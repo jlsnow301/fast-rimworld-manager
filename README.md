@@ -23,6 +23,11 @@ and `loadBefore` rules, placing core/framework tiers first and alphabetizing
 otherwise independent mods. Circular rules report an error and leave the current
 order unchanged.
 
+The header shows **Unsaved changes** when the current game version, active mod
+order, or known expansions differ from the last loaded or saved
+`ModsConfig.xml`. Importing or editing marks the list dirty; restoring the saved
+values or saving successfully clears the indicator.
+
 ## Run
 
 - `deno task dev` starts the frontend in Vite.

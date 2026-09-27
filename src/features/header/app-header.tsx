@@ -5,6 +5,7 @@ export function AppHeader() {
 	const fileInput = useRef<HTMLInputElement>(null);
 	const {
 		hasModList,
+		isModListDirty,
 		importModList,
 		settingsOpen,
 		sourceName,
@@ -20,6 +21,11 @@ export function AppHeader() {
 			</div>
 			<div className='header-status'>
 				<span>{sourceName || 'No mod list loaded'}</span>
+				{isModListDirty && (
+					<span aria-live='polite' className='dirty-indicator'>
+						Unsaved changes
+					</span>
+				)}
 				<button onClick={() => fileInput.current?.click()}>
 					Import list
 				</button>

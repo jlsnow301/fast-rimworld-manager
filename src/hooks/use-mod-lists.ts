@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
 import { parseModsConfig } from '../utils/mods_config';
+import {
+	createModListSnapshot,
+	hasModListChanges,
+	type ModListSnapshot,
+} from '../utils/dirty_state';
 import type { InstalledMod, ModListType, VisibleMod } from '../utils/types';
 
 export function useModLists(setStatus: (message: string) => void) {
@@ -13,6 +18,9 @@ export function useModLists(setStatus: (message: string) => void) {
 	const [sourceName, setSourceName] = useState('');
 	const [activeSearch, setActiveSearch] = useState('');
 	const [inactiveSearch, setInactiveSearch] = useState('');
+	const [savedSnapshot, setSavedSnapshot] = useState(() =>
+		createModListSnapshot('1.4', [], [])
+	);
 
 	function initialize(
 		foundMods: InstalledMod[],
@@ -21,6 +29,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		modsError: unknown,
 		configPathConfigured: boolean,
 	) {
+		setSavedSnapshot(createModListSnapshot('1.4', [], []));
 		setInstalledMods(foundMods);
 		setActiveMods([]);
 		setInactiveMods(getInactivePackageIds(foundMods, []));
@@ -32,6 +41,13 @@ export function useModLists(setStatus: (message: string) => void) {
 				setInactiveMods(getInactivePackageIds(foundMods, parsed.activeMods));
 				setKnownExpansions(parsed.knownExpansions);
 				setGameVersion(parsed.version);
+				setSavedSnapshot(
+					createModListSnapshot(
+						parsed.version,
+						parsed.activeMods,
+						parsed.knownExpansions,
+					),
+				);
 				setSourceName('ModsConfig.xml');
 				setStatus(
 					`Loaded ${parsed.activeMods.length} active mods and found ${foundMods.length} installed mods.`,
@@ -107,6 +123,20 @@ export function useModLists(setStatus: (message: string) => void) {
 		setInactiveMods(transfer.inactive);
 		setStatus(`Moved ${transfer.packageId} to ${target} mods.`);
 	}
+	function markModListSaved(snapshot: ModListSnapshot) {
+		setSavedSnapshot(
+			createModListSnapshot(
+				snapshot.version,
+				snapshot.activeMods,
+				snapshot.knownExpansions,
+			),
+		);
+	}
+	const isModListDirty = hasModListChanges(savedSnapshot, {
+		version: gameVersion,
+		activeMods,
+		knownExpansions,
+	});
 
 	const modDetailsByPackageId = new Map<string, InstalledMod>();
 	for (const mod of installedMods) {
@@ -139,6 +169,8 @@ export function useModLists(setStatus: (message: string) => void) {
 		sourceName,
 		visibleActiveMods: visibleMods(activeMods, activeSearch),
 		visibleInactiveMods: visibleMods(inactiveMods, inactiveSearch),
+		isModListDirty,
+		markModListSaved,
 		applySortedActiveMods,
 	};
 }

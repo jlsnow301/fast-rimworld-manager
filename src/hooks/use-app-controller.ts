@@ -135,14 +135,16 @@ export function useAppController() {
 
 	async function saveModList() {
 		setStatus('Saving ModsConfig.xml…');
+		const snapshot = {
+			version: modLists.gameVersion,
+			activeMods: [...modLists.activeMods],
+			knownExpansions: [...modLists.knownExpansions],
+		};
 		try {
 			const path = await invokeDesktop<string>('save_mod_list', {
-				args: {
-					version: modLists.gameVersion,
-					activeMods: modLists.activeMods,
-					knownExpansions: modLists.knownExpansions,
-				},
+				args: snapshot,
 			});
+			modLists.markModListSaved(snapshot);
 			setStatus(`Saved ModsConfig.xml to ${path}.`);
 		} catch (error) {
 			setStatus(error instanceof Error ? error.message : String(error));
