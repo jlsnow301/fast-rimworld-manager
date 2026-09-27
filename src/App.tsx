@@ -1,4 +1,4 @@
-import './App.css';
+import './globals.css';
 import { AppProvider } from './context/app-context';
 import { AppHeader } from './features/header/app-header';
 import { ModListFeature } from './features/mod-list/mod-list-feature';
@@ -10,7 +10,7 @@ function App() {
 
 	return (
 		<AppProvider value={controller}>
-			<main className='app-shell'>
+			<main className='min-h-screen'>
 				<AppHeader />
 				{controller.settingsOpen ? <SettingsFeature /> : <ModListFeature />}
 			</main>

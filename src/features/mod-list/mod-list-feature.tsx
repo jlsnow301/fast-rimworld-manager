@@ -1,4 +1,21 @@
-import type { DragEvent as ReactDragEvent } from 'react';
+import { type DragEvent as ReactDragEvent, Fragment } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyTitle,
+} from '@/components/ui/empty';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { useAppContext } from '../../context/app-context';
 import { MOD_DRAG_MIME, parseModDragPayload } from '../../utils/mod_drag';
 import { normalizedPackageId } from '../../utils/mods';
@@ -25,28 +42,39 @@ export function ModListFeature() {
 	} = useAppContext();
 
 	return (
-		<section className='content'>
-			<div className='page-heading'>
+		<section className='mx-auto w-full max-w-7xl p-6'>
+			<div className='mb-4 flex flex-wrap items-end justify-between gap-3'>
 				<div>
-					<h2>Mod list</h2>
-					<p>Game version {gameVersion}</p>
+					<h2 className='text-lg font-semibold tracking-wide uppercase'>
+						Mod list
+					</h2>
+					<p className='text-sm text-muted-foreground'>
+						Game version {gameVersion}
+					</p>
 				</div>
-				<span>
-					{activeMods.length} active · {inactiveMods.length} inactive
-				</span>
-				<button disabled={activeMods.length < 2} onClick={sortMods}>
-					Sort active mods
-				</button>
+				<div className='flex items-center gap-3'>
+					<Badge variant='secondary'>
+						{activeMods.length} active · {inactiveMods.length} inactive
+					</Badge>
+					<Button
+						disabled={activeMods.length < 2}
+						onClick={sortMods}
+						size='sm'
+						variant='outline'
+					>
+						Sort active mods
+					</Button>
+				</div>
 			</div>
-			<p className='mod-drag-hint'>
+			<p className='mb-3 text-sm text-muted-foreground'>
 				Drag mods between the lists to change activation.
 			</p>
-			<div className='mod-columns'>
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 				<ModListPanel
 					count={activeMods.length}
 					emptyMessage={hasModList
 						? 'No active mods.'
-						: 'Import a mod list to see active mods.'}
+						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
 					mods={visibleActiveMods}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
@@ -70,7 +98,9 @@ export function ModListFeature() {
 				/>
 			</div>
 			<ModPreviewFeature />
-			<p aria-live='polite' className='status-message'>{status}</p>
+			<p aria-live='polite' className='mt-3 text-sm text-muted-foreground'>
+				{status}
+			</p>
 		</section>
 	);
 }
@@ -113,70 +143,75 @@ function ModListPanel({
 	}
 
 	return (
-		<section className='mod-panel'>
-			<div className='panel-heading'>
-				<h3>{title}</h3>
-				<span>{count}</span>
-			</div>
-			<input
-				aria-label={`Search ${title.toLowerCase()}`}
-				onChange={(event) => onSearch(event.currentTarget.value)}
-				placeholder='Search package IDs'
-				value={search}
-			/>
-			<div
-				className='mod-list'
-				onDragOver={(event) => {
-					event.preventDefault();
-					event.dataTransfer.dropEffect = 'move';
-				}}
-				onDrop={handleDrop}
-			>
-				{mods.length === 0
-					? (
-						<p className='empty-message'>
-							{count > 0 ? 'No matches.' : emptyMessage}
-						</p>
-					)
-					: mods.map(({ packageId, index }) => {
-						const mod = modDetailsByPackageId.get(
-							normalizedPackageId(packageId),
-						);
-						return (
-							<div
-								className='mod-row'
-								aria-label={`Show details for ${mod?.name ?? packageId}`}
-								draggable
-								key={`${packageId}-${index}`}
-								role='button'
-								tabIndex={0}
-								onClick={() => onSelectMod(packageId)}
-								onKeyDown={(event) => {
-									if (event.key === 'Enter' || event.key === ' ') {
-										event.preventDefault();
-										onSelectMod(packageId);
-									}
-								}}
-								onDragStart={(event) => {
-									event.dataTransfer.effectAllowed = 'move';
-									event.dataTransfer.setData(
-										MOD_DRAG_MIME,
-										JSON.stringify({ index, source: type }),
-									);
-								}}
-							>
-								<div className='mod-labels'>
-									<span className='mod-name'>{mod?.name ?? packageId}</span>
-									{mod && (
-										<span className='package-id'>
-											{mod.packageId} · {mod.source}
+		<Card className='min-w-0' size='sm'>
+			<CardHeader className='flex flex-row items-center justify-between'>
+				<CardTitle>{title}</CardTitle>
+				<CardAction>
+					<Badge variant='outline'>{count}</Badge>
+				</CardAction>
+			</CardHeader>
+			<CardContent className='flex min-h-0 flex-col gap-3'>
+				<Input
+					aria-label={`Search ${title.toLowerCase()}`}
+					onChange={(event) => onSearch(event.currentTarget.value)}
+					placeholder='Search package IDs'
+					value={search}
+				/>
+				<div
+					className='flex min-h-72 max-h-[calc(100vh-22rem)] flex-col overflow-y-auto border'
+					onDragOver={(event) => {
+						event.preventDefault();
+						event.dataTransfer.dropEffect = 'move';
+					}}
+					onDrop={handleDrop}
+				>
+					{mods.length === 0
+						? (
+							<Empty className='flex-1 p-6'>
+								<EmptyHeader>
+									<EmptyTitle>{count > 0 ? 'No matches' : title}</EmptyTitle>
+									<EmptyDescription>{emptyMessage}</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
+						)
+						: mods.map(({ packageId, index }, modIndex) => {
+							const mod = modDetailsByPackageId.get(
+								normalizedPackageId(packageId),
+							);
+							return (
+								<Fragment key={`${packageId}-${index}`}>
+									<Button
+										aria-label={`Show details for ${mod?.name ?? packageId}`}
+										className='h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal cursor-grab active:cursor-grabbing'
+										draggable
+										onClick={() => onSelectMod(packageId)}
+										onDragStart={(event) => {
+											event.dataTransfer.effectAllowed = 'move';
+											event.dataTransfer.setData(
+												MOD_DRAG_MIME,
+												JSON.stringify({ index, source: type }),
+											);
+										}}
+										variant='ghost'
+									>
+										<span className='flex min-w-0 flex-col items-start gap-1'>
+											<span className='break-words'>
+												{mod?.name ?? packageId}
+											</span>
+											{mod && (
+												<span className='flex flex-wrap gap-2'>
+													<Badge variant='secondary'>{mod.packageId}</Badge>
+													<Badge variant='outline'>{mod.source}</Badge>
+												</span>
+											)}
 										</span>
-									)}
-								</div>
-							</div>
-						);
-					})}
-			</div>
-		</section>
+									</Button>
+									{modIndex < mods.length - 1 && <Separator />}
+								</Fragment>
+							);
+						})}
+				</div>
+			</CardContent>
+		</Card>
 	);
 }

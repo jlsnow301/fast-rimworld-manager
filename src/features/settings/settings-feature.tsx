@@ -1,3 +1,13 @@
+import { Button } from '@/components/ui/button';
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { PATH_FIELDS } from '../../utils/mods';
 import type { PathSettings } from '../../utils/types';
 import { useAppContext } from '../../context/app-context';
@@ -12,29 +22,35 @@ export function SettingsFeature() {
 	} = useAppContext();
 
 	return (
-		<section className='content settings-panel'>
-			<div className='page-heading'>
-				<div>
-					<h2>Settings</h2>
-					<p>RimWorld and mod folder locations</p>
-				</div>
-			</div>
-			<div className='settings-actions'>
-				<button onClick={autoDetectPaths}>Auto-detect paths</button>
-				<button onClick={savePathSettings}>Save paths</button>
-			</div>
-			<div className='path-fields'>
-				{PATH_FIELDS.map(({ key, label }) => (
-					<PathField
-						key={key}
-						label={label}
-						name={key}
-						onChange={updatePath}
-						value={pathSettings[key]}
-					/>
-				))}
-			</div>
-			<p aria-live='polite' className='status-message'>{settingsMessage}</p>
+		<section className='mx-auto w-full max-w-5xl p-6'>
+			<Card>
+				<CardHeader>
+					<CardTitle>Settings</CardTitle>
+					<CardDescription>RimWorld and mod folder locations</CardDescription>
+				</CardHeader>
+				<CardContent className='flex flex-col gap-5'>
+					<div className='flex flex-wrap gap-2'>
+						<Button onClick={autoDetectPaths} variant='outline'>
+							Auto-detect paths
+						</Button>
+						<Button onClick={savePathSettings}>Save paths</Button>
+					</div>
+					<FieldGroup className='gap-4'>
+						{PATH_FIELDS.map(({ key, label }) => (
+							<PathField
+								key={key}
+								label={label}
+								name={key}
+								onChange={updatePath}
+								value={pathSettings[key]}
+							/>
+						))}
+					</FieldGroup>
+					<p aria-live='polite' className='text-sm text-muted-foreground'>
+						{settingsMessage}
+					</p>
+				</CardContent>
+			</Card>
 		</section>
 	);
 }
@@ -48,9 +64,9 @@ type PathFieldProps = {
 
 function PathField({ label, name, onChange, value }: PathFieldProps) {
 	return (
-		<label className='path-field' htmlFor={`path-${name}`}>
-			<span>{label}</span>
-			<input
+		<Field>
+			<FieldLabel htmlFor={`path-${name}`}>{label}</FieldLabel>
+			<Input
 				autoComplete='off'
 				id={`path-${name}`}
 				onChange={(event) => onChange(name, event.currentTarget.value)}
@@ -58,6 +74,6 @@ function PathField({ label, name, onChange, value }: PathFieldProps) {
 				spellCheck={false}
 				value={value}
 			/>
-		</label>
+		</Field>
 	);
 }
