@@ -13,14 +13,17 @@ use crate::path_detection::{load_path_settings_for_app, PathSettings};
 pub struct InstalledMod {
     pub name: String,
     pub package_id: String,
+    pub description: String,
+    pub published_file_id: Option<String>,
     pub path: String,
     pub source: String,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy)]
 enum AboutField {
     Name,
     PackageId,
+    Description,
 }
 
 #[tauri::command]
@@ -80,13 +83,16 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         let Ok(contents) = fs::read_to_string(about_path) else {
             continue;
         };
-        let Some((name, package_id)) = parse_about_xml(&contents) else {
+        let Some((name, package_id, description)) = parse_about_xml(&contents) else {
             continue;
         };
+        let published_file_id = published_file_id(&mod_path);
 
         mods.push(InstalledMod {
             name,
             package_id,
+            description,
+            published_file_id,
             path: mod_path.to_string_lossy().into_owned(),
             source: source.to_string(),
         });
@@ -95,11 +101,12 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
     Ok(())
 }
 
-fn parse_about_xml(xml: &str) -> Option<(String, String)> {
+fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
     let mut reader = Reader::from_str(xml);
     let mut current_field = None;
     let mut name = String::new();
     let mut package_id = String::new();
+    let mut description = String::new();
 
     loop {
         match reader.read_event() {
@@ -109,23 +116,38 @@ fn parse_about_xml(xml: &str) -> Option<(String, String)> {
                     Some(AboutField::Name)
                 } else if tag.as_ref().eq_ignore_ascii_case("packageId") {
                     Some(AboutField::PackageId)
+                } else if tag.as_ref().eq_ignore_ascii_case("description") {
+                    Some(AboutField::Description)
                 } else {
                     current_field
                 };
             }
             Ok(Event::Text(text)) => {
                 let unescaped = quick_xml::escape::unescape(text.as_ref()).ok()?;
-                append_about_text(current_field, &unescaped, &mut name, &mut package_id);
+                append_about_text(
+                    current_field,
+                    &unescaped,
+                    &mut name,
+                    &mut package_id,
+                    &mut description,
+                );
             }
             Ok(Event::GeneralRef(reference)) => {
                 let entity = format!("&{};", reference.as_ref());
                 let unescaped = quick_xml::escape::unescape(&entity).ok()?;
-                append_about_text(current_field, &unescaped, &mut name, &mut package_id);
+                append_about_text(
+                    current_field,
+                    &unescaped,
+                    &mut name,
+                    &mut package_id,
+                    &mut description,
+                );
             }
             Ok(Event::End(element)) => {
                 let tag = element.local_name();
                 if tag.as_ref().eq_ignore_ascii_case("name")
                     || tag.as_ref().eq_ignore_ascii_case("packageId")
+                    || tag.as_ref().eq_ignore_ascii_case("description")
                 {
                     current_field = None;
                 }
@@ -148,6 +170,7 @@ fn parse_about_xml(xml: &str) -> Option<(String, String)> {
             name.to_string()
         },
         package_id.to_string(),
+        description.trim().to_string(),
     ))
 }
 
@@ -156,12 +179,32 @@ fn append_about_text(
     value: &str,
     name: &mut String,
     package_id: &mut String,
+    description: &mut String,
 ) {
     match field {
         Some(AboutField::Name) => name.push_str(value),
         Some(AboutField::PackageId) => package_id.push_str(value),
+        Some(AboutField::Description) => description.push_str(value),
         None => {}
     }
+}
+
+fn published_file_id(mod_path: &Path) -> Option<String> {
+    let id_file = mod_path.join("About/PublishedFileId.txt");
+    if let Ok(contents) = fs::read_to_string(&id_file) {
+        let id = contents.trim_start_matches('\u{feff}').trim();
+        return valid_published_file_id(id);
+    }
+
+    mod_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .and_then(valid_published_file_id)
+}
+
+fn valid_published_file_id(value: &str) -> Option<String> {
+    let id = value.parse::<u64>().ok()?;
+    (id > 0).then(|| value.to_string())
 }
 
 #[cfg(all(test, target_os = "windows"))]
@@ -236,6 +279,41 @@ mod tests {
             assert_eq!(listed.name, name);
             assert_eq!(listed.source, source);
         }
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn parses_escaped_description_for_preview() {
+        let parsed = parse_about_xml(
+            "<ModMetaData><name>Mod &amp; More</name><packageId>Author.Mod</packageId><description>Details &amp; requirements</description></ModMetaData>",
+        );
+
+        assert_eq!(
+            parsed,
+            Some((
+                "Mod & More".to_string(),
+                "Author.Mod".to_string(),
+                "Details & requirements".to_string(),
+            ))
+        );
+    }
+
+    #[test]
+    fn reads_published_file_id_from_about_file_or_workshop_folder() {
+        let root = unique_temp_directory("published-file-id");
+        let local_mod = root.join("LocalMod");
+        let about_directory = local_mod.join("About");
+        fs::create_dir_all(&about_directory).expect("About folder should be created");
+        fs::write(
+            about_directory.join("PublishedFileId.txt"),
+            "\u{feff} 98765\n",
+        )
+        .expect("PublishedFileId.txt should be created");
+        let workshop_mod = root.join("12345");
+        fs::create_dir_all(&workshop_mod).expect("Workshop folder should be created");
+
+        assert_eq!(published_file_id(&local_mod).as_deref(), Some("98765"));
+        assert_eq!(published_file_id(&workshop_mod).as_deref(), Some("12345"));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
 

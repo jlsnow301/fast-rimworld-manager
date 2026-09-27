@@ -12,8 +12,10 @@ can still edit paths manually, but autodetection is currently Windows-only.
 
 At startup, the app reads active IDs from the configured `ModsConfig.xml` and
 scans the configured game `Data`, local mods, and Steam Workshop folders for
-`About/About.xml`. Discovered mods appear in the active or inactive list; the
-list shows each mod's name, package ID, and source.
+`About/About.xml`. Discovered mods appear in the active or inactive list; rows
+show the mod name, package ID, and source. Click a row for local details and,
+when available, Steam Workshop title, description, preview image, and update
+time.
 
 ## Run
 

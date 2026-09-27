@@ -1,5 +1,6 @@
 mod installed_mods;
 mod path_detection;
+mod steam_preview;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,6 +12,7 @@ pub fn run() {
             path_detection::save_path_settings,
             path_detection::load_startup_mod_list,
             installed_mods::list_installed_mods,
+            steam_preview::fetch_steam_mod_details,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

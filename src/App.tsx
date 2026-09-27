@@ -40,8 +40,18 @@ type DetectedPaths = {
 type InstalledMod = {
 	name: string;
 	packageId: string;
+	description: string;
+	publishedFileId: string | null;
 	path: string;
 	source: string;
+};
+
+type SteamModPreview = {
+	publishedFileId: string;
+	title: string;
+	description: string;
+	previewUrl: string | null;
+	timeUpdated: number | null;
 };
 
 type ModListType = 'active' | 'inactive';
@@ -168,6 +178,11 @@ function App() {
 	const [status, setStatus] = useState(
 		'Waiting for configured mods. Set the RimWorld paths in Settings.',
 	);
+	const [selectedMod, setSelectedMod] = useState<InstalledMod | null>(null);
+	const [steamPreview, setSteamPreview] = useState<SteamModPreview | null>(
+		null,
+	);
+	const [previewMessage, setPreviewMessage] = useState('');
 
 	useEffect(() => {
 		let cancelled = false;
@@ -246,6 +261,42 @@ function App() {
 			cancelled = true;
 		};
 	}, []);
+	useEffect(() => {
+		if (!selectedMod) return;
+
+		let cancelled = false;
+		setSteamPreview(null);
+		if (!selectedMod.publishedFileId) {
+			setPreviewMessage('This mod does not include a Steam Workshop ID.');
+			return () => {
+				cancelled = true;
+			};
+		}
+
+		setPreviewMessage('Loading Steam Workshop details…');
+		void invokeDesktop<SteamModPreview | null>('fetch_steam_mod_details', {
+			publishedFileId: selectedMod.publishedFileId,
+		})
+			.then((preview) => {
+				if (cancelled) return;
+				setSteamPreview(preview);
+				setPreviewMessage(
+					preview
+						? 'Steam Workshop details loaded.'
+						: 'Steam item is unavailable.',
+				);
+			})
+			.catch((error) => {
+				if (cancelled) return;
+				setPreviewMessage(
+					error instanceof Error ? error.message : String(error),
+				);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [selectedMod]);
 
 	const hasModList = sourceName.length > 0 || activeMods.length > 0 ||
 		inactiveMods.length > 0;
@@ -273,6 +324,11 @@ function App() {
 					: 'Could not read this mod list.',
 			);
 		}
+	}
+	function openModPreview(packageId: string) {
+		const mod = modDetailsByPackageId.get(normalizedPackageId(packageId));
+		if (!mod) return;
+		setSelectedMod(mod);
 	}
 
 	function moveMod(
@@ -459,6 +515,7 @@ function App() {
 						mods={visibleActiveMods}
 						modDetailsByPackageId={modDetailsByPackageId}
 						onDropMod={moveMod}
+						onSelectMod={openModPreview}
 						onSearch={setActiveSearch}
 						search={activeSearch}
 						title='Active mods'
@@ -470,12 +527,21 @@ function App() {
 						mods={visibleInactiveMods}
 						modDetailsByPackageId={modDetailsByPackageId}
 						onDropMod={moveMod}
+						onSelectMod={openModPreview}
 						onSearch={setInactiveSearch}
 						search={inactiveSearch}
 						title='Inactive mods'
 						type='inactive'
 					/>
 				</div>
+				{selectedMod && (
+					<ModPreviewPanel
+						mod={selectedMod}
+						steamPreview={steamPreview}
+						message={previewMessage}
+						onClose={() => setSelectedMod(null)}
+					/>
+				)}
 
 				<p aria-live='polite' className='status-message'>{status}</p>
 			</section>
@@ -531,11 +597,85 @@ function SettingsPanel({
 	);
 }
 
+type ModPreviewPanelProps = {
+	message: string;
+	mod: InstalledMod;
+	onClose: () => void;
+	steamPreview: SteamModPreview | null;
+};
+
+function ModPreviewPanel({
+	message,
+	mod,
+	onClose,
+	steamPreview,
+}: ModPreviewPanelProps) {
+	const lastUpdated = steamPreview?.timeUpdated
+		? new Date(steamPreview.timeUpdated * 1000).toLocaleString()
+		: null;
+
+	return (
+		<section aria-label={`${mod.name} details`} className='mod-preview'>
+			<div className='panel-heading'>
+				<h3>{mod.name}</h3>
+				<button onClick={onClose}>Close</button>
+			</div>
+			<dl className='preview-fields'>
+				<div>
+					<dt>Package ID</dt>
+					<dd>{mod.packageId}</dd>
+				</div>
+				<div>
+					<dt>Source</dt>
+					<dd>{mod.source}</dd>
+				</div>
+				<div>
+					<dt>Installed path</dt>
+					<dd>{mod.path}</dd>
+				</div>
+				{mod.publishedFileId && (
+					<div>
+						<dt>Steam Workshop ID</dt>
+						<dd>{mod.publishedFileId}</dd>
+					</div>
+				)}
+			</dl>
+			{mod.description && (
+				<div>
+					<h4>About this mod</h4>
+					<p className='preview-description'>{mod.description}</p>
+				</div>
+			)}
+			{steamPreview && (
+				<div>
+					<h4>Steam Workshop</h4>
+					<p>{steamPreview.title}</p>
+					{lastUpdated && <p>Last updated {lastUpdated}</p>}
+					{steamPreview.previewUrl && (
+						<img
+							className='steam-preview-image'
+							src={steamPreview.previewUrl}
+							alt={`Steam Workshop preview for ${steamPreview.title}`}
+						/>
+					)}
+					{steamPreview.description && (
+						<p className='preview-description'>
+							{steamPreview.description}
+						</p>
+					)}
+				</div>
+			)}
+			<p aria-live='polite' className='status-message'>{message}</p>
+		</section>
+	);
+}
+
 type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	mods: { packageId: string; index: number }[];
+	onSelectMod: (packageId: string) => void;
 	onDropMod: (
 		sourceIndex: number,
 		source: ModListType,
@@ -552,6 +692,7 @@ function ModListPanel({
 	emptyMessage,
 	modDetailsByPackageId,
 	mods,
+	onSelectMod,
 	onDropMod,
 	onSearch,
 	search,
@@ -598,8 +739,18 @@ function ModListPanel({
 						return (
 							<div
 								className='mod-row'
+								aria-label={`Show details for ${mod?.name ?? packageId}`}
 								draggable
 								key={`${packageId}-${index}`}
+								role='button'
+								tabIndex={0}
+								onClick={() => onSelectMod(packageId)}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										onSelectMod(packageId);
+									}
+								}}
 								onDragStart={(event) => {
 									event.dataTransfer.effectAllowed = 'move';
 									event.dataTransfer.setData(
