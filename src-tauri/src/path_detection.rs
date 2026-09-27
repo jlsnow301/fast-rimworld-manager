@@ -62,6 +62,32 @@ fn settings_file(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
+pub fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
+    load_configured_mod_list(&settings_file(&app)?)
+}
+
+fn load_configured_mod_list(settings_file: &Path) -> Result<Option<String>, String> {
+    let settings = load_settings_file(settings_file)?;
+    read_mods_config(&settings.config_path)
+}
+
+fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
+    if config_path.trim().is_empty() {
+        return Ok(None);
+    }
+
+    let mods_config = PathBuf::from(config_path).join("ModsConfig.xml");
+    match fs::read_to_string(&mods_config) {
+        Ok(contents) => Ok(Some(contents)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!(
+            "Could not read ModsConfig.xml at {}: {error}",
+            mods_config.display()
+        )),
+    }
+}
+
+#[tauri::command]
 pub fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
     #[cfg(target_os = "windows")]
     {
@@ -312,6 +338,45 @@ mod tests {
 
         assert_eq!(found, None);
         fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+    #[test]
+    fn loads_mods_config_from_the_persisted_config_folder() {
+        let root = unique_temp_directory("startup-modlist");
+        let settings_file = root.join("app/paths.json");
+        let config_directory = root.join("RimWorld/Config");
+        fs::create_dir_all(&config_directory).expect("config directory should be created");
+        let xml =
+            "<ModsConfigData><activeMods><li>Ludeon.RimWorld</li></activeMods></ModsConfigData>";
+        fs::write(config_directory.join("ModsConfig.xml"), xml)
+            .expect("ModsConfig.xml should be created");
+        let settings = PathSettings {
+            config_path: config_directory.to_string_lossy().into_owned(),
+            ..PathSettings::default()
+        };
+        save_settings_file(&settings_file, &settings).expect("path settings should save");
+
+        let loaded = load_configured_mod_list(&settings_file)
+            .expect("configured mod list should be readable");
+
+        assert_eq!(loaded.as_deref(), Some(xml));
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn returns_no_modlist_when_config_file_is_missing() {
+        let config_directory = unique_temp_directory("missing-config");
+        fs::create_dir_all(&config_directory).expect("config directory should be created");
+
+        assert_eq!(
+            read_mods_config(config_directory.to_str().expect("path should be UTF-8")),
+            Ok(None)
+        );
+        fs::remove_dir_all(config_directory).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn returns_no_modlist_when_config_path_is_empty() {
+        assert_eq!(read_mods_config(""), Ok(None));
     }
     #[test]
     fn persists_path_settings_between_loads() {

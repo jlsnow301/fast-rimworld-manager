@@ -77,16 +77,6 @@ function App() {
 	const [settingsMessage, setSettingsMessage] = useState(
 		'Loading saved paths.',
 	);
-	useEffect(() => {
-		invoke<PathSettings>('load_path_settings')
-			.then((settings) => {
-				setPathSettings(settings);
-				setSettingsMessage('Saved paths loaded.');
-			})
-			.catch(() => {
-				setSettingsMessage('Path settings are available in the desktop app.');
-			});
-	}, []);
 	const [activeMods, setActiveMods] = useState<string[]>([]);
 	const [inactiveMods, setInactiveMods] = useState<string[]>([]);
 	const [knownExpansions, setKnownExpansions] = useState<string[]>([]);
@@ -98,6 +88,60 @@ function App() {
 	const [status, setStatus] = useState(
 		'Import a ModsConfig.xml file or add a package ID to start editing.',
 	);
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadConfiguredModList() {
+			let settings: PathSettings;
+			try {
+				settings = await invoke<PathSettings>('load_path_settings');
+			} catch {
+				if (!cancelled) {
+					setSettingsMessage(
+						'Path settings are available in the desktop app.',
+					);
+				}
+				return;
+			}
+
+			if (cancelled) return;
+			setPathSettings(settings);
+			setSettingsMessage('Saved paths loaded.');
+			if (!settings.configPath) return;
+
+			try {
+				const content = await invoke<string | null>('load_startup_mod_list');
+				if (cancelled) return;
+				if (!content) {
+					setStatus(
+						'No ModsConfig.xml found in the configured config folder.',
+					);
+					return;
+				}
+
+				const parsed = parseModsConfig(content);
+				setActiveMods(parsed.activeMods);
+				setInactiveMods([]);
+				setKnownExpansions(parsed.knownExpansions);
+				setGameVersion(parsed.version);
+				setSourceName('ModsConfig.xml');
+				setStatus(
+					`Loaded ${parsed.activeMods.length} active mods from ModsConfig.xml.`,
+				);
+			} catch (error) {
+				if (!cancelled) {
+					setStatus(
+						error instanceof Error ? error.message : String(error),
+					);
+				}
+			}
+		}
+
+		void loadConfiguredModList();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const hasModList = sourceName.length > 0 || activeMods.length > 0 ||
 		inactiveMods.length > 0;

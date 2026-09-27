@@ -8,6 +8,7 @@ pub fn run() {
             path_detection::detect_rimworld_paths,
             path_detection::load_path_settings,
             path_detection::save_path_settings,
+            path_detection::load_startup_mod_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

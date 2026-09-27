@@ -9,8 +9,11 @@ active mods, move entries between active and inactive lists, and export a new
 Settings can detect and store Windows RimWorld, config, local mods, and Steam
 Workshop paths. Autodetection checks the Windows Steam registry and Steam
 libraries; non-Steam game scans cover standard install folders. Other platforms
-can still edit paths manually, but autodetection is currently Windows-only. The
-app does not yet scan installed mods into the mod list.
+can still edit paths manually, but autodetection is currently Windows-only.
+
+At startup, the app reads active mod IDs from `ModsConfig.xml` in the saved
+config folder. It does not yet discover installed mods or populate the inactive
+list.
 
 ## Run
 
