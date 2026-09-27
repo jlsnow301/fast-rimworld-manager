@@ -26,7 +26,11 @@ pub struct DetectedPaths {
 
 #[tauri::command]
 pub fn load_path_settings(app: AppHandle) -> Result<PathSettings, String> {
-    load_settings_file(&settings_file(&app)?)
+    load_path_settings_for_app(&app)
+}
+
+pub(crate) fn load_path_settings_for_app(app: &AppHandle) -> Result<PathSettings, String> {
+    load_settings_file(&settings_file(app)?)
 }
 
 #[tauri::command]

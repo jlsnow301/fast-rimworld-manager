@@ -15,6 +15,37 @@ type DetectedPaths = {
 	workshopPath: string | null;
 };
 
+type InstalledMod = {
+	name: string;
+	packageId: string;
+	path: string;
+	source: string;
+};
+
+function normalizedPackageId(packageId: string) {
+	return packageId.toLowerCase().replace(/_steam$/, '');
+}
+
+function getInactivePackageIds(
+	installedMods: InstalledMod[],
+	activeMods: string[],
+) {
+	const activeIds = new Set(activeMods.map(normalizedPackageId));
+	const seenIds = new Set<string>();
+	const inactiveMods: string[] = [];
+
+	for (const mod of installedMods) {
+		const packageId = normalizedPackageId(mod.packageId);
+		if (!packageId || activeIds.has(packageId) || seenIds.has(packageId)) {
+			continue;
+		}
+		seenIds.add(packageId);
+		inactiveMods.push(mod.packageId);
+	}
+
+	return inactiveMods;
+}
+
 const EMPTY_PATH_SETTINGS: PathSettings = {
 	gamePath: '',
 	configPath: '',
@@ -77,6 +108,7 @@ function App() {
 	const [settingsMessage, setSettingsMessage] = useState(
 		'Loading saved paths.',
 	);
+	const [installedMods, setInstalledMods] = useState<InstalledMod[]>([]);
 	const [activeMods, setActiveMods] = useState<string[]>([]);
 	const [inactiveMods, setInactiveMods] = useState<string[]>([]);
 	const [knownExpansions, setKnownExpansions] = useState<string[]>([]);
@@ -88,10 +120,11 @@ function App() {
 	const [status, setStatus] = useState(
 		'Import a ModsConfig.xml file or add a package ID to start editing.',
 	);
+
 	useEffect(() => {
 		let cancelled = false;
 
-		async function loadConfiguredModList() {
+		async function loadConfiguredMods() {
 			let settings: PathSettings;
 			try {
 				settings = await invoke<PathSettings>('load_path_settings');
@@ -107,37 +140,60 @@ function App() {
 			if (cancelled) return;
 			setPathSettings(settings);
 			setSettingsMessage('Saved paths loaded.');
-			if (!settings.configPath) return;
 
-			try {
-				const content = await invoke<string | null>('load_startup_mod_list');
-				if (cancelled) return;
-				if (!content) {
-					setStatus(
-						'No ModsConfig.xml found in the configured config folder.',
+			const [modsResult, configResult] = await Promise.allSettled([
+				invoke<InstalledMod[]>('list_installed_mods'),
+				settings.configPath
+					? invoke<string | null>('load_startup_mod_list')
+					: Promise.resolve(null),
+			]);
+			if (cancelled) return;
+
+			const foundMods = modsResult.status === 'fulfilled'
+				? modsResult.value
+				: [];
+			const content = configResult.status === 'fulfilled'
+				? configResult.value
+				: null;
+			setInstalledMods(foundMods);
+			setActiveMods([]);
+			setInactiveMods(getInactivePackageIds(foundMods, []));
+
+			if (content) {
+				try {
+					const parsed = parseModsConfig(content);
+					setActiveMods(parsed.activeMods);
+					setInactiveMods(
+						getInactivePackageIds(foundMods, parsed.activeMods),
 					);
-					return;
-				}
-
-				const parsed = parseModsConfig(content);
-				setActiveMods(parsed.activeMods);
-				setInactiveMods([]);
-				setKnownExpansions(parsed.knownExpansions);
-				setGameVersion(parsed.version);
-				setSourceName('ModsConfig.xml');
-				setStatus(
-					`Loaded ${parsed.activeMods.length} active mods from ModsConfig.xml.`,
-				);
-			} catch (error) {
-				if (!cancelled) {
+					setKnownExpansions(parsed.knownExpansions);
+					setGameVersion(parsed.version);
+					setSourceName('ModsConfig.xml');
+					setStatus(
+						`Loaded ${parsed.activeMods.length} active mods and found ${foundMods.length} installed mods.`,
+					);
+				} catch (error) {
 					setStatus(
 						error instanceof Error ? error.message : String(error),
 					);
 				}
+				return;
+			}
+
+			if (configResult.status === 'rejected') {
+				setStatus(String(configResult.reason));
+			} else if (settings.configPath) {
+				setStatus(
+					`No ModsConfig.xml found. Found ${foundMods.length} installed mods.`,
+				);
+			} else if (modsResult.status === 'rejected') {
+				setStatus(String(modsResult.reason));
+			} else if (foundMods.length > 0) {
+				setStatus(`Found ${foundMods.length} installed mods.`);
 			}
 		}
 
-		void loadConfiguredModList();
+		void loadConfiguredMods();
 		return () => {
 			cancelled = true;
 		};
@@ -155,7 +211,7 @@ function App() {
 		try {
 			const parsed = parseModsConfig(await file.text());
 			setActiveMods(parsed.activeMods);
-			setInactiveMods([]);
+			setInactiveMods(getInactivePackageIds(installedMods, parsed.activeMods));
 			setKnownExpansions(parsed.knownExpansions);
 			setGameVersion(parsed.version);
 			setSourceName(file.name);
@@ -288,7 +344,26 @@ function App() {
 			setSettingsMessage(
 				error instanceof Error ? error.message : String(error),
 			);
+			return;
 		}
+
+		try {
+			const foundMods = await invoke<InstalledMod[]>('list_installed_mods');
+			setInstalledMods(foundMods);
+			setInactiveMods(getInactivePackageIds(foundMods, activeMods));
+			setStatus(`Found ${foundMods.length} installed mods.`);
+		} catch (error) {
+			setSettingsMessage(
+				`Paths saved, but mod scanning failed: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+		}
+	}
+	const modDetailsByPackageId = new Map<string, InstalledMod>();
+	for (const mod of installedMods) {
+		const key = normalizedPackageId(mod.packageId);
+		if (!modDetailsByPackageId.has(key)) modDetailsByPackageId.set(key, mod);
 	}
 	const visibleActiveMods = activeMods
 		.map((packageId, index) => ({ packageId, index }))
@@ -370,6 +445,7 @@ function App() {
 							? 'No active mods.'
 							: 'Import a mod list to see active mods.'}
 						mods={visibleActiveMods}
+						modDetailsByPackageId={modDetailsByPackageId}
 						onMove={moveMod}
 						onReorder={moveActiveMod}
 						onSearch={setActiveSearch}
@@ -381,6 +457,7 @@ function App() {
 						count={inactiveMods.length}
 						emptyMessage='Mods you deactivate will appear here.'
 						mods={visibleInactiveMods}
+						modDetailsByPackageId={modDetailsByPackageId}
 						onMove={moveMod}
 						onSearch={setInactiveSearch}
 						search={inactiveSearch}
@@ -446,6 +523,7 @@ function SettingsPanel({
 type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
+	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	mods: { packageId: string; index: number }[];
 	onMove: (index: number, source: 'active' | 'inactive') => void;
 	onReorder?: (index: number, direction: -1 | 1) => void;
@@ -458,6 +536,7 @@ type ModListPanelProps = {
 function ModListPanel({
 	count,
 	emptyMessage,
+	modDetailsByPackageId,
 	mods,
 	onMove,
 	onReorder,
@@ -485,38 +564,46 @@ function ModListPanel({
 							{count > 0 ? 'No matches.' : emptyMessage}
 						</p>
 					)
-					: mods.map(({ packageId, index }) => (
-						<div className='mod-row' key={`${packageId}-${index}`}>
-							<span className='package-id'>{packageId}</span>
-							<div className='row-actions'>
-								{type === 'active' && onReorder && (
-									<>
-										<button
-											aria-label={`Move ${packageId} up`}
-											disabled={index === 0}
-											onClick={() => onReorder(index, -1)}
-										>
-											↑
-										</button>
-										<button
-											aria-label={`Move ${packageId} down`}
-											disabled={index === count - 1}
-											onClick={() =>
-												onReorder(index, 1)}
-										>
-											↓
-										</button>
-									</>
-								)}
-								<button
-									onClick={() =>
-										onMove(index, type)}
-								>
-									{type === 'active' ? 'Deactivate' : 'Activate'}
-								</button>
+					: mods.map(({ packageId, index }) => {
+						const mod = modDetailsByPackageId.get(
+							normalizedPackageId(packageId),
+						);
+						return (
+							<div className='mod-row' key={`${packageId}-${index}`}>
+								<div className='mod-labels'>
+									<span className='mod-name'>{mod?.name ?? packageId}</span>
+									{mod && (
+										<span className='package-id'>
+											{mod.packageId} · {mod.source}
+										</span>
+									)}
+								</div>
+								<div className='row-actions'>
+									{type === 'active' && onReorder && (
+										<>
+											<button
+												aria-label={`Move ${packageId} up`}
+												disabled={index === 0}
+												onClick={() => onReorder(index, -1)}
+											>
+												↑
+											</button>
+											<button
+												aria-label={`Move ${packageId} down`}
+												disabled={index === count - 1}
+												onClick={() => onReorder(index, 1)}
+											>
+												↓
+											</button>
+										</>
+									)}
+									<button onClick={() => onMove(index, type)}>
+										{type === 'active' ? 'Deactivate' : 'Activate'}
+									</button>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 			</div>
 		</section>
 	);

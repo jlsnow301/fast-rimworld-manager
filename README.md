@@ -11,9 +11,10 @@ Workshop paths. Autodetection checks the Windows Steam registry and Steam
 libraries; non-Steam game scans cover standard install folders. Other platforms
 can still edit paths manually, but autodetection is currently Windows-only.
 
-At startup, the app reads active mod IDs from `ModsConfig.xml` in the saved
-config folder. It does not yet discover installed mods or populate the inactive
-list.
+At startup, the app reads active IDs from the configured `ModsConfig.xml` and
+scans the configured game `Data`, local mods, and Steam Workshop folders for
+`About/About.xml`. Discovered mods appear in the active or inactive list; the
+list shows each mod's name, package ID, and source.
 
 ## Run
 

@@ -162,7 +162,19 @@ input {
 	border-bottom: 1px solid #eee;
 }
 
+.mod-labels {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+}
+
+.mod-name {
+	overflow-wrap: anywhere;
+}
+
 .package-id {
+	color: #666;
+	font-size: 12px;
 	overflow-wrap: anywhere;
 }
 
