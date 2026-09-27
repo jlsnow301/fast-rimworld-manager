@@ -21,3 +21,6 @@ list shows each mod's name, package ID, and source.
 - `deno task tauri dev` starts the Tauri desktop app.
 - `deno task build` checks TypeScript and builds the frontend.
 - `deno task tauri build` builds the desktop bundle.
+
+Path detection and mod folder scans need the Tauri desktop runtime; the Vite
+preview cannot access RimWorld files.

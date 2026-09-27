@@ -8,6 +8,21 @@ import {
 } from 'react';
 import './App.css';
 import { moveModBetweenLists } from './mod_lists';
+
+const TAURI_RUNTIME_REQUIRED =
+	'Native RimWorld access requires the Tauri desktop app. Run `deno task tauri dev`.';
+function invokeDesktop<T>(command: string, args?: Record<string, unknown>) {
+	const internals = (
+		window as Window & {
+			__TAURI_INTERNALS__?: { invoke?: unknown };
+		}
+	).__TAURI_INTERNALS__;
+	if (typeof internals?.invoke !== 'function') {
+		return Promise.reject(new Error(TAURI_RUNTIME_REQUIRED));
+	}
+	return invoke<T>(command, args);
+}
+
 type PathSettings = {
 	gamePath: string;
 	configPath: string;
@@ -160,11 +175,11 @@ function App() {
 		async function loadConfiguredMods() {
 			let settings: PathSettings;
 			try {
-				settings = await invoke<PathSettings>('load_path_settings');
-			} catch {
+				settings = await invokeDesktop<PathSettings>('load_path_settings');
+			} catch (error) {
 				if (!cancelled) {
 					setSettingsMessage(
-						'Path settings are available in the desktop app.',
+						error instanceof Error ? error.message : String(error),
 					);
 				}
 				return;
@@ -175,9 +190,9 @@ function App() {
 			setSettingsMessage('Saved paths loaded.');
 
 			const [modsResult, configResult] = await Promise.allSettled([
-				invoke<InstalledMod[]>('list_installed_mods'),
+				invokeDesktop<InstalledMod[]>('list_installed_mods'),
 				settings.configPath
-					? invoke<string | null>('load_startup_mod_list')
+					? invokeDesktop<string | null>('load_startup_mod_list')
 					: Promise.resolve(null),
 			]);
 			if (cancelled) return;
@@ -313,7 +328,9 @@ function App() {
 	async function autoDetectPaths() {
 		setSettingsMessage('Looking for RimWorld and Steam folders…');
 		try {
-			const detected = await invoke<DetectedPaths>('detect_rimworld_paths');
+			const detected = await invokeDesktop<DetectedPaths>(
+				'detect_rimworld_paths',
+			);
 			const updates: Partial<PathSettings> = {};
 			for (const key of Object.keys(detected) as (keyof PathSettings)[]) {
 				const detectedPath = detected[key];
@@ -340,7 +357,7 @@ function App() {
 	async function savePathSettings() {
 		setSettingsMessage('Saving paths…');
 		try {
-			await invoke('save_path_settings', { settings: pathSettings });
+			await invokeDesktop('save_path_settings', { settings: pathSettings });
 			setSettingsMessage('Paths saved.');
 		} catch (error) {
 			setSettingsMessage(
@@ -350,7 +367,9 @@ function App() {
 		}
 
 		try {
-			const foundMods = await invoke<InstalledMod[]>('list_installed_mods');
+			const foundMods = await invokeDesktop<InstalledMod[]>(
+				'list_installed_mods',
+			);
 			setInstalledMods(foundMods);
 			setInactiveMods(getInactivePackageIds(foundMods, activeMods));
 			setStatus(`Found ${foundMods.length} installed mods.`);
