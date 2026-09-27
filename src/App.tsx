@@ -1,5 +1,33 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import './App.css';
+type PathSettings = {
+	gamePath: string;
+	configPath: string;
+	localModsPath: string;
+	workshopPath: string;
+};
+
+type DetectedPaths = {
+	gamePath: string | null;
+	configPath: string | null;
+	localModsPath: string | null;
+	workshopPath: string | null;
+};
+
+const EMPTY_PATH_SETTINGS: PathSettings = {
+	gamePath: '',
+	configPath: '',
+	localModsPath: '',
+	workshopPath: '',
+};
+
+const PATH_FIELDS: { key: keyof PathSettings; label: string }[] = [
+	{ key: 'gamePath', label: 'RimWorld game folder' },
+	{ key: 'configPath', label: 'RimWorld config folder' },
+	{ key: 'localModsPath', label: 'Local mods folder' },
+	{ key: 'workshopPath', label: 'Steam Workshop mods folder' },
+];
 
 type ModListFile = {
 	activeMods: string[];
@@ -42,6 +70,23 @@ function parseModsConfig(content: string): ModListFile {
 
 function App() {
 	const fileInput = useRef<HTMLInputElement>(null);
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [pathSettings, setPathSettings] = useState<PathSettings>(
+		EMPTY_PATH_SETTINGS,
+	);
+	const [settingsMessage, setSettingsMessage] = useState(
+		'Loading saved paths.',
+	);
+	useEffect(() => {
+		invoke<PathSettings>('load_path_settings')
+			.then((settings) => {
+				setPathSettings(settings);
+				setSettingsMessage('Saved paths loaded.');
+			})
+			.catch(() => {
+				setSettingsMessage('Path settings are available in the desktop app.');
+			});
+	}, []);
 	const [activeMods, setActiveMods] = useState<string[]>([]);
 	const [inactiveMods, setInactiveMods] = useState<string[]>([]);
 	const [knownExpansions, setKnownExpansions] = useState<string[]>([]);
@@ -159,6 +204,48 @@ function App() {
 		setStatus('Downloaded ModsConfig.xml.');
 	}
 
+	function updatePath(key: keyof PathSettings, value: string) {
+		setPathSettings((settings) => ({ ...settings, [key]: value }));
+	}
+
+	async function autoDetectPaths() {
+		setSettingsMessage('Looking for RimWorld and Steam folders…');
+		try {
+			const detected = await invoke<DetectedPaths>('detect_rimworld_paths');
+			const updates: Partial<PathSettings> = {};
+			for (const key of Object.keys(detected) as (keyof PathSettings)[]) {
+				const detectedPath = detected[key];
+				if (detectedPath && !pathSettings[key]) {
+					updates[key] = detectedPath;
+				}
+			}
+			setPathSettings((settings) => ({ ...settings, ...updates }));
+			const foundCount = Object.keys(updates).length;
+			setSettingsMessage(
+				foundCount
+					? `Detected ${foundCount} path${
+						foundCount === 1 ? '' : 's'
+					}. Review and save them.`
+					: 'No RimWorld paths found. Enter paths manually.',
+			);
+		} catch (error) {
+			setSettingsMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		}
+	}
+
+	async function savePathSettings() {
+		setSettingsMessage('Saving paths…');
+		try {
+			await invoke('save_path_settings', { settings: pathSettings });
+			setSettingsMessage('Paths saved.');
+		} catch (error) {
+			setSettingsMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		}
+	}
 	const visibleActiveMods = activeMods
 		.map((packageId, index) => ({ packageId, index }))
 		.filter(({ packageId }) =>
@@ -183,6 +270,12 @@ function App() {
 						Import list
 					</button>
 					<button disabled={!hasModList} onClick={saveModList}>Save XML</button>
+					<button
+						aria-expanded={settingsOpen}
+						onClick={() => setSettingsOpen((open) => !open)}
+					>
+						{settingsOpen ? 'Back' : 'Settings'}
+					</button>
 					<input
 						ref={fileInput}
 						aria-label='Import RimWorld ModsConfig.xml'
@@ -194,7 +287,16 @@ function App() {
 				</div>
 			</header>
 
-			<section className='content'>
+			{settingsOpen && (
+				<SettingsPanel
+					message={settingsMessage}
+					onAutoDetect={autoDetectPaths}
+					onSave={savePathSettings}
+					onUpdate={updatePath}
+					paths={pathSettings}
+				/>
+			)}
+			<section className='content' hidden={settingsOpen}>
 				<div className='page-heading'>
 					<div>
 						<h2>Mod list</h2>
@@ -246,6 +348,54 @@ function App() {
 				<p aria-live='polite' className='status-message'>{status}</p>
 			</section>
 		</main>
+	);
+}
+
+type SettingsPanelProps = {
+	message: string;
+	onAutoDetect: () => void;
+	onSave: () => void;
+	onUpdate: (key: keyof PathSettings, value: string) => void;
+	paths: PathSettings;
+};
+
+function SettingsPanel({
+	message,
+	onAutoDetect,
+	onSave,
+	onUpdate,
+	paths,
+}: SettingsPanelProps) {
+	return (
+		<section className='content settings-panel'>
+			<div className='page-heading'>
+				<div>
+					<h2>Settings</h2>
+					<p>RimWorld and mod folder locations</p>
+				</div>
+			</div>
+			<div className='settings-actions'>
+				<button onClick={onAutoDetect}>Auto-detect paths</button>
+				<button onClick={onSave}>Save paths</button>
+			</div>
+			<div className='path-fields'>
+				{PATH_FIELDS.map(({ key, label }) => (
+					<label className='path-field' htmlFor={`path-${key}`} key={key}>
+						<span>{label}</span>
+						<input
+							autoComplete='off'
+							id={`path-${key}`}
+							onChange={(event) =>
+								onUpdate(key, event.currentTarget.value)}
+							placeholder='Enter folder path'
+							spellCheck={false}
+							value={paths[key]}
+						/>
+					</label>
+				))}
+			</div>
+			<p aria-live='polite' className='status-message'>{message}</p>
+		</section>
 	);
 }
 

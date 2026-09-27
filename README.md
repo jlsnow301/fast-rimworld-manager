@@ -2,7 +2,15 @@
 
 A basic Tauri desktop UI for working with RimWorld mod lists.
 
-The current UI can import a selected `ModsConfig.xml`, add package IDs, reorder active mods, move entries between active and inactive lists, and export a new `ModsConfig.xml`. It does not yet scan RimWorld folders or discover installed mods.
+The current UI can import a selected `ModsConfig.xml`, add package IDs, reorder
+active mods, move entries between active and inactive lists, and export a new
+`ModsConfig.xml`.
+
+Settings can detect and store Windows RimWorld, config, local mods, and Steam
+Workshop paths. Autodetection checks the Windows Steam registry and Steam
+libraries; non-Steam game scans cover standard install folders. Other platforms
+can still edit paths manually, but autodetection is currently Windows-only. The
+app does not yet scan installed mods into the mod list.
 
 ## Run
 

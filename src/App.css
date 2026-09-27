@@ -1,210 +1,235 @@
 :root {
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222;
-    background: #fff;
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
+	font-family: Arial, Helvetica, sans-serif;
+	color: #222;
+	background: #fff;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
 }
 
 * {
-    box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
-    margin: 0;
-    min-width: 680px;
-    min-height: 100vh;
+	margin: 0;
+	min-width: 680px;
+	min-height: 100vh;
 }
 
 button,
 input {
-    font: inherit;
+	font: inherit;
 }
 
 button {
-    padding: 5px 9px;
-    color: inherit;
-    background: #fff;
-    border: 1px solid #bbb;
-    border-radius: 2px;
-    cursor: pointer;
+	padding: 5px 9px;
+	color: inherit;
+	background: #fff;
+	border: 1px solid #bbb;
+	border-radius: 2px;
+	cursor: pointer;
 }
 
 button:hover:not(:disabled) {
-    background: #f1f1f1;
+	background: #f1f1f1;
 }
 
 button:disabled {
-    color: #888;
-    cursor: default;
+	color: #888;
+	cursor: default;
 }
 
 input {
-    min-width: 0;
-    padding: 6px 8px;
-    border: 1px solid #bbb;
-    border-radius: 2px;
+	min-width: 0;
+	padding: 6px 8px;
+	border: 1px solid #bbb;
+	border-radius: 2px;
 }
 
 .app-shell {
-    min-height: 100vh;
+	min-height: 100vh;
 }
 
 .app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 12px 20px;
-    border-bottom: 1px solid #ccc;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 12px 20px;
+	border-bottom: 1px solid #ccc;
 }
 
 .app-header h1,
 .page-heading h2,
 .panel-heading h3 {
-    margin: 0;
+	margin: 0;
 }
 
 .app-header h1 {
-    font-size: 20px;
+	font-size: 20px;
 }
 
 .app-header span,
 .page-heading p,
 .page-heading > span {
-    color: #666;
-    font-size: 13px;
+	color: #666;
+	font-size: 13px;
 }
 
 .app-header > div:first-child {
-    display: grid;
+	display: grid;
 }
 
 .header-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .content {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 20px;
 }
 
 .page-heading,
 .panel-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
 .page-heading h2 {
-    font-size: 18px;
+	font-size: 18px;
 }
 
 .page-heading p {
-    margin: 3px 0 0;
+	margin: 3px 0 0;
 }
 
 .add-mod-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 18px 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 18px 0;
 }
 
 .add-mod-form input {
-    width: min(320px, 45vw);
+	width: min(320px, 45vw);
 }
 
 .mod-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
 }
 
 .mod-panel {
-    min-width: 0;
-    border: 1px solid #ccc;
+	min-width: 0;
+	border: 1px solid #ccc;
 }
 
 .panel-heading {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+	padding: 10px;
+	border-bottom: 1px solid #ddd;
 }
 
 .panel-heading h3 {
-    font-size: 15px;
+	font-size: 15px;
 }
 
 .mod-panel > input {
-    display: block;
-    width: calc(100% - 20px);
-    margin: 10px;
+	display: block;
+	width: calc(100% - 20px);
+	margin: 10px;
 }
 
 .mod-list {
-    min-height: 300px;
-    max-height: calc(100vh - 310px);
-    overflow: auto;
-    border-top: 1px solid #ddd;
+	min-height: 300px;
+	max-height: calc(100vh - 310px);
+	overflow: auto;
+	border-top: 1px solid #ddd;
 }
 
 .mod-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 42px;
-    padding: 5px 8px;
-    border-bottom: 1px solid #eee;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 42px;
+	padding: 5px 8px;
+	border-bottom: 1px solid #eee;
 }
 
 .package-id {
-    overflow-wrap: anywhere;
+	overflow-wrap: anywhere;
 }
 
 .row-actions {
-    display: flex;
-    flex: 0 0 auto;
-    gap: 4px;
+	display: flex;
+	flex: 0 0 auto;
+	gap: 4px;
 }
 
 .row-actions button {
-    padding: 4px 7px;
+	padding: 4px 7px;
 }
 
 .empty-message {
-    margin: 0;
-    padding: 18px 10px;
-    color: #666;
+	margin: 0;
+	padding: 18px 10px;
+	color: #666;
 }
 
 .status-message {
-    min-height: 24px;
-    margin: 12px 0 0;
-    color: #555;
-    font-size: 13px;
+	min-height: 24px;
+	margin: 12px 0 0;
+	color: #555;
+	font-size: 13px;
 }
 
 @media (max-width: 760px) {
-    .app-header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+	.app-header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
 
-    .header-status {
-        flex-wrap: wrap;
-    }
+	.header-status {
+		flex-wrap: wrap;
+	}
 
-    .mod-columns {
-        grid-template-columns: 1fr;
-    }
+	.mod-columns {
+		grid-template-columns: 1fr;
+	}
 
-    .add-mod-form {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
+	.add-mod-form {
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+}
+
+.settings-actions {
+	display: flex;
+	gap: 8px;
+	margin: 18px 0;
+}
+
+.path-fields {
+	display: grid;
+	max-width: 900px;
+	gap: 14px;
+}
+
+.path-field {
+	display: grid;
+	gap: 5px;
+}
+
+.path-field span {
+	font-size: 14px;
+}
+
+.path-field input {
+	width: 100%;
 }
