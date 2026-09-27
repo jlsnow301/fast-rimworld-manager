@@ -91,6 +91,57 @@ fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
     }
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveModListArgs {
+    pub version: String,
+    pub active_mods: Vec<String>,
+    pub known_expansions: Vec<String>,
+}
+
+#[tauri::command]
+pub fn save_mod_list(app: AppHandle, args: SaveModListArgs) -> Result<String, String> {
+    let settings = load_path_settings_for_app(&app)?;
+    save_configured_mod_list(&settings.config_path, &args)
+}
+
+fn save_configured_mod_list(config_path: &str, args: &SaveModListArgs) -> Result<String, String> {
+    if config_path.trim().is_empty() {
+        return Err("Set the RimWorld config folder in Settings before saving.".to_string());
+    }
+    let config_directory = Path::new(config_path);
+    if !config_directory.is_dir() {
+        return Err(format!(
+            "RimWorld config folder does not exist: {}",
+            config_directory.display()
+        ));
+    }
+    let mods_config_path = config_directory.join("ModsConfig.xml");
+    fs::write(&mods_config_path, serialize_mods_config(args))
+        .map_err(|error| format!("Could not save {}: {error}", mods_config_path.display()))?;
+    Ok(mods_config_path.to_string_lossy().into_owned())
+}
+
+fn serialize_mods_config(args: &SaveModListArgs) -> String {
+    let mut xml =
+        String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<ModsConfigData>\n  <version>");
+    xml.push_str(&quick_xml::escape::escape(&args.version));
+    xml.push_str("</version>\n  <activeMods>");
+    for package_id in &args.active_mods {
+        xml.push_str("\n    <li>");
+        xml.push_str(&quick_xml::escape::escape(package_id));
+        xml.push_str("</li>");
+    }
+    xml.push_str("\n  </activeMods>\n  <knownExpansions>");
+    for expansion in &args.known_expansions {
+        xml.push_str("\n    <li>");
+        xml.push_str(&quick_xml::escape::escape(expansion));
+        xml.push_str("</li>");
+    }
+    xml.push_str("\n  </knownExpansions>\n</ModsConfigData>");
+    xml
+}
+
 #[tauri::command]
 pub fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
     #[cfg(target_os = "windows")]
@@ -397,6 +448,62 @@ mod tests {
 
         assert_eq!(load_settings_file(&settings_file), Ok(settings));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn saves_active_order_version_and_expansions_to_config_folder() {
+        let root = unique_temp_directory("save-mod-list");
+        fs::create_dir_all(&root).expect("config folder should be created");
+        let args = SaveModListArgs {
+            version: "1.6&test".to_string(),
+            active_mods: vec!["Ludeon.RimWorld".to_string(), "Author.Mod&Name".to_string()],
+            known_expansions: vec!["Ludeon.RimWorld".to_string()],
+        };
+
+        let saved_path =
+            save_configured_mod_list(root.to_str().expect("path should be UTF-8"), &args)
+                .expect("mod list should save");
+        let saved_contents = fs::read_to_string(&saved_path).expect("saved config should read");
+
+        assert_eq!(
+            saved_contents,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<ModsConfigData>\n  <version>1.6&amp;test</version>\n  <activeMods>\n    <li>Ludeon.RimWorld</li>\n    <li>Author.Mod&amp;Name</li>\n  </activeMods>\n  <knownExpansions>\n    <li>Ludeon.RimWorld</li>\n  </knownExpansions>\n</ModsConfigData>"
+        );
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn rejects_save_without_a_config_folder() {
+        let error = save_configured_mod_list(
+            "",
+            &SaveModListArgs {
+                version: "1.6".to_string(),
+                active_mods: Vec::new(),
+                known_expansions: Vec::new(),
+            },
+        )
+        .expect_err("empty config folder should not save");
+
+        assert_eq!(
+            error,
+            "Set the RimWorld config folder in Settings before saving."
+        );
+    }
+
+    #[test]
+    fn reports_missing_config_folder_without_writing_elsewhere() {
+        let config_directory = unique_temp_directory("missing-save-folder");
+        let error = save_configured_mod_list(
+            config_directory.to_str().expect("path should be UTF-8"),
+            &SaveModListArgs {
+                version: "1.6".to_string(),
+                active_mods: Vec::new(),
+                known_expansions: Vec::new(),
+            },
+        )
+        .expect_err("missing config folder should fail");
+
+        assert!(error.contains("RimWorld config folder does not exist"));
     }
 
     #[test]

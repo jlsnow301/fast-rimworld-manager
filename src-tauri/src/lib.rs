@@ -15,6 +15,7 @@ pub fn run() {
             installed_mods::list_installed_mods,
             steam_preview::fetch_steam_mod_details,
             sorting::sort_active_mods,
+            path_detection::save_mod_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

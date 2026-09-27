@@ -24,7 +24,7 @@ export function AppHeader() {
 					Import list
 				</button>
 				<button disabled={!hasModList} onClick={saveModList}>
-					Save XML
+					Save to RimWorld
 				</button>
 				<button aria-expanded={settingsOpen} onClick={toggleSettings}>
 					{settingsOpen ? 'Back' : 'Settings'}

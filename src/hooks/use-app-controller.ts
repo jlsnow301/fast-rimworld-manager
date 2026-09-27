@@ -133,6 +133,22 @@ export function useAppController() {
 		}
 	}
 
+	async function saveModList() {
+		setStatus('Saving ModsConfig.xml…');
+		try {
+			const path = await invokeDesktop<string>('save_mod_list', {
+				args: {
+					version: modLists.gameVersion,
+					activeMods: modLists.activeMods,
+					knownExpansions: modLists.knownExpansions,
+				},
+			});
+			setStatus(`Saved ModsConfig.xml to ${path}.`);
+		} catch (error) {
+			setStatus(error instanceof Error ? error.message : String(error));
+		}
+	}
+
 	async function sortMods() {
 		if (modLists.activeMods.length < 2) return;
 		setStatus('Sorting active mods…');
@@ -159,6 +175,7 @@ export function useAppController() {
 		closeModPreview: () => setSelectedMod(null),
 		pathSettings,
 		previewMessage,
+		saveModList,
 		savePathSettings,
 		selectedMod,
 		selectMod,

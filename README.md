@@ -3,7 +3,8 @@
 A basic Tauri desktop UI for working with RimWorld mod lists.
 
 The current UI can import a `ModsConfig.xml`, drag discovered mods between the
-active and inactive lists, and export the active list as `ModsConfig.xml`.
+active and inactive lists, and save the active list directly to the configured
+RimWorld `ModsConfig.xml`.
 
 Settings can detect and store Windows RimWorld, config, local mods, and Steam
 Workshop paths. Autodetection checks the Windows Steam registry and Steam

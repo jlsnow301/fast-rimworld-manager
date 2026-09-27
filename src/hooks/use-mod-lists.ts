@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
-import { parseModsConfig, serializeModsConfig } from '../utils/mods_config';
+import { parseModsConfig } from '../utils/mods_config';
 import type { InstalledMod, ModListType, VisibleMod } from '../utils/types';
 
 export function useModLists(setStatus: (message: string) => void) {
@@ -87,18 +87,6 @@ export function useModLists(setStatus: (message: string) => void) {
 		}
 	}
 
-	function saveModList() {
-		const xml = serializeModsConfig(gameVersion, activeMods, knownExpansions);
-		const downloadUrl = URL.createObjectURL(
-			new Blob([xml], { type: 'application/xml' }),
-		);
-		const download = document.createElement('a');
-		download.href = downloadUrl;
-		download.download = 'ModsConfig.xml';
-		download.click();
-		window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
-		setStatus('Downloaded ModsConfig.xml.');
-	}
 	function applySortedActiveMods(sortedMods: string[]) {
 		setActiveMods(sortedMods);
 		setStatus('Active mods sorted by load-order rules.');
@@ -136,6 +124,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		activeMods,
 		activeSearch,
 		gameVersion,
+		knownExpansions,
 		hasModList: sourceName.length > 0 || activeMods.length > 0 ||
 			inactiveMods.length > 0,
 		inactiveMods,
@@ -145,7 +134,6 @@ export function useModLists(setStatus: (message: string) => void) {
 		modDetailsByPackageId,
 		moveMod,
 		refreshInstalledMods,
-		saveModList,
 		setActiveSearch,
 		setInactiveSearch,
 		sourceName,
