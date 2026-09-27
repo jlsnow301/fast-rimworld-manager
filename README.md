@@ -32,7 +32,8 @@ values or saving successfully clears the indicator.
 
 ## Run
 
-- `deno task dev` starts the frontend in Vite.
+- `deno task dev` runs Vite with its runner loader and ignores its temporary
+  config bundle in Deno's file watcher.
 - `deno task tauri dev` starts the Tauri desktop app.
 - `deno task build` checks TypeScript and builds the frontend.
 - `deno task tauri build` builds the desktop bundle.
