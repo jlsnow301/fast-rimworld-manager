@@ -1,5 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import {
+	type DragEvent as ReactDragEvent,
+	type FormEvent,
+	useEffect,
+	useRef,
+	useState,
+} from 'react';
 import './App.css';
 import { moveModBetweenLists } from './mod_lists';
 type PathSettings = {
@@ -22,6 +28,33 @@ type InstalledMod = {
 	path: string;
 	source: string;
 };
+
+type ModListType = 'active' | 'inactive';
+
+type ModDragPayload = {
+	index: number;
+	source: ModListType;
+};
+
+const MOD_DRAG_MIME = 'application/x-rimsort-mod';
+
+function parseModDragPayload(value: string): ModDragPayload | null {
+	try {
+		const payload: unknown = JSON.parse(value);
+		if (typeof payload !== 'object' || payload === null) return null;
+		const candidate = payload as Record<string, unknown>;
+		if (
+			typeof candidate.index !== 'number' ||
+			!Number.isInteger(candidate.index) ||
+			(candidate.source !== 'active' && candidate.source !== 'inactive')
+		) {
+			return null;
+		}
+		return { index: candidate.index, source: candidate.source };
+	} catch {
+		return null;
+	}
+}
 
 function normalizedPackageId(packageId: string) {
 	return packageId.toLowerCase().replace(/_steam$/, '');
@@ -117,9 +150,8 @@ function App() {
 	const [sourceName, setSourceName] = useState('');
 	const [activeSearch, setActiveSearch] = useState('');
 	const [inactiveSearch, setInactiveSearch] = useState('');
-	const [newPackageId, setNewPackageId] = useState('');
 	const [status, setStatus] = useState(
-		'Import a ModsConfig.xml file or add a package ID to start editing.',
+		'Waiting for configured mods. Set the RimWorld paths in Settings.',
 	);
 
 	useEffect(() => {
@@ -228,27 +260,13 @@ function App() {
 		}
 	}
 
-	function addMod(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		const packageId = newPackageId.trim();
+	function moveMod(
+		index: number,
+		source: ModListType,
+		target: ModListType,
+	) {
+		if (source === target) return;
 
-		if (!packageId) return;
-
-		const alreadyExists = [...activeMods, ...inactiveMods].some(
-			(mod) => mod.toLowerCase() === packageId.toLowerCase(),
-		);
-
-		if (alreadyExists) {
-			setStatus(`${packageId} is already in this list.`);
-			return;
-		}
-
-		setActiveMods((mods) => [...mods, packageId]);
-		setNewPackageId('');
-		setStatus(`Added ${packageId} to the active list.`);
-	}
-
-	function moveMod(index: number, source: 'active' | 'inactive') {
 		const transfer = moveModBetweenLists(
 			activeMods,
 			inactiveMods,
@@ -259,25 +277,7 @@ function App() {
 
 		setActiveMods(transfer.active);
 		setInactiveMods(transfer.inactive);
-		setStatus(
-			`Moved ${transfer.packageId} to ${
-				source === 'active' ? 'inactive' : 'active'
-			} mods.`,
-		);
-	}
-
-	function moveActiveMod(index: number, direction: -1 | 1) {
-		const targetIndex = index + direction;
-		if (targetIndex < 0 || targetIndex >= activeMods.length) return;
-
-		setActiveMods((mods) => {
-			const reordered = [...mods];
-			[reordered[index], reordered[targetIndex]] = [
-				reordered[targetIndex],
-				reordered[index],
-			];
-			return reordered;
-		});
+		setStatus(`Moved ${transfer.packageId} to ${target} mods.`);
 	}
 
 	function saveModList() {
@@ -427,18 +427,9 @@ function App() {
 						{activeMods.length} active · {inactiveMods.length} inactive
 					</span>
 				</div>
-
-				<form className='add-mod-form' onSubmit={addMod}>
-					<label htmlFor='package-id'>Add package ID</label>
-					<input
-						autoComplete='off'
-						id='package-id'
-						onChange={(event) => setNewPackageId(event.currentTarget.value)}
-						placeholder='Author.ModName'
-						value={newPackageId}
-					/>
-					<button type='submit'>Add to active</button>
-				</form>
+				<p className='mod-drag-hint'>
+					Drag mods between the lists to change activation.
+				</p>
 
 				<div className='mod-columns'>
 					<ModListPanel
@@ -448,8 +439,7 @@ function App() {
 							: 'Import a mod list to see active mods.'}
 						mods={visibleActiveMods}
 						modDetailsByPackageId={modDetailsByPackageId}
-						onMove={moveMod}
-						onReorder={moveActiveMod}
+						onDropMod={moveMod}
 						onSearch={setActiveSearch}
 						search={activeSearch}
 						title='Active mods'
@@ -457,10 +447,10 @@ function App() {
 					/>
 					<ModListPanel
 						count={inactiveMods.length}
-						emptyMessage='Mods you deactivate will appear here.'
+						emptyMessage='No inactive mods found. Configure paths in Settings.'
 						mods={visibleInactiveMods}
 						modDetailsByPackageId={modDetailsByPackageId}
-						onMove={moveMod}
+						onDropMod={moveMod}
 						onSearch={setInactiveSearch}
 						search={inactiveSearch}
 						title='Inactive mods'
@@ -527,8 +517,11 @@ type ModListPanelProps = {
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	mods: { packageId: string; index: number }[];
-	onMove: (index: number, source: 'active' | 'inactive') => void;
-	onReorder?: (index: number, direction: -1 | 1) => void;
+	onDropMod: (
+		sourceIndex: number,
+		source: ModListType,
+		target: ModListType,
+	) => void;
 	onSearch: (query: string) => void;
 	search: string;
 	title: string;
@@ -540,13 +533,19 @@ function ModListPanel({
 	emptyMessage,
 	modDetailsByPackageId,
 	mods,
-	onMove,
-	onReorder,
+	onDropMod,
 	onSearch,
 	search,
 	title,
 	type,
 }: ModListPanelProps) {
+	function handleDrop(event: ReactDragEvent<HTMLDivElement>) {
+		event.preventDefault();
+		const payload = parseModDragPayload(
+			event.dataTransfer.getData(MOD_DRAG_MIME),
+		);
+		if (payload) onDropMod(payload.index, payload.source, type);
+	}
 	return (
 		<section className='mod-panel'>
 			<div className='panel-heading'>
@@ -559,7 +558,14 @@ function ModListPanel({
 				placeholder='Search package IDs'
 				value={search}
 			/>
-			<div className='mod-list'>
+			<div
+				className='mod-list'
+				onDragOver={(event) => {
+					event.preventDefault();
+					event.dataTransfer.dropEffect = 'move';
+				}}
+				onDrop={handleDrop}
+			>
 				{mods.length === 0
 					? (
 						<p className='empty-message'>
@@ -571,7 +577,18 @@ function ModListPanel({
 							normalizedPackageId(packageId),
 						);
 						return (
-							<div className='mod-row' key={`${packageId}-${index}`}>
+							<div
+								className='mod-row'
+								draggable
+								key={`${packageId}-${index}`}
+								onDragStart={(event) => {
+									event.dataTransfer.effectAllowed = 'move';
+									event.dataTransfer.setData(
+										MOD_DRAG_MIME,
+										JSON.stringify({ index, source: type }),
+									);
+								}}
+							>
 								<div className='mod-labels'>
 									<span className='mod-name'>{mod?.name ?? packageId}</span>
 									{mod && (
@@ -579,29 +596,6 @@ function ModListPanel({
 											{mod.packageId} · {mod.source}
 										</span>
 									)}
-								</div>
-								<div className='row-actions'>
-									{type === 'active' && onReorder && (
-										<>
-											<button
-												aria-label={`Move ${packageId} up`}
-												disabled={index === 0}
-												onClick={() => onReorder(index, -1)}
-											>
-												↑
-											</button>
-											<button
-												aria-label={`Move ${packageId} down`}
-												disabled={index === count - 1}
-												onClick={() => onReorder(index, 1)}
-											>
-												↓
-											</button>
-										</>
-									)}
-									<button onClick={() => onMove(index, type)}>
-										{type === 'active' ? 'Deactivate' : 'Activate'}
-									</button>
 								</div>
 							</div>
 						);

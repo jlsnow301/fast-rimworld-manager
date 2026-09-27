@@ -108,15 +108,10 @@ input {
 	margin: 3px 0 0;
 }
 
-.add-mod-form {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin: 18px 0;
-}
-
-.add-mod-form input {
-	width: min(320px, 45vw);
+.mod-drag-hint {
+	margin: 10px 0;
+	color: #555;
+	font-size: 13px;
 }
 
 .mod-columns {
@@ -162,6 +157,14 @@ input {
 	border-bottom: 1px solid #eee;
 }
 
+.mod-row[draggable="true"] {
+	cursor: grab;
+}
+
+.mod-row[draggable="true"]:active {
+	cursor: grabbing;
+}
+
 .mod-labels {
 	display: grid;
 	min-width: 0;
@@ -176,16 +179,6 @@ input {
 	color: #666;
 	font-size: 12px;
 	overflow-wrap: anywhere;
-}
-
-.row-actions {
-	display: flex;
-	flex: 0 0 auto;
-	gap: 4px;
-}
-
-.row-actions button {
-	padding: 4px 7px;
 }
 
 .empty-message {
@@ -213,11 +206,6 @@ input {
 
 	.mod-columns {
 		grid-template-columns: 1fr;
-	}
-
-	.add-mod-form {
-		align-items: flex-start;
-		flex-wrap: wrap;
 	}
 }
 
