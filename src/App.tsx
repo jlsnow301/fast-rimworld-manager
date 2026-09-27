@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import './App.css';
+import { moveModBetweenLists } from './mod_lists';
 type PathSettings = {
 	gamePath: string;
 	configPath: string;
@@ -248,20 +249,21 @@ function App() {
 	}
 
 	function moveMod(index: number, source: 'active' | 'inactive') {
-		if (source === 'active') {
-			const mod = activeMods[index];
-			if (!mod) return;
-			setActiveMods((mods) => mods.filter((_, modIndex) => modIndex !== index));
-			setInactiveMods((mods) => [...mods, mod]);
-			setStatus(`Moved ${mod} to inactive mods.`);
-			return;
-		}
+		const transfer = moveModBetweenLists(
+			activeMods,
+			inactiveMods,
+			index,
+			source,
+		);
+		if (!transfer) return;
 
-		const mod = inactiveMods[index];
-		if (!mod) return;
-		setInactiveMods((mods) => mods.filter((_, modIndex) => modIndex !== index));
-		setActiveMods((mods) => [...mods, mod]);
-		setStatus(`Moved ${mod} to active mods.`);
+		setActiveMods(transfer.active);
+		setInactiveMods(transfer.inactive);
+		setStatus(
+			`Moved ${transfer.packageId} to ${
+				source === 'active' ? 'inactive' : 'active'
+			} mods.`,
+		);
 	}
 
 	function moveActiveMod(index: number, direction: -1 | 1) {
