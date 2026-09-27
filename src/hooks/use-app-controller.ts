@@ -1,0 +1,161 @@
+import { useEffect, useState } from 'react';
+import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
+import { invokeDesktop } from '../utils/tauri';
+import type { DetectedPaths, InstalledMod, PathSettings } from '../utils/types';
+import { useModLists } from './use-mod-lists';
+import { useSteamPreview } from './use-steam-preview';
+
+export function useAppController() {
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [pathSettings, setPathSettings] = useState<PathSettings>(
+		EMPTY_PATH_SETTINGS,
+	);
+	const [settingsMessage, setSettingsMessage] = useState(
+		'Loading saved paths.',
+	);
+	const [status, setStatus] = useState(
+		'Waiting for configured mods. Set the RimWorld paths in Settings.',
+	);
+	const [selectedMod, setSelectedMod] = useState<InstalledMod | null>(null);
+	const modLists = useModLists(setStatus);
+	const { previewMessage, steamPreview } = useSteamPreview(selectedMod);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function loadConfiguredMods() {
+			let settings: PathSettings;
+			try {
+				settings = await invokeDesktop<PathSettings>('load_path_settings');
+			} catch (error) {
+				if (!cancelled) {
+					setSettingsMessage(
+						error instanceof Error ? error.message : String(error),
+					);
+				}
+				return;
+			}
+
+			if (cancelled) return;
+			setPathSettings(settings);
+			setSettingsMessage('Saved paths loaded.');
+
+			const [modsResult, configResult] = await Promise.allSettled([
+				invokeDesktop<InstalledMod[]>('list_installed_mods'),
+				settings.configPath
+					? invokeDesktop<string | null>('load_startup_mod_list')
+					: Promise.resolve(null),
+			]);
+			if (cancelled) return;
+
+			const foundMods = modsResult.status === 'fulfilled'
+				? modsResult.value
+				: [];
+			const content = configResult.status === 'fulfilled'
+				? configResult.value
+				: null;
+			modLists.initialize(
+				foundMods,
+				content,
+				configResult.status === 'rejected' ? configResult.reason : null,
+				modsResult.status === 'rejected' ? modsResult.reason : null,
+				Boolean(settings.configPath),
+			);
+		}
+
+		void loadConfiguredMods();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	function toggleSettings() {
+		setSettingsOpen((open) => !open);
+	}
+
+	function updatePath(key: keyof PathSettings, value: string) {
+		setPathSettings((settings) => ({ ...settings, [key]: value }));
+	}
+
+	async function autoDetectPaths() {
+		setSettingsMessage('Looking for RimWorld and Steam folders…');
+		try {
+			const detected = await invokeDesktop<DetectedPaths>(
+				'detect_rimworld_paths',
+			);
+			const updates: Partial<PathSettings> = {};
+			for (const key of Object.keys(detected) as (keyof PathSettings)[]) {
+				const detectedPath = detected[key];
+				if (detectedPath && !pathSettings[key]) {
+					updates[key] = detectedPath;
+				}
+			}
+			setPathSettings((settings) => ({ ...settings, ...updates }));
+			const foundCount = Object.keys(updates).length;
+			setSettingsMessage(
+				foundCount
+					? `Detected ${foundCount} path${
+						foundCount === 1 ? '' : 's'
+					}. Review and save them.`
+					: 'No RimWorld paths found. Enter paths manually.',
+			);
+		} catch (error) {
+			setSettingsMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		}
+	}
+
+	async function savePathSettings() {
+		setSettingsMessage('Saving paths…');
+		try {
+			await invokeDesktop('save_path_settings', { settings: pathSettings });
+			setSettingsMessage('Paths saved.');
+		} catch (error) {
+			setSettingsMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+			return;
+		}
+
+		try {
+			const foundMods = await invokeDesktop<InstalledMod[]>(
+				'list_installed_mods',
+			);
+			modLists.refreshInstalledMods(foundMods);
+			setStatus(`Found ${foundMods.length} installed mods.`);
+		} catch (error) {
+			setSettingsMessage(
+				`Paths saved, but mod scanning failed: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+		}
+	}
+
+	function selectMod(packageId: string) {
+		const mod = modLists.modDetailsByPackageId.get(
+			normalizedPackageId(packageId),
+		);
+		if (mod) setSelectedMod(mod);
+	}
+
+	return {
+		...modLists,
+		autoDetectPaths,
+		closeModPreview: () => setSelectedMod(null),
+		pathSettings,
+		previewMessage,
+		savePathSettings,
+		selectedMod,
+		selectMod,
+		settingsMessage,
+		settingsOpen,
+		status,
+		steamPreview,
+		toggleSettings,
+		updatePath,
+	};
+}
+
+export type AppController = ReturnType<typeof useAppController>;

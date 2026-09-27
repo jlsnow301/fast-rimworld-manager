@@ -3,5 +3,11 @@
     "useTabs": true,
     "singleQuote": true,
     "json.trailingCommas": "jsonc"
+  },
+  "lint": {
+    "exclude": [
+      "no-sloppy-imports",
+      "jsx-button-has-type"
+    ]
   }
 }
