@@ -99,6 +99,10 @@ export function useModLists(setStatus: (message: string) => void) {
 		window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
 		setStatus('Downloaded ModsConfig.xml.');
 	}
+	function applySortedActiveMods(sortedMods: string[]) {
+		setActiveMods(sortedMods);
+		setStatus('Active mods sorted by load-order rules.');
+	}
 
 	function moveMod(index: number, source: ModListType, target: ModListType) {
 		if (source === target) return;
@@ -147,5 +151,6 @@ export function useModLists(setStatus: (message: string) => void) {
 		sourceName,
 		visibleActiveMods: visibleMods(activeMods, activeSearch),
 		visibleInactiveMods: visibleMods(inactiveMods, inactiveSearch),
+		applySortedActiveMods,
 	};
 }

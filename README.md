@@ -17,6 +17,11 @@ show the mod name, package ID, and source. Click a row for local details and,
 when available, Steam Workshop title, description, preview image, and update
 time.
 
+The Sort action topologically orders active mods using `About.xml` `loadAfter`
+and `loadBefore` rules, placing core/framework tiers first and alphabetizing
+otherwise independent mods. Circular rules report an error and leave the current
+order unchanged.
+
 ## Run
 
 - `deno task dev` starts the frontend in Vite.

@@ -133,6 +133,19 @@ export function useAppController() {
 		}
 	}
 
+	async function sortMods() {
+		if (modLists.activeMods.length < 2) return;
+		setStatus('Sorting active mods…');
+		try {
+			const sorted = await invokeDesktop<string[]>('sort_active_mods', {
+				activeMods: modLists.activeMods,
+			});
+			modLists.applySortedActiveMods(sorted);
+		} catch (error) {
+			setStatus(error instanceof Error ? error.message : String(error));
+		}
+	}
+
 	function selectMod(packageId: string) {
 		const mod = modLists.modDetailsByPackageId.get(
 			normalizedPackageId(packageId),
@@ -155,6 +168,7 @@ export function useAppController() {
 		steamPreview,
 		toggleSettings,
 		updatePath,
+		sortMods,
 	};
 }
 

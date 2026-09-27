@@ -15,6 +15,8 @@ pub struct InstalledMod {
     pub package_id: String,
     pub description: String,
     pub published_file_id: Option<String>,
+    pub load_after: Vec<String>,
+    pub load_before: Vec<String>,
     pub path: String,
     pub source: String,
 }
@@ -32,7 +34,7 @@ pub fn list_installed_mods(app: AppHandle) -> Result<Vec<InstalledMod>, String> 
     collect_installed_mods(&settings)
 }
 
-fn collect_installed_mods(settings: &PathSettings) -> Result<Vec<InstalledMod>, String> {
+pub(crate) fn collect_installed_mods(settings: &PathSettings) -> Result<Vec<InstalledMod>, String> {
     let mut mods = Vec::new();
 
     if !settings.game_path.trim().is_empty() {
@@ -86,6 +88,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         let Some((name, package_id, description)) = parse_about_xml(&contents) else {
             continue;
         };
+        let (load_after, load_before) = parse_load_order_rules(&contents);
         let published_file_id = published_file_id(&mod_path);
 
         mods.push(InstalledMod {
@@ -95,6 +98,8 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             published_file_id,
             path: mod_path.to_string_lossy().into_owned(),
             source: source.to_string(),
+            load_after,
+            load_before,
         });
     }
 
@@ -205,6 +210,82 @@ fn published_file_id(mod_path: &Path) -> Option<String> {
 fn valid_published_file_id(value: &str) -> Option<String> {
     let id = value.parse::<u64>().ok()?;
     (id > 0).then(|| value.to_string())
+}
+
+#[derive(Clone, Copy)]
+enum LoadOrderRule {
+    After,
+    Before,
+}
+
+fn parse_load_order_rules(xml: &str) -> (Vec<String>, Vec<String>) {
+    let mut reader = Reader::from_str(xml);
+    let mut rule = None;
+    let mut in_list_item = false;
+    let mut item = String::new();
+    let mut load_after = Vec::new();
+    let mut load_before = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element)) => {
+                let tag = element.local_name();
+                if tag.as_ref().eq_ignore_ascii_case("loadAfter") {
+                    rule = Some(LoadOrderRule::After);
+                } else if tag.as_ref().eq_ignore_ascii_case("loadBefore") {
+                    rule = Some(LoadOrderRule::Before);
+                } else if rule.is_some() && tag.as_ref().eq_ignore_ascii_case("li") {
+                    in_list_item = true;
+                    item.clear();
+                }
+            }
+            Ok(Event::Text(text)) if in_list_item => {
+                let Ok(text) = quick_xml::escape::unescape(text.as_ref()) else {
+                    continue;
+                };
+                item.push_str(&text);
+            }
+            Ok(Event::GeneralRef(reference)) if in_list_item => {
+                let entity = format!("&{};", reference.as_ref());
+                let Ok(text) = quick_xml::escape::unescape(&entity) else {
+                    continue;
+                };
+                item.push_str(&text);
+            }
+            Ok(Event::End(element)) => {
+                let tag = element.local_name();
+                if tag.as_ref().eq_ignore_ascii_case("li") && in_list_item {
+                    let package_id = item.trim();
+                    if !package_id.is_empty() {
+                        match rule {
+                            Some(LoadOrderRule::After) => load_after.push(package_id.to_string()),
+                            Some(LoadOrderRule::Before) => load_before.push(package_id.to_string()),
+                            None => {}
+                        }
+                    }
+                    in_list_item = false;
+                } else if tag.as_ref().eq_ignore_ascii_case("loadAfter")
+                    || tag.as_ref().eq_ignore_ascii_case("loadBefore")
+                {
+                    rule = None;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    (load_after, load_before)
+}
+
+#[test]
+fn parses_load_after_and_load_before_list_items() {
+    let (load_after, load_before) = parse_load_order_rules(
+            "<ModMetaData><loadAfter><li>Author.Framework</li></loadAfter><loadBefore><li>Author.Patch</li></loadBefore></ModMetaData>",
+        );
+
+    assert_eq!(load_after, vec!["Author.Framework"]);
+    assert_eq!(load_before, vec!["Author.Patch"]);
 }
 
 #[cfg(all(test, target_os = "windows"))]

@@ -13,6 +13,7 @@ export function ModListFeature() {
 		inactiveSearch,
 		modDetailsByPackageId,
 		moveMod,
+		sortMods,
 		selectMod,
 		setActiveSearch,
 		setInactiveSearch,
@@ -33,6 +34,9 @@ export function ModListFeature() {
 				<span>
 					{activeMods.length} active · {inactiveMods.length} inactive
 				</span>
+				<button disabled={activeMods.length < 2} onClick={sortMods}>
+					Sort active mods
+				</button>
 			</div>
 			<p className='mod-drag-hint'>
 				Drag mods between the lists to change activation.
