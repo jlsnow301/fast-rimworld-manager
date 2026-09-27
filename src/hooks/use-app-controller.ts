@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
 import { invokeDesktop } from '../utils/tauri';
-import type { DetectedPaths, InstalledMod, PathSettings } from '../utils/types';
+import type {
+	DatabaseDownloadResult,
+	DatabaseKind,
+	DetectedPaths,
+	InstalledMod,
+	PathSettings,
+} from '../utils/types';
 import { useModLists } from './use-mod-lists';
 import { useSteamPreview } from './use-steam-preview';
 
@@ -13,6 +19,12 @@ export function useAppController() {
 	const [settingsMessage, setSettingsMessage] = useState(
 		'Loading saved paths.',
 	);
+	const [databaseMessage, setDatabaseMessage] = useState(
+		'Databases are saved in the app data folder.',
+	);
+	const [downloadingDatabase, setDownloadingDatabase] = useState<
+		DatabaseKind | null
+	>(null);
 	const [status, setStatus] = useState(
 		'Waiting for configured mods. Set the RimWorld paths in Settings.',
 	);
@@ -132,6 +144,32 @@ export function useAppController() {
 			);
 		}
 	}
+	async function downloadDatabase(database: DatabaseKind) {
+		setDownloadingDatabase(database);
+		setDatabaseMessage(
+			`Downloading ${
+				database === 'communityRules' ? 'Community Rules' : 'Steam Workshop'
+			} database…`,
+		);
+		try {
+			const result = await invokeDesktop<DatabaseDownloadResult>(
+				'download_database',
+				{ database },
+			);
+			const displayName = result.database === 'communityRules'
+				? 'Community Rules'
+				: 'Steam Workshop';
+			setDatabaseMessage(
+				`Updated ${displayName} database (${result.bytesDownloaded.toLocaleString()} bytes).`,
+			);
+		} catch (error) {
+			setDatabaseMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		} finally {
+			setDownloadingDatabase(null);
+		}
+	}
 
 	async function saveModList() {
 		setStatus('Saving ModsConfig.xml…');
@@ -173,6 +211,9 @@ export function useAppController() {
 
 	return {
 		...modLists,
+		databaseMessage,
+		downloadDatabase,
+		downloadingDatabase,
 		autoDetectPaths,
 		closeModPreview: () => setSelectedMod(null),
 		pathSettings,

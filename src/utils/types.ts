@@ -5,6 +5,13 @@ export type PathSettings = {
 	workshopPath: string;
 };
 
+export type DatabaseKind = 'communityRules' | 'steamWorkshop';
+
+export type DatabaseDownloadResult = {
+	database: DatabaseKind;
+	bytesDownloaded: number;
+};
+
 export type DetectedPaths = {
 	gamePath: string | null;
 	configPath: string | null;

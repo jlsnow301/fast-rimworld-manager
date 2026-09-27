@@ -13,6 +13,10 @@ Workshop paths. Autodetection checks the Windows Steam registry and Steam
 libraries; non-Steam game scans cover standard install folders. Other platforms
 can still edit paths manually, but autodetection is currently Windows-only.
 
+Settings can download RimSort's Community Rules and Steam Workshop databases to
+the app configuration directory. The downloaded `communityRules.json` and
+`steamDB.json` files are stored for metadata features.
+
 At startup, the app reads active IDs from the configured `ModsConfig.xml` and
 scans the configured game `Data`, local mods, and Steam Workshop folders for
 `About/About.xml`. Discovered mods appear in the active or inactive list; rows
