@@ -1,7 +1,12 @@
-# Tauri + React + Typescript
+# RimSort
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+A basic Tauri desktop UI for working with RimWorld mod lists.
 
-## Recommended IDE Setup
+The current UI can import a selected `ModsConfig.xml`, add package IDs, reorder active mods, move entries between active and inactive lists, and export a new `ModsConfig.xml`. It does not yet scan RimWorld folders or discover installed mods.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Run
+
+- `deno task dev` starts the frontend in Vite.
+- `deno task tauri dev` starts the Tauri desktop app.
+- `deno task build` checks TypeScript and builds the frontend.
+- `deno task tauri build` builds the desktop bundle.
