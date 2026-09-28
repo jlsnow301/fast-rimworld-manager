@@ -5,7 +5,7 @@ import { ModListFeature } from './features/mod-list/mod-list-feature';
 import { SettingsFeature } from './features/settings/settings-feature';
 import { useAppController } from './hooks/use-app-controller';
 
-function App() {
+export function App() {
 	const controller = useAppController();
 
 	return (
@@ -17,5 +17,3 @@ function App() {
 		</AppProvider>
 	);
 }
-
-export default App;

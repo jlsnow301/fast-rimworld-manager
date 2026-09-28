@@ -5,9 +5,11 @@
     "json.trailingCommas": "jsonc"
   },
   "lint": {
+    "rules":{
     "exclude": [
       "no-sloppy-imports",
       "jsx-button-has-type"
     ]
+  }
   }
 }

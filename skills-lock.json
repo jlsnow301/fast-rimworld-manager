@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "jotai": {
+      "source": "jlsnow301/skills",
+      "sourceType": "github",
+      "skillPath": "skills/jotai/SKILL.md",
+      "computedHash": "b302cbd4c7a75e1ad6d1827427cf986b728059475bce328b63128bf08404ebcb"
+    },
     "rust-best-practices": {
       "source": "apollographql/skills",
       "sourceType": "github",

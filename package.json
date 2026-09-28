@@ -16,6 +16,7 @@
     "@tauri-apps/plugin-dialog": "^2.8.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "jotai": "^3.0.0",
     "lucide-react": "^1.48.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

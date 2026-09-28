@@ -13,6 +13,7 @@
     "npm:@vitejs/plugin-react@^6.0.2": "6.0.3_vite@8.1.0",
     "npm:class-variance-authority@~0.7.1": "0.7.1",
     "npm:cn@0.4": "0.4.0",
+    "npm:jotai@3": "3.0.0_@types+react@19.2.17_react@19.2.7",
     "npm:lucide-react@^1.48.0": "1.48.0_react@19.2.7",
     "npm:react-dom@^19.1.0": "19.2.7_react@19.2.7",
     "npm:react@^19.1.0": "19.2.7",
@@ -1448,6 +1449,17 @@
     "jose@6.2.12": {
       "integrity": "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="
     },
+    "jotai@3.0.0_@types+react@19.2.17_react@19.2.7": {
+      "integrity": "sha512-KxhbmsJUp/tmrv6aZgO+nzB3H9K8C0xmk5i3aGkwy/EANg73DVBkggv3zVHaAi5PlNlQgTgP4uiVepo+JC+wSA==",
+      "dependencies": [
+        "@types/react",
+        "react"
+      ],
+      "optionalPeers": [
+        "@types/react",
+        "react"
+      ]
+    },
     "js-tokens@4.0.0": {
       "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
     },
@@ -2329,6 +2341,7 @@
         "npm:@vitejs/plugin-react@^6.0.2",
         "npm:class-variance-authority@~0.7.1",
         "npm:cn@0.4",
+        "npm:jotai@3",
         "npm:lucide-react@^1.48.0",
         "npm:react-dom@^19.1.0",
         "npm:react@^19.1.0",
