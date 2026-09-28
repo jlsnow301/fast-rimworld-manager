@@ -4,20 +4,13 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use crate::backend::models::databases::{DatabaseDownloadResult, DatabaseKind};
 use serde_json::Value;
 use tauri::Manager;
 
 const MAX_DATABASE_BYTES: usize = 128 * 1024 * 1024;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum DatabaseKind {
-    CommunityRules,
-    SteamWorkshop,
-}
 
 impl DatabaseKind {
     fn file_name(self) -> &'static str {
@@ -53,15 +46,7 @@ impl DatabaseKind {
     }
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DatabaseDownloadResult {
-    pub database: DatabaseKind,
-    pub bytes_downloaded: u64,
-}
-
-#[tauri::command]
-pub async fn download_database(
+pub(crate) async fn download_database(
     app: tauri::AppHandle,
     database: DatabaseKind,
 ) -> Result<DatabaseDownloadResult, String> {

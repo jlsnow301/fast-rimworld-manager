@@ -4,7 +4,7 @@ use std::path::Path;
 
 use serde_json::{Map, Value};
 
-use crate::installed_mods::{InstalledMod, ModDependency};
+use crate::backend::models::mods::{InstalledMod, ModDependency};
 
 pub(crate) fn enrich_installed_mods(database_directory: &Path, mods: &mut [InstalledMod]) {
     let community_rules = read_database(&database_directory.join("communityRules.json"));

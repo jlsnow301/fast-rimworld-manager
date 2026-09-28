@@ -1,19 +1,11 @@
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+
+use crate::backend::models::steam::SteamModPreview;
 
 const STEAM_DETAILS_URL: &str =
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SteamModPreview {
-    pub published_file_id: String,
-    pub title: String,
-    pub description: String,
-    pub preview_url: Option<String>,
-    pub time_updated: Option<u64>,
-}
 
 #[derive(Deserialize)]
 struct SteamApiResponse {
@@ -42,8 +34,7 @@ struct SteamPublishedFileDetails {
     time_updated: Option<u64>,
 }
 
-#[tauri::command]
-pub async fn fetch_steam_mod_details(
+pub(crate) async fn fetch_steam_mod_details(
     published_file_id: String,
 ) -> Result<Option<SteamModPreview>, String> {
     let published_file_id = published_file_id.trim().to_string();

@@ -1,17 +1,9 @@
 use std::fs;
 use std::path::Path;
 
-use serde::Serialize;
+use crate::backend::models::mod_lists::ImportedModListFile;
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ImportedModListFile {
-    pub file_name: String,
-    pub contents: String,
-}
-
-#[tauri::command]
-pub fn load_mod_list_file(path: String) -> Result<ImportedModListFile, String> {
+pub(crate) fn load_mod_list_file(path: String) -> Result<ImportedModListFile, String> {
     load_mod_list_file_from_path(Path::new(&path))
 }
 

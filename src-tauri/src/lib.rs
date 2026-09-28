@@ -1,10 +1,4 @@
-mod databases;
-mod installed_mods;
-mod mod_list_import;
-mod mod_metadata;
-mod path_detection;
-mod sorting;
-mod steam_preview;
+mod backend;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -12,16 +6,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            databases::download_database,
-            path_detection::detect_rimworld_paths,
-            path_detection::load_path_settings,
-            path_detection::save_path_settings,
-            path_detection::load_startup_mod_list,
-            installed_mods::list_installed_mods,
-            steam_preview::fetch_steam_mod_details,
-            sorting::sort_active_mods,
-            mod_list_import::load_mod_list_file,
-            path_detection::save_mod_list,
+            backend::commands::databases::download_database,
+            backend::commands::paths::detect_rimworld_paths,
+            backend::commands::paths::load_path_settings,
+            backend::commands::paths::save_path_settings,
+            backend::commands::mod_lists::load_startup_mod_list,
+            backend::commands::mods::list_installed_mods,
+            backend::commands::steam::fetch_steam_mod_details,
+            backend::commands::mods::sort_active_mods,
+            backend::commands::mod_lists::load_mod_list_file,
+            backend::commands::mod_lists::save_mod_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

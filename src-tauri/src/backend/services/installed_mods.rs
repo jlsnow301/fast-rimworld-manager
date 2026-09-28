@@ -3,34 +3,13 @@ use std::path::{Path, PathBuf};
 
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
-use crate::path_detection::{load_path_settings_for_app, PathSettings};
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InstalledMod {
-    pub name: String,
-    pub package_id: String,
-    pub description: String,
-    pub published_file_id: Option<String>,
-    pub load_after: Vec<String>,
-    pub load_before: Vec<String>,
-    pub incompatible_with: Vec<String>,
-    pub supported_versions: Vec<String>,
-    pub dependencies: Vec<ModDependency>,
-    pub path: String,
-    pub source: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ModDependency {
-    pub package_id: String,
-    pub name: String,
-    pub alternative_package_ids: Vec<String>,
-}
+use crate::backend::models::{
+    mods::{InstalledMod, ModDependency},
+    paths::PathSettings,
+};
+use crate::backend::services::{mod_metadata, path_detection::load_path_settings_for_app};
 
 #[derive(Clone, Copy)]
 enum AboutField {
@@ -39,12 +18,11 @@ enum AboutField {
     Description,
 }
 
-#[tauri::command]
-pub fn list_installed_mods(app: AppHandle) -> Result<Vec<InstalledMod>, String> {
+pub(crate) fn list_installed_mods(app: AppHandle) -> Result<Vec<InstalledMod>, String> {
     let settings = load_path_settings_for_app(&app)?;
     let mut mods = collect_installed_mods(&settings)?;
     if let Ok(config_directory) = app.path().app_config_dir() {
-        crate::mod_metadata::enrich_installed_mods(&config_directory.join("databases"), &mut mods);
+        mod_metadata::enrich_installed_mods(&config_directory.join("databases"), &mut mods);
     }
     Ok(mods)
 }

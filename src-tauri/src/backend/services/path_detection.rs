@@ -3,29 +3,14 @@ use std::path::{Path, PathBuf};
 #[cfg(target_os = "windows")]
 use std::process::Command;
 
-use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PathSettings {
-    pub game_path: String,
-    pub config_path: String,
-    pub local_mods_path: String,
-    pub workshop_path: String,
-}
+use crate::backend::models::{
+    mod_lists::SaveModListArgs,
+    paths::{DetectedPaths, PathSettings},
+};
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DetectedPaths {
-    pub game_path: Option<String>,
-    pub config_path: Option<String>,
-    pub local_mods_path: Option<String>,
-    pub workshop_path: Option<String>,
-}
-
-#[tauri::command]
-pub fn load_path_settings(app: AppHandle) -> Result<PathSettings, String> {
+pub(crate) fn load_path_settings(app: AppHandle) -> Result<PathSettings, String> {
     load_path_settings_for_app(&app)
 }
 
@@ -33,8 +18,7 @@ pub(crate) fn load_path_settings_for_app(app: &AppHandle) -> Result<PathSettings
     load_settings_file(&settings_file(app)?)
 }
 
-#[tauri::command]
-pub fn save_path_settings(app: AppHandle, settings: PathSettings) -> Result<(), String> {
+pub(crate) fn save_path_settings(app: AppHandle, settings: PathSettings) -> Result<(), String> {
     save_settings_file(&settings_file(&app)?, &settings)
 }
 
@@ -65,8 +49,7 @@ fn settings_file(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| format!("Could not resolve the settings directory: {error}"))
 }
 
-#[tauri::command]
-pub fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
+pub(crate) fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
     load_configured_mod_list(&settings_file(&app)?)
 }
 
@@ -91,16 +74,7 @@ fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveModListArgs {
-    pub version: String,
-    pub active_mods: Vec<String>,
-    pub known_expansions: Vec<String>,
-}
-
-#[tauri::command]
-pub fn save_mod_list(app: AppHandle, args: SaveModListArgs) -> Result<String, String> {
+pub(crate) fn save_mod_list(app: AppHandle, args: SaveModListArgs) -> Result<String, String> {
     let settings = load_path_settings_for_app(&app)?;
     save_configured_mod_list(&settings.config_path, &args)
 }
@@ -142,8 +116,7 @@ fn serialize_mods_config(args: &SaveModListArgs) -> String {
     xml
 }
 
-#[tauri::command]
-pub fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
+pub(crate) fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
     #[cfg(target_os = "windows")]
     {
         Ok(detect_windows_paths())

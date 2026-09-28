@@ -2,8 +2,10 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use tauri::AppHandle;
 
-use crate::installed_mods::{collect_installed_mods, InstalledMod};
-use crate::path_detection::load_path_settings_for_app;
+use crate::backend::models::mods::InstalledMod;
+use crate::backend::services::{
+    installed_mods::collect_installed_mods, path_detection::load_path_settings_for_app,
+};
 
 const KNOWN_TIER_ZERO_MODS: &[&str] = &[
     "zetrith.prepatcher",
@@ -33,8 +35,10 @@ const KNOWN_TIER_ONE_MODS: &[&str] = &[
     "vanillaexpanded.backgrounds",
 ];
 
-#[tauri::command]
-pub fn sort_active_mods(app: AppHandle, active_mods: Vec<String>) -> Result<Vec<String>, String> {
+pub(crate) fn sort_active_mods(
+    app: AppHandle,
+    active_mods: Vec<String>,
+) -> Result<Vec<String>, String> {
     let settings = load_path_settings_for_app(&app)?;
     let installed_mods = collect_installed_mods(&settings)?;
     sort_package_ids(&active_mods, &installed_mods)
