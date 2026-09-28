@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import process from 'node:process';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -8,11 +9,8 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
 	plugins: [
-		react({
-			babel: {
-				plugins: [['babel-plugin-react-compiler', {}]],
-			},
-		}),
+		react(),
+		babel({ presets: [reactCompilerPreset()] }),
 		tailwindcss(),
 	],
 
