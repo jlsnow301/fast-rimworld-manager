@@ -179,9 +179,21 @@ export function useAppController() {
 			const displayName = result.database === 'communityRules'
 				? 'Community Rules'
 				: 'Steam Workshop';
-			setDatabaseMessage(
-				`Updated ${displayName} database (${result.bytesDownloaded.toLocaleString()} bytes).`,
-			);
+			try {
+				const foundMods = await invokeDesktop<InstalledMod[]>(
+					'list_installed_mods',
+				);
+				modLists.refreshInstalledMods(foundMods);
+				setDatabaseMessage(
+					`Updated ${displayName} database (${result.bytesDownloaded.toLocaleString()} bytes). Mod highlights refreshed.`,
+				);
+			} catch (error) {
+				setDatabaseMessage(
+					`Updated ${displayName} database, but installed mods could not be refreshed: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				);
+			}
 		} catch (error) {
 			setDatabaseMessage(
 				error instanceof Error ? error.message : String(error),

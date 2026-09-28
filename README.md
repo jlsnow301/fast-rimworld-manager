@@ -20,6 +20,11 @@ Settings can download RimSort's Community Rules and Steam Workshop databases to
 the app configuration directory. The downloaded `communityRules.json` and
 `steamDB.json` files are stored for metadata features.
 
+Active mod rows highlight missing dependencies declared by `About.xml` or the
+Steam Workshop database, and load-order violations from `About.xml` or Community
+Rules. Selecting a highlighted mod shows the missing dependency names and the
+required relative order. Updating either database refreshes the highlights.
+
 At startup, the app reads active IDs from the configured `ModsConfig.xml` and
 scans the configured game `Data`, local mods, and Steam Workshop folders for
 `About/About.xml`. Discovered mods appear in the active or inactive list; rows

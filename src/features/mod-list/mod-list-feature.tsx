@@ -1,4 +1,5 @@
 import { type DragEvent as ReactDragEvent, Fragment } from 'react';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,7 +20,12 @@ import { Separator } from '@/components/ui/separator';
 import { useAppContext } from '../../context/app-context';
 import { MOD_DRAG_MIME, parseModDragPayload } from '../../utils/mod_drag';
 import { normalizedPackageId } from '../../utils/mods';
-import type { InstalledMod, ModListType, VisibleMod } from '../../utils/types';
+import type {
+	InstalledMod,
+	ModHighlightState,
+	ModListType,
+	VisibleMod,
+} from '../../utils/types';
 import { ModPreviewFeature } from '../mod-preview/mod-preview-feature';
 
 export function ModListFeature() {
@@ -29,6 +35,7 @@ export function ModListFeature() {
 		inactiveMods,
 		inactiveSearch,
 		modDetailsByPackageId,
+		modHighlights,
 		moveMod,
 		sortMods,
 		selectMod,
@@ -76,6 +83,7 @@ export function ModListFeature() {
 						? 'No active mods.'
 						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
 					mods={visibleActiveMods}
+					modHighlights={modHighlights}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -88,6 +96,7 @@ export function ModListFeature() {
 					count={inactiveMods.length}
 					emptyMessage='No inactive mods found. Configure paths in Settings.'
 					mods={visibleInactiveMods}
+					modHighlights={modHighlights}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -109,6 +118,7 @@ type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
+	modHighlights: ReadonlyMap<string, ModHighlightState>;
 	mods: VisibleMod[];
 	onSelectMod: (packageId: string) => void;
 	onDropMod: (
@@ -126,6 +136,7 @@ function ModListPanel({
 	count,
 	emptyMessage,
 	modDetailsByPackageId,
+	modHighlights,
 	mods,
 	onSelectMod,
 	onDropMod,
@@ -178,11 +189,37 @@ function ModListPanel({
 							const mod = modDetailsByPackageId.get(
 								normalizedPackageId(packageId),
 							);
+							const highlights = type === 'active'
+								? modHighlights.get(normalizedPackageId(packageId))
+								: undefined;
+							const missingDependencyNames = highlights?.missingDependencies
+								.map((dependency) => dependency.name)
+								.join(', ');
+							const orderViolationLabels = highlights?.loadOrderViolations
+								.map(({ relation, packageId: targetPackageId }) =>
+									`load ${relation} ${targetPackageId}`
+								)
+								.join(', ');
+							const warningLabel = [
+								missingDependencyNames &&
+								`Missing dependencies: ${missingDependencyNames}`,
+								orderViolationLabels &&
+								`Load-order violations: ${orderViolationLabels}`,
+							].filter(Boolean).join('. ');
+
 							return (
 								<Fragment key={`${packageId}-${index}`}>
 									<Button
-										aria-label={`Show details for ${mod?.name ?? packageId}`}
-										className='h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal cursor-grab active:cursor-grabbing'
+										aria-label={`Show details for ${mod?.name ?? packageId}${
+											warningLabel ? `. ${warningLabel}` : ''
+										}`}
+										className={cn(
+											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal cursor-grab active:cursor-grabbing',
+											missingDependencyNames &&
+												'border-l-2 border-destructive',
+											!missingDependencyNames && orderViolationLabels &&
+												'border-l-2 border-muted-foreground',
+										)}
 										draggable
 										onClick={() => onSelectMod(packageId)}
 										onDragStart={(event) => {
@@ -203,6 +240,22 @@ function ModListPanel({
 													<Badge variant='secondary'>{mod.packageId}</Badge>
 													<Badge variant='outline'>{mod.source}</Badge>
 												</span>
+											)}
+											{missingDependencyNames && (
+												<Badge
+													title={missingDependencyNames}
+													variant='destructive'
+												>
+													Missing dependencies
+												</Badge>
+											)}
+											{orderViolationLabels && (
+												<Badge
+													title={orderViolationLabels}
+													variant='outline'
+												>
+													Load order
+												</Badge>
 											)}
 										</span>
 									</Button>

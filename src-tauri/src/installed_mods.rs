@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::path_detection::{load_path_settings_for_app, PathSettings};
 
@@ -17,8 +17,17 @@ pub struct InstalledMod {
     pub published_file_id: Option<String>,
     pub load_after: Vec<String>,
     pub load_before: Vec<String>,
+    pub dependencies: Vec<ModDependency>,
     pub path: String,
     pub source: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDependency {
+    pub package_id: String,
+    pub name: String,
+    pub alternative_package_ids: Vec<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -31,7 +40,11 @@ enum AboutField {
 #[tauri::command]
 pub fn list_installed_mods(app: AppHandle) -> Result<Vec<InstalledMod>, String> {
     let settings = load_path_settings_for_app(&app)?;
-    collect_installed_mods(&settings)
+    let mut mods = collect_installed_mods(&settings)?;
+    if let Ok(config_directory) = app.path().app_config_dir() {
+        crate::mod_metadata::enrich_installed_mods(&config_directory.join("databases"), &mut mods);
+    }
+    Ok(mods)
 }
 
 pub(crate) fn collect_installed_mods(settings: &PathSettings) -> Result<Vec<InstalledMod>, String> {
@@ -89,6 +102,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             continue;
         };
         let (load_after, load_before) = parse_load_order_rules(&contents);
+        let dependencies = parse_mod_dependencies(&contents);
         let published_file_id = published_file_id(&mod_path);
 
         mods.push(InstalledMod {
@@ -96,10 +110,11 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             package_id,
             description,
             published_file_id,
-            path: mod_path.to_string_lossy().into_owned(),
-            source: source.to_string(),
             load_after,
             load_before,
+            dependencies,
+            path: mod_path.to_string_lossy().into_owned(),
+            source: source.to_string(),
         });
     }
 
@@ -276,6 +291,173 @@ fn parse_load_order_rules(xml: &str) -> (Vec<String>, Vec<String>) {
     }
 
     (load_after, load_before)
+}
+
+#[derive(Clone, Copy)]
+enum ModDependencyField {
+    PackageId,
+    Name,
+    AlternativePackageId,
+}
+
+fn parse_mod_dependencies(xml: &str) -> Vec<ModDependency> {
+    let mut reader = Reader::from_str(xml);
+    let mut depth = 0usize;
+    let mut dependencies_depth = None;
+    let mut dependency_depth = None;
+    let mut alternatives_depth = None;
+    let mut alternative_item_depth = None;
+    let mut field = None;
+    let mut package_id = String::new();
+    let mut name = String::new();
+    let mut alternative_package_ids = Vec::new();
+    let mut alternative_package_id = String::new();
+    let mut dependencies = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element)) => {
+                depth += 1;
+                let tag = element.local_name();
+                if tag.as_ref().eq_ignore_ascii_case("modDependencies") {
+                    dependencies_depth = Some(depth);
+                } else if dependencies_depth == Some(depth - 1)
+                    && tag.as_ref().eq_ignore_ascii_case("li")
+                {
+                    dependency_depth = Some(depth);
+                    package_id.clear();
+                    name.clear();
+                    alternative_package_ids.clear();
+                } else if dependency_depth == Some(depth - 1)
+                    && tag.as_ref().eq_ignore_ascii_case("alternativePackageIds")
+                {
+                    alternatives_depth = Some(depth);
+                } else if alternatives_depth == Some(depth - 1)
+                    && tag.as_ref().eq_ignore_ascii_case("li")
+                {
+                    alternative_item_depth = Some(depth);
+                    alternative_package_id.clear();
+                    field = Some(ModDependencyField::AlternativePackageId);
+                } else if dependency_depth == Some(depth - 1) {
+                    field = if tag.as_ref().eq_ignore_ascii_case("packageId") {
+                        Some(ModDependencyField::PackageId)
+                    } else if tag.as_ref().eq_ignore_ascii_case("displayName") {
+                        Some(ModDependencyField::Name)
+                    } else {
+                        None
+                    };
+                }
+            }
+            Ok(Event::Text(text)) => {
+                if let Ok(text) = quick_xml::escape::unescape(text.as_ref()) {
+                    append_dependency_text(
+                        field,
+                        &text,
+                        &mut package_id,
+                        &mut name,
+                        &mut alternative_package_id,
+                    );
+                }
+            }
+            Ok(Event::GeneralRef(reference)) => {
+                let entity = format!("&{};", reference.as_ref());
+                if let Ok(text) = quick_xml::escape::unescape(&entity) {
+                    append_dependency_text(
+                        field,
+                        &text,
+                        &mut package_id,
+                        &mut name,
+                        &mut alternative_package_id,
+                    );
+                }
+            }
+            Ok(Event::End(element)) => {
+                let tag = element.local_name();
+                if alternative_item_depth == Some(depth) && tag.as_ref().eq_ignore_ascii_case("li")
+                {
+                    let alternative = alternative_package_id.trim();
+                    if !alternative.is_empty() {
+                        alternative_package_ids.push(alternative.to_string());
+                    }
+                    alternative_item_depth = None;
+                    field = None;
+                } else if alternatives_depth == Some(depth)
+                    && tag.as_ref().eq_ignore_ascii_case("alternativePackageIds")
+                {
+                    alternatives_depth = None;
+                } else if dependency_depth == Some(depth) && tag.as_ref().eq_ignore_ascii_case("li")
+                {
+                    let package_id = package_id.trim();
+                    if !package_id.is_empty() {
+                        dependencies.push(ModDependency {
+                            package_id: package_id.to_string(),
+                            name: if name.trim().is_empty() {
+                                package_id.to_string()
+                            } else {
+                                name.trim().to_string()
+                            },
+                            alternative_package_ids: std::mem::take(&mut alternative_package_ids),
+                        });
+                    }
+                    dependency_depth = None;
+                    field = None;
+                } else if tag.as_ref().eq_ignore_ascii_case("packageId")
+                    || tag.as_ref().eq_ignore_ascii_case("displayName")
+                {
+                    field = None;
+                }
+                if dependencies_depth == Some(depth)
+                    && tag.as_ref().eq_ignore_ascii_case("modDependencies")
+                {
+                    dependencies_depth = None;
+                }
+                depth = depth.saturating_sub(1);
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    dependencies
+}
+
+fn append_dependency_text(
+    field: Option<ModDependencyField>,
+    value: &str,
+    package_id: &mut String,
+    name: &mut String,
+    alternative_package_id: &mut String,
+) {
+    match field {
+        Some(ModDependencyField::PackageId) => package_id.push_str(value),
+        Some(ModDependencyField::Name) => name.push_str(value),
+        Some(ModDependencyField::AlternativePackageId) => {
+            alternative_package_id.push_str(value);
+        }
+        None => {}
+    }
+}
+#[test]
+fn parses_mod_dependencies_with_nested_alternative_ids() {
+    let dependencies = parse_mod_dependencies(
+		"<ModMetaData><modDependencies><li><packageId>Author.Framework</packageId><alternativePackageIds><li>Author.Framework.Continued</li></alternativePackageIds><displayName>Framework &amp; More</displayName></li><li><packageId>Author.Other</packageId></li></modDependencies></ModMetaData>",
+	);
+
+    assert_eq!(
+        dependencies,
+        vec![
+            ModDependency {
+                package_id: "Author.Framework".to_string(),
+                name: "Framework & More".to_string(),
+                alternative_package_ids: vec!["Author.Framework.Continued".to_string()],
+            },
+            ModDependency {
+                package_id: "Author.Other".to_string(),
+                name: "Author.Other".to_string(),
+                alternative_package_ids: Vec::new(),
+            },
+        ],
+    );
 }
 
 #[test]

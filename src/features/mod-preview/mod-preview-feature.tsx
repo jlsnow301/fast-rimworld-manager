@@ -8,15 +8,30 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { normalizedPackageId } from '../../utils/mods';
 import { useAppContext } from '../../context/app-context';
 export function ModPreviewFeature() {
-	const { closeModPreview, previewMessage, selectedMod, steamPreview } =
-		useAppContext();
+	const {
+		closeModPreview,
+		modHighlights,
+		previewMessage,
+		selectedMod,
+		steamPreview,
+	} = useAppContext();
 	if (!selectedMod) return null;
 
 	const lastUpdated = steamPreview?.timeUpdated
 		? new Date(steamPreview.timeUpdated * 1000).toLocaleString()
 		: null;
+	const highlights = modHighlights.get(
+		normalizedPackageId(selectedMod.packageId),
+	);
+	const missingDependencyNames = highlights?.missingDependencies
+		.map((dependency) => dependency.name)
+		.join(', ');
+	const loadOrderDetails = highlights?.loadOrderViolations
+		.map(({ relation, packageId }) => `Should load ${relation} ${packageId}`)
+		.join('. ');
 
 	return (
 		<Card className='mt-4'>
@@ -51,6 +66,37 @@ export function ModPreviewFeature() {
 						</div>
 					)}
 				</dl>
+				{(missingDependencyNames || loadOrderDetails) && (
+					<>
+						<Separator />
+						<section
+							aria-label='Mod compatibility checks'
+							className='flex flex-col gap-2'
+						>
+							<h4 className='font-semibold'>Mod compatibility checks</h4>
+							{missingDependencyNames && (
+								<div className='flex flex-col gap-1'>
+									<Badge className='self-start' variant='destructive'>
+										Missing dependencies
+									</Badge>
+									<p className='text-sm text-muted-foreground'>
+										{missingDependencyNames}
+									</p>
+								</div>
+							)}
+							{loadOrderDetails && (
+								<div className='flex flex-col gap-1'>
+									<Badge className='self-start' variant='outline'>
+										Load order
+									</Badge>
+									<p className='text-sm text-muted-foreground'>
+										{loadOrderDetails}
+									</p>
+								</div>
+							)}
+						</section>
+					</>
+				)}
 				{selectedMod.description && (
 					<>
 						<Separator />

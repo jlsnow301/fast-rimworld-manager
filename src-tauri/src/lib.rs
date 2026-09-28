@@ -1,6 +1,7 @@
 mod databases;
 mod installed_mods;
 mod mod_list_import;
+mod mod_metadata;
 mod path_detection;
 mod sorting;
 mod steam_preview;

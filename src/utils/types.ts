@@ -23,13 +23,32 @@ export type DetectedPaths = {
 	workshopPath: string | null;
 };
 
+export type ModDependency = {
+	packageId: string;
+	name: string;
+	alternativePackageIds: string[];
+};
+
 export type InstalledMod = {
 	name: string;
 	packageId: string;
 	description: string;
 	publishedFileId: string | null;
+	loadAfter: string[];
+	loadBefore: string[];
 	path: string;
 	source: string;
+	dependencies: ModDependency[];
+};
+
+export type ModLoadOrderViolation = {
+	relation: 'after' | 'before';
+	packageId: string;
+};
+
+export type ModHighlightState = {
+	missingDependencies: ModDependency[];
+	loadOrderViolations: ModLoadOrderViolation[];
 };
 
 export type SteamModPreview = {

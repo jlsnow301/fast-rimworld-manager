@@ -169,6 +169,7 @@ mod tests {
             published_file_id: None,
             load_after: load_after.iter().map(|id| id.to_string()).collect(),
             load_before: load_before.iter().map(|id| id.to_string()).collect(),
+            dependencies: Vec::new(),
             path: String::new(),
             source: "local".to_string(),
         }
