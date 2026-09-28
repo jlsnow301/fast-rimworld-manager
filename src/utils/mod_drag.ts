@@ -1,6 +1,6 @@
 import type { ModListType } from './types';
 
-export const MOD_DRAG_MIME = 'application/x-rimsort-mod';
+export const MOD_DRAG_MIME = 'application/x-fast-rimworld-manager-mod';
 
 export type ModDragPayload = {
 	index: number;

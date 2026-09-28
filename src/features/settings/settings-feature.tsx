@@ -124,7 +124,7 @@ export function SettingsFeature() {
 				<CardHeader>
 					<CardTitle>Databases</CardTitle>
 					<CardDescription>
-						Download compatible metadata from the RimSort database projects.
+						Download compatible metadata from community-maintained repositories.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>

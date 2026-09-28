@@ -236,7 +236,7 @@ export function ModListFeature() {
 						<AlertDialogDescription>
 							{isTestMode
 								? 'Test mode preview only. No Steam requests will be sent.'
-								: 'RimSort will send an update request for every mod below to the Steam client. Steam must be installed, running, and signed in to download them.'}
+								: 'The app will send an update request for every mod below to the Steam client. Steam must be installed, running, and signed in to download them.'}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<ul

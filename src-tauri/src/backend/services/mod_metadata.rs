@@ -170,7 +170,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .map(|duration| duration.as_nanos())
             .unwrap_or_default();
-        std::env::temp_dir().join(format!("rimsort-mod-metadata-{nonce}"))
+        std::env::temp_dir().join(format!("fast-rimworld-manager-mod-metadata-{nonce}"))
     }
 
     fn installed_mod(package_id: &str, published_file_id: Option<&str>) -> InstalledMod {

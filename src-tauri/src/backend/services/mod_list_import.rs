@@ -40,7 +40,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .map(|duration| duration.as_nanos())
             .unwrap_or_default();
-        std::env::temp_dir().join(format!("rimsort-import-{nonce}"))
+        std::env::temp_dir().join(format!("fast-rimworld-manager-import-{nonce}"))
     }
 
     #[test]

@@ -26,9 +26,11 @@ export function AppHeader() {
 	return (
 		<header className='flex items-center justify-between gap-4 border-b px-5 py-3'>
 			<div className='grid gap-0.5'>
-				<h1 className='text-lg font-semibold tracking-wide'>RimSort</h1>
+				<h1 className='text-lg font-semibold tracking-wide'>
+					Fast RimWorld Manager
+				</h1>
 				<span className='text-sm text-muted-foreground'>
-					RimWorld mod manager
+					Manage RimWorld mods
 				</span>
 			</div>
 			<div className='flex items-center gap-2'>
