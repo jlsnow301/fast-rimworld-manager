@@ -13,6 +13,7 @@ pub fn run() {
             backend::commands::mod_lists::load_startup_mod_list,
             backend::commands::mods::list_installed_mods,
             backend::commands::steam::fetch_steam_mod_details,
+            backend::commands::steam::check_outdated_mods,
             backend::commands::steam::save_steam_api_key,
             backend::commands::steam::remove_steam_api_key,
             backend::commands::steam::steam_api_key_configured,

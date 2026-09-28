@@ -30,6 +30,7 @@ import {
 	sourceNameAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
+	workshopUpdateResultAtom,
 } from '../state/app-atoms';
 
 export function useModLists(setStatus: (message: string) => void) {
@@ -43,6 +44,7 @@ export function useModLists(setStatus: (message: string) => void) {
 	const [activeSearch, setActiveSearch] = useAtom(activeSearchAtom);
 	const [inactiveSearch, setInactiveSearch] = useAtom(inactiveSearchAtom);
 	const [, setSavedSnapshot] = useAtom(savedSnapshotAtom);
+	const [, setWorkshopUpdateResult] = useAtom(workshopUpdateResultAtom);
 
 	function initialize(
 		foundMods: InstalledMod[],
@@ -56,6 +58,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		setInstalledMods(foundMods);
 		setActiveMods([]);
 		setInactiveMods(getInactivePackageIds(foundMods, []));
+		setWorkshopUpdateResult(null);
 
 		if (content) {
 			try {
@@ -97,6 +100,7 @@ export function useModLists(setStatus: (message: string) => void) {
 	function refreshInstalledMods(foundMods: InstalledMod[]) {
 		if (store.get(isTestModeAtom)) return;
 		setInstalledMods(foundMods);
+		setWorkshopUpdateResult(null);
 		setInactiveMods(getInactivePackageIds(foundMods, activeMods));
 	}
 

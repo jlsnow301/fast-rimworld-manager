@@ -54,6 +54,11 @@ Manager and is not returned to the frontend after saving. Use **Test connection*
 to verify access to an authenticated Steam API method. Workshop previews continue
 to use their public endpoint and do not require this key.
 
+**Check for updates** compares Steam's latest Workshop `time_updated` with the
+installed timestamp in `appworkshop_294100.acf` and marks newer versions on their
+mod rows. It does not download or modify mods. This public Workshop endpoint
+does not require the saved API key.
+
 ## Run
 
 - `deno task dev` runs Vite with its runner loader and ignores its temporary

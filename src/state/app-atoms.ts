@@ -7,8 +7,10 @@ import type { ModListSnapshot } from '../utils/dirty_state';
 import type {
 	DatabaseKind,
 	InstalledMod,
+	OutdatedWorkshopMod,
 	PathSettings,
 	SteamModPreview,
+	WorkshopUpdateCheckResult,
 } from '../utils/types';
 import { TEST_MOD_LIST } from '../utils/test_mod_list';
 
@@ -46,6 +48,18 @@ export const inactiveSearchAtom = atom('');
 export const savedSnapshotAtom = atom<ModListSnapshot>(
 	createModListSnapshot('1.4', [], []),
 );
+export const workshopUpdateResultAtom = atom<WorkshopUpdateCheckResult | null>(
+	null,
+);
+export const checkingWorkshopUpdatesAtom = atom(false);
+export const outdatedWorkshopModsByPackageIdAtom = atom((get) => {
+	const result = get(workshopUpdateResultAtom);
+	const updates = new Map<string, OutdatedWorkshopMod>();
+	for (const mod of result?.outdatedMods ?? []) {
+		updates.set(normalizedPackageId(mod.packageId), mod);
+	}
+	return updates;
+});
 
 type TestModeBackup = {
 	installedMods: InstalledMod[];
@@ -57,6 +71,7 @@ type TestModeBackup = {
 	savedSnapshot: ModListSnapshot;
 	activeSearch: string;
 	inactiveSearch: string;
+	workshopUpdateResult: WorkshopUpdateCheckResult | null;
 };
 
 export const isTestModeAtom = atom(false);
@@ -74,6 +89,7 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		set(savedSnapshotAtom, backup.savedSnapshot);
 		set(activeSearchAtom, backup.activeSearch);
 		set(inactiveSearchAtom, backup.inactiveSearch);
+		set(workshopUpdateResultAtom, backup.workshopUpdateResult);
 		set(testModeBackupAtom, null);
 		set(isTestModeAtom, false);
 		set(selectedModAtom, null);
@@ -94,6 +110,7 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		savedSnapshot: get(savedSnapshotAtom),
 		activeSearch: get(activeSearchAtom),
 		inactiveSearch: get(inactiveSearchAtom),
+		workshopUpdateResult: get(workshopUpdateResultAtom),
 	});
 	set(installedModsAtom, TEST_MOD_LIST.installedMods);
 	set(activeModsAtom, [...TEST_MOD_LIST.modList.activeMods]);
@@ -118,6 +135,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 	);
 	set(activeSearchAtom, '');
 	set(inactiveSearchAtom, '');
+	set(workshopUpdateResultAtom, null);
+	set(checkingWorkshopUpdatesAtom, false);
 	set(isTestModeAtom, true);
 	set(selectedModAtom, null);
 	set(steamPreviewAtom, null);
@@ -170,6 +189,11 @@ export const hasModListAtom = atom((get) => {
 	return sourceName.length > 0 || activeMods.length > 0 ||
 		inactiveMods.length > 0;
 });
+export const hasWorkshopModsAtom = atom((get) =>
+	get(installedModsAtom).some(
+		(mod) => mod.source === 'workshop' && mod.publishedFileId !== null,
+	)
+);
 
 export const isModListDirtyAtom = atom((get) =>
 	hasModListChanges(get(savedSnapshotAtom), {

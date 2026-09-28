@@ -4,11 +4,15 @@ import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
 	activeSearchAtom,
+	checkingWorkshopUpdatesAtom,
 	gameVersionAtom,
 	hasModListAtom,
+	hasWorkshopModsAtom,
 	inactiveModsAtom,
 	inactiveSearchAtom,
+	isTestModeAtom,
 	modDetailsByPackageIdAtom,
+	outdatedWorkshopModsByPackageIdAtom,
 	statusAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
@@ -38,12 +42,13 @@ import type {
 	InstalledMod,
 	ModHighlightState,
 	ModListType,
+	OutdatedWorkshopMod,
 	VisibleMod,
 } from '../../utils/types';
 import { ModPreviewFeature } from '../mod-preview/mod-preview-feature';
 
 export function ModListFeature() {
-	const { moveMod, sortMods, selectMod } = useAppContext();
+	const { moveMod, sortMods, selectMod, checkForModUpdates } = useAppContext();
 	const activeMods = useAtomValue(activeModsAtom);
 	const activeSearch = useAtomValue(activeSearchAtom);
 	const inactiveMods = useAtomValue(inactiveModsAtom);
@@ -57,6 +62,12 @@ export function ModListFeature() {
 	const visibleInactiveMods = useAtomValue(visibleInactiveModsAtom);
 	const gameVersion = useAtomValue(gameVersionAtom);
 	const hasModList = useAtomValue(hasModListAtom);
+	const hasWorkshopMods = useAtomValue(hasWorkshopModsAtom);
+	const isTestMode = useAtomValue(isTestModeAtom);
+	const checkingWorkshopUpdates = useAtomValue(checkingWorkshopUpdatesAtom);
+	const outdatedWorkshopModsByPackageId = useAtomValue(
+		outdatedWorkshopModsByPackageIdAtom,
+	);
 
 	return (
 		<section className='mx-auto w-full max-w-7xl p-6'>
@@ -73,6 +84,17 @@ export function ModListFeature() {
 					<Badge variant='secondary'>
 						{activeMods.length} active · {inactiveMods.length} inactive
 					</Badge>
+					<Button
+						aria-busy={checkingWorkshopUpdates}
+						disabled={!hasWorkshopMods || checkingWorkshopUpdates || isTestMode}
+						onClick={checkForModUpdates}
+						size='sm'
+						variant='outline'
+					>
+						{checkingWorkshopUpdates
+							? 'Checking Workshop…'
+							: 'Check for updates'}
+					</Button>
 					<Button
 						disabled={activeMods.length < 2}
 						onClick={sortMods}
@@ -123,6 +145,7 @@ export function ModListFeature() {
 						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
 					mods={visibleActiveMods}
 					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -136,6 +159,7 @@ export function ModListFeature() {
 					emptyMessage='No inactive mods found. Configure paths in Settings.'
 					mods={visibleInactiveMods}
 					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -157,6 +181,7 @@ type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
+	outdatedWorkshopModsByPackageId: ReadonlyMap<string, OutdatedWorkshopMod>;
 	activeDiagnosticsByPackageId: ReadonlyMap<string, ModHighlightState>;
 	mods: VisibleMod[];
 	onSelectMod: (packageId: string) => void;
@@ -176,6 +201,7 @@ function ModListPanel({
 	emptyMessage,
 	modDetailsByPackageId,
 	activeDiagnosticsByPackageId,
+	outdatedWorkshopModsByPackageId,
 	mods,
 	onSelectMod,
 	onDropMod,
@@ -239,9 +265,19 @@ function ModListPanel({
 							const warningDetails = diagnostics?.warnings
 								.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
 								.join('. ');
+							const outdatedWorkshopMod = outdatedWorkshopModsByPackageId.get(
+								normalizedPackageId(packageId),
+							);
+							const updateDetails = outdatedWorkshopMod
+								? `Steam update available. Latest Workshop update: ${
+									new Date(outdatedWorkshopMod.steamTimeUpdated * 1000)
+										.toLocaleString()
+								}.`
+								: undefined;
 							const accessibleIssues = [
 								errorDetails && `Errors: ${errorDetails}`,
 								warningDetails && `Warnings: ${warningDetails}`,
+								updateDetails,
 							].filter(Boolean).join('. ');
 
 							return (
@@ -297,6 +333,18 @@ function ModListPanel({
 													{issue.title}
 												</Badge>
 											))}
+											{outdatedWorkshopMod && (
+												<Badge
+													title={`Installed update: ${
+														new Date(
+															outdatedWorkshopMod.installedTimeUpdated * 1000,
+														).toLocaleString()
+													}`}
+													variant='secondary'
+												>
+													Update available
+												</Badge>
+											)}
 										</span>
 									</Button>
 									{modIndex < mods.length - 1 && <Separator />}

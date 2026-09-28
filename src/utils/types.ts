@@ -79,6 +79,20 @@ export type SteamModPreview = {
 	timeUpdated: number | null;
 };
 
+export type OutdatedWorkshopMod = {
+	name: string;
+	packageId: string;
+	publishedFileId: string;
+	installedTimeUpdated: number;
+	steamTimeUpdated: number;
+};
+
+export type WorkshopUpdateCheckResult = {
+	checkedCount: number;
+	skippedCount: number;
+	outdatedMods: OutdatedWorkshopMod[];
+};
+
 export type ModListType = 'active' | 'inactive';
 
 export type ModListFile = {

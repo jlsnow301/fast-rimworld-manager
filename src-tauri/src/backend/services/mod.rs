@@ -6,3 +6,4 @@ pub(crate) mod path_detection;
 pub(crate) mod sorting;
 pub(crate) mod steam_api;
 pub(crate) mod steam_preview;
+pub(crate) mod steam_updates;

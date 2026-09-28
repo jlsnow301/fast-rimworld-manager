@@ -1,7 +1,8 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
 import { useEffect } from 'react';
 import {
+	checkingWorkshopUpdatesAtom,
 	closeModPreviewAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
@@ -13,6 +14,7 @@ import {
 	statusAtom,
 	steamApiKeyConfiguredAtom,
 	steamApiMessageAtom,
+	workshopUpdateResultAtom,
 } from '../state/app-atoms';
 import { normalizedPackageId } from '../utils/mods';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
@@ -22,6 +24,7 @@ import type {
 	DetectedPaths,
 	InstalledMod,
 	PathSettings,
+	WorkshopUpdateCheckResult,
 } from '../utils/types';
 import { useModLists } from './use-mod-lists';
 import { useSteamPreview } from './use-steam-preview';
@@ -34,6 +37,9 @@ export function useAppController() {
 	const [, setDatabaseMessage] = useAtom(databaseMessageAtom);
 	const [, setDownloadingDatabase] = useAtom(downloadingDatabaseAtom);
 	const [, setStatus] = useAtom(statusAtom);
+	const store = useStore();
+	const setCheckingWorkshopUpdates = useSetAtom(checkingWorkshopUpdatesAtom);
+	const setWorkshopUpdateResult = useSetAtom(workshopUpdateResultAtom);
 	const [, setSteamApiKeyConfigured] = useAtom(steamApiKeyConfiguredAtom);
 	const [, setSteamApiMessage] = useAtom(steamApiMessageAtom);
 	const setSelectedMod = useSetAtom(selectedModAtom);
@@ -248,6 +254,38 @@ export function useAppController() {
 		}
 	}
 
+	async function checkForModUpdates() {
+		if (store.get(isTestModeAtom)) {
+			setStatus('Workshop update checks are disabled in test mode.');
+			return;
+		}
+		setCheckingWorkshopUpdates(true);
+		setWorkshopUpdateResult(null);
+		setStatus('Checking installed Workshop mods for updates…');
+		try {
+			const result = await invokeDesktop<WorkshopUpdateCheckResult>(
+				'check_outdated_mods',
+			);
+			if (store.get(isTestModeAtom)) return;
+			setWorkshopUpdateResult(result);
+			const updateCount = result.outdatedMods.length;
+			const skipped = result.skippedCount
+				? ` ${result.skippedCount} could not be compared.`
+				: '';
+			setStatus(
+				`Checked ${result.checkedCount} Workshop mods; ${updateCount} update${
+					updateCount === 1 ? '' : 's'
+				} available.${skipped}`,
+			);
+		} catch (error) {
+			if (!store.get(isTestModeAtom)) {
+				setStatus(error instanceof Error ? error.message : String(error));
+			}
+		} finally {
+			setCheckingWorkshopUpdates(false);
+		}
+	}
+
 	function selectMod(packageId: string) {
 		const mod = modLists.modDetailsByPackageId.get(
 			normalizedPackageId(packageId),
@@ -331,6 +369,7 @@ export function useAppController() {
 		closeModPreview,
 		sortMods,
 		selectMod,
+		checkForModUpdates,
 		refreshSteamApiKeyStatus,
 		saveSteamApiKey,
 		testSteamApiConnection,
