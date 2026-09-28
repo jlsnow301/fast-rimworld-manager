@@ -4,4 +4,5 @@ pub(crate) mod mod_list_import;
 pub(crate) mod mod_metadata;
 pub(crate) mod path_detection;
 pub(crate) mod sorting;
+pub(crate) mod steam_api;
 pub(crate) mod steam_preview;

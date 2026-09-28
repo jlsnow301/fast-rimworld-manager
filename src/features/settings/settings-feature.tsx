@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
 	Card,
@@ -14,6 +15,8 @@ import {
 	downloadingDatabaseAtom,
 	pathSettingsAtom,
 	settingsMessageAtom,
+	steamApiKeyConfiguredAtom,
+	steamApiMessageAtom,
 } from '../../state/app-atoms';
 import { useAppContext } from '../../context/app-context';
 import { PATH_FIELDS } from '../../utils/mods';
@@ -45,11 +48,46 @@ export function SettingsFeature() {
 		downloadDatabase,
 		savePathSettings,
 		updatePath,
+		saveSteamApiKey,
+		testSteamApiConnection,
+		removeSteamApiKey,
 	} = useAppContext();
 	const databaseMessage = useAtomValue(databaseMessageAtom);
 	const downloadingDatabase = useAtomValue(downloadingDatabaseAtom);
 	const pathSettings = useAtomValue(pathSettingsAtom);
 	const settingsMessage = useAtomValue(settingsMessageAtom);
+	const steamApiKeyConfigured = useAtomValue(steamApiKeyConfiguredAtom);
+	const steamApiMessage = useAtomValue(steamApiMessageAtom);
+	const [steamApiKeyInput, setSteamApiKeyInput] = useState('');
+	const [steamApiBusy, setSteamApiBusy] = useState(false);
+
+	async function handleSaveSteamApiKey() {
+		setSteamApiBusy(true);
+		try {
+			const saved = await saveSteamApiKey(steamApiKeyInput);
+			if (saved) setSteamApiKeyInput('');
+		} finally {
+			setSteamApiBusy(false);
+		}
+	}
+
+	async function handleTestSteamApiConnection() {
+		setSteamApiBusy(true);
+		try {
+			await testSteamApiConnection();
+		} finally {
+			setSteamApiBusy(false);
+		}
+	}
+
+	async function handleRemoveSteamApiKey() {
+		setSteamApiBusy(true);
+		try {
+			await removeSteamApiKey();
+		} finally {
+			setSteamApiBusy(false);
+		}
+	}
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6'>
@@ -115,6 +153,63 @@ export function SettingsFeature() {
 					))}
 					<p aria-live='polite' className='text-sm text-muted-foreground'>
 						{databaseMessage}
+					</p>
+				</CardContent>
+			</Card>
+			<Card>
+				<CardHeader>
+					<CardTitle>Steam Web API</CardTitle>
+					<CardDescription>
+						Create a personal 32-character API key at
+						https://steamcommunity.com/dev/apikey. The key is kept in Windows
+						Credential Manager and never shown again.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className='flex flex-col gap-4'>
+					<FieldGroup>
+						<Field>
+							<FieldLabel htmlFor='steam-api-key'>Steam Web API key</FieldLabel>
+							<Input
+								autoComplete='off'
+								id='steam-api-key'
+								onChange={(event) =>
+									setSteamApiKeyInput(event.currentTarget.value)}
+								placeholder='Enter your 32-character key'
+								spellCheck={false}
+								type='password'
+								value={steamApiKeyInput}
+							/>
+						</Field>
+					</FieldGroup>
+					<div className='flex flex-wrap gap-2'>
+						<Button
+							disabled={steamApiBusy || steamApiKeyInput.trim().length === 0}
+							onClick={handleSaveSteamApiKey}
+						>
+							Save API key
+						</Button>
+						<Button
+							disabled={steamApiBusy || !steamApiKeyConfigured}
+							onClick={handleTestSteamApiConnection}
+							variant='outline'
+						>
+							Test connection
+						</Button>
+						<Button
+							disabled={steamApiBusy || !steamApiKeyConfigured}
+							onClick={handleRemoveSteamApiKey}
+							variant='outline'
+						>
+							Remove key
+						</Button>
+					</div>
+					<p aria-live='polite' className='text-sm text-muted-foreground'>
+						{steamApiKeyConfigured
+							? 'A Steam Web API key is stored securely.'
+							: 'No Steam Web API key is stored.'}
+					</p>
+					<p aria-live='polite' className='text-sm'>
+						{steamApiMessage}
 					</p>
 				</CardContent>
 			</Card>

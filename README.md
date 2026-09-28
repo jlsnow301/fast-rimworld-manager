@@ -48,6 +48,12 @@ order, or known expansions differ from the last loaded or saved
 `ModsConfig.xml`. Importing or editing marks the list dirty; restoring the saved
 values or saving successfully clears the indicator.
 
+Settings also accept a personal 32-character Steam Web API key, available at
+`https://steamcommunity.com/dev/apikey`. The key is stored in Windows Credential
+Manager and is not returned to the frontend after saving. Use **Test connection**
+to verify access to an authenticated Steam API method. Workshop previews continue
+to use their public endpoint and do not require this key.
+
 ## Run
 
 - `deno task dev` runs Vite with its runner loader and ignores its temporary
