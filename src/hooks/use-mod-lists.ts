@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
 import { parseModsConfig } from '../utils/mods_config';
+import { filterVisibleMods } from '../utils/mod_search';
 import {
 	createModListSnapshot,
 	hasModListChanges,
@@ -14,7 +15,6 @@ import type {
 	ImportedModListFile,
 	InstalledMod,
 	ModListType,
-	VisibleMod,
 } from '../utils/types';
 
 export function useModLists(setStatus: (message: string) => void) {
@@ -166,13 +166,6 @@ export function useModLists(setStatus: (message: string) => void) {
 		modDetailsByPackageId,
 		gameVersion,
 	);
-	const visibleMods = (mods: string[], search: string): VisibleMod[] =>
-		mods
-			.map((packageId, index) => ({ packageId, index }))
-			.filter(({ packageId }) =>
-				packageId.toLowerCase().includes(search.toLowerCase())
-			);
-
 	return {
 		activeMods,
 		activeSearch,
@@ -191,8 +184,16 @@ export function useModLists(setStatus: (message: string) => void) {
 		setActiveSearch,
 		setInactiveSearch,
 		sourceName,
-		visibleActiveMods: visibleMods(activeMods, activeSearch),
-		visibleInactiveMods: visibleMods(inactiveMods, inactiveSearch),
+		visibleActiveMods: filterVisibleMods(
+			activeMods,
+			modDetailsByPackageId,
+			activeSearch,
+		),
+		visibleInactiveMods: filterVisibleMods(
+			inactiveMods,
+			modDetailsByPackageId,
+			inactiveSearch,
+		),
 		isModListDirty,
 		markModListSaved,
 		applySortedActiveMods,

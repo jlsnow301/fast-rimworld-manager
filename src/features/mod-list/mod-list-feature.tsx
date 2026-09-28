@@ -194,7 +194,7 @@ function ModListPanel({
 				<Input
 					aria-label={`Search ${title.toLowerCase()}`}
 					onChange={(event) => onSearch(event.currentTarget.value)}
-					placeholder='Search package IDs'
+					placeholder='Search names or package IDs'
 					value={search}
 				/>
 				<div
