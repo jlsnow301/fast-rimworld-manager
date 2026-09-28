@@ -36,19 +36,39 @@ export type InstalledMod = {
 	publishedFileId: string | null;
 	loadAfter: string[];
 	loadBefore: string[];
+	incompatibleWith: string[];
+	supportedVersions: string[];
 	path: string;
 	source: string;
 	dependencies: ModDependency[];
 };
 
-export type ModLoadOrderViolation = {
-	relation: 'after' | 'before';
-	packageId: string;
+export type ModIssueCode =
+	| 'missing-mod'
+	| 'duplicate-mod'
+	| 'missing-dependency'
+	| 'incompatibility'
+	| 'load-order'
+	| 'version-mismatch';
+
+export type ModIssueSeverity = 'error' | 'warning';
+
+export type ModIssue = {
+	code: ModIssueCode;
+	severity: ModIssueSeverity;
+	title: string;
+	details: string[];
 };
 
 export type ModHighlightState = {
-	missingDependencies: ModDependency[];
-	loadOrderViolations: ModLoadOrderViolation[];
+	errors: ModIssue[];
+	warnings: ModIssue[];
+};
+
+export type ActiveModDiagnostics = {
+	byPackageId: ReadonlyMap<string, ModHighlightState>;
+	errorCount: number;
+	warningCount: number;
 };
 
 export type SteamModPreview = {

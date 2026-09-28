@@ -17,6 +17,8 @@ pub struct InstalledMod {
     pub published_file_id: Option<String>,
     pub load_after: Vec<String>,
     pub load_before: Vec<String>,
+    pub incompatible_with: Vec<String>,
+    pub supported_versions: Vec<String>,
     pub dependencies: Vec<ModDependency>,
     pub path: String,
     pub source: String,
@@ -101,7 +103,8 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         let Some((name, package_id, description)) = parse_about_xml(&contents) else {
             continue;
         };
-        let (load_after, load_before) = parse_load_order_rules(&contents);
+        let parsed_rules = parse_about_rules(&contents);
+        let supported_versions = parse_xml_list(&contents, "supportedVersions");
         let dependencies = parse_mod_dependencies(&contents);
         let published_file_id = published_file_id(&mod_path);
 
@@ -110,8 +113,10 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             package_id,
             description,
             published_file_id,
-            load_after,
-            load_before,
+            load_after: parsed_rules.load_after,
+            load_before: parsed_rules.load_before,
+            incompatible_with: parsed_rules.incompatible_with,
+            supported_versions,
             dependencies,
             path: mod_path.to_string_lossy().into_owned(),
             source: source.to_string(),
@@ -227,29 +232,44 @@ fn valid_published_file_id(value: &str) -> Option<String> {
     (id > 0).then(|| value.to_string())
 }
 
-#[derive(Clone, Copy)]
-enum LoadOrderRule {
-    After,
-    Before,
+struct ParsedAboutRules {
+    load_after: Vec<String>,
+    load_before: Vec<String>,
+    incompatible_with: Vec<String>,
 }
 
-fn parse_load_order_rules(xml: &str) -> (Vec<String>, Vec<String>) {
+#[derive(Clone, Copy)]
+enum AboutRuleList {
+    After,
+    Before,
+    IncompatibleWith,
+}
+
+fn parse_about_rules(xml: &str) -> ParsedAboutRules {
     let mut reader = Reader::from_str(xml);
     let mut rule = None;
     let mut in_list_item = false;
     let mut item = String::new();
-    let mut load_after = Vec::new();
-    let mut load_before = Vec::new();
+    let mut parsed = ParsedAboutRules {
+        load_after: Vec::new(),
+        load_before: Vec::new(),
+        incompatible_with: Vec::new(),
+    };
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(element)) => {
                 let tag = element.local_name();
-                if tag.as_ref().eq_ignore_ascii_case("loadAfter") {
-                    rule = Some(LoadOrderRule::After);
+                rule = if tag.as_ref().eq_ignore_ascii_case("loadAfter") {
+                    Some(AboutRuleList::After)
                 } else if tag.as_ref().eq_ignore_ascii_case("loadBefore") {
-                    rule = Some(LoadOrderRule::Before);
-                } else if rule.is_some() && tag.as_ref().eq_ignore_ascii_case("li") {
+                    Some(AboutRuleList::Before)
+                } else if tag.as_ref().eq_ignore_ascii_case("incompatibleWith") {
+                    Some(AboutRuleList::IncompatibleWith)
+                } else {
+                    rule
+                };
+                if rule.is_some() && tag.as_ref().eq_ignore_ascii_case("li") {
                     in_list_item = true;
                     item.clear();
                 }
@@ -273,14 +293,22 @@ fn parse_load_order_rules(xml: &str) -> (Vec<String>, Vec<String>) {
                     let package_id = item.trim();
                     if !package_id.is_empty() {
                         match rule {
-                            Some(LoadOrderRule::After) => load_after.push(package_id.to_string()),
-                            Some(LoadOrderRule::Before) => load_before.push(package_id.to_string()),
+                            Some(AboutRuleList::After) => {
+                                parsed.load_after.push(package_id.to_string())
+                            }
+                            Some(AboutRuleList::Before) => {
+                                parsed.load_before.push(package_id.to_string())
+                            }
+                            Some(AboutRuleList::IncompatibleWith) => {
+                                parsed.incompatible_with.push(package_id.to_string())
+                            }
                             None => {}
                         }
                     }
                     in_list_item = false;
                 } else if tag.as_ref().eq_ignore_ascii_case("loadAfter")
                     || tag.as_ref().eq_ignore_ascii_case("loadBefore")
+                    || tag.as_ref().eq_ignore_ascii_case("incompatibleWith")
                 {
                     rule = None;
                 }
@@ -290,7 +318,66 @@ fn parse_load_order_rules(xml: &str) -> (Vec<String>, Vec<String>) {
         }
     }
 
-    (load_after, load_before)
+    parsed
+}
+
+fn parse_xml_list(xml: &str, container_name: &str) -> Vec<String> {
+    let mut reader = Reader::from_str(xml);
+    let mut depth = 0usize;
+    let mut container_depth = None;
+    let mut item_depth = None;
+    let mut item = String::new();
+    let mut values = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element)) => {
+                depth += 1;
+                let tag = element.local_name();
+                if tag.as_ref().eq_ignore_ascii_case(container_name) {
+                    container_depth = Some(depth);
+                } else if container_depth == Some(depth - 1)
+                    && tag.as_ref().eq_ignore_ascii_case("li")
+                {
+                    item_depth = Some(depth);
+                    item.clear();
+                }
+            }
+            Ok(Event::Text(text)) if item_depth.is_some() => {
+                let Ok(text) = quick_xml::escape::unescape(text.as_ref()) else {
+                    continue;
+                };
+                item.push_str(&text);
+            }
+            Ok(Event::GeneralRef(reference)) if item_depth.is_some() => {
+                let entity = format!("&{};", reference.as_ref());
+                let Ok(text) = quick_xml::escape::unescape(&entity) else {
+                    continue;
+                };
+                item.push_str(&text);
+            }
+            Ok(Event::End(element)) => {
+                let tag = element.local_name();
+                if item_depth == Some(depth) && tag.as_ref().eq_ignore_ascii_case("li") {
+                    let value = item.trim();
+                    if !value.is_empty() {
+                        values.push(value.to_string());
+                    }
+                    item_depth = None;
+                }
+                if container_depth == Some(depth)
+                    && tag.as_ref().eq_ignore_ascii_case(container_name)
+                {
+                    container_depth = None;
+                }
+                depth = depth.saturating_sub(1);
+            }
+            Ok(Event::Eof) | Err(_) => break,
+            _ => {}
+        }
+    }
+
+    values
 }
 
 #[derive(Clone, Copy)]
@@ -461,13 +548,14 @@ fn parses_mod_dependencies_with_nested_alternative_ids() {
 }
 
 #[test]
-fn parses_load_after_and_load_before_list_items() {
-    let (load_after, load_before) = parse_load_order_rules(
-            "<ModMetaData><loadAfter><li>Author.Framework</li></loadAfter><loadBefore><li>Author.Patch</li></loadBefore></ModMetaData>",
-        );
+fn parses_about_order_incompatibility_and_supported_version_lists() {
+    let xml = "<ModMetaData><loadAfter><li>Author.Framework</li></loadAfter><loadBefore><li>Author.Patch</li></loadBefore><incompatibleWith><li>Author.Conflict</li></incompatibleWith><supportedVersions><li>1.5</li><li>1.6</li></supportedVersions></ModMetaData>";
+    let rules = parse_about_rules(xml);
 
-    assert_eq!(load_after, vec!["Author.Framework"]);
-    assert_eq!(load_before, vec!["Author.Patch"]);
+    assert_eq!(rules.load_after, ["Author.Framework"]);
+    assert_eq!(rules.load_before, ["Author.Patch"]);
+    assert_eq!(rules.incompatible_with, ["Author.Conflict"]);
+    assert_eq!(parse_xml_list(xml, "supportedVersions"), ["1.5", "1.6"]);
 }
 
 #[cfg(all(test, target_os = "windows"))]

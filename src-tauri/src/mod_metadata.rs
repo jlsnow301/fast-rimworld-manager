@@ -181,6 +181,8 @@ mod tests {
             published_file_id: published_file_id.map(str::to_string),
             load_after: Vec::new(),
             load_before: Vec::new(),
+            incompatible_with: Vec::new(),
+            supported_versions: Vec::new(),
             dependencies: Vec::new(),
             path: String::new(),
             source: "workshop".to_string(),

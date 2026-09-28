@@ -10,10 +10,11 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { normalizedPackageId } from '../../utils/mods';
 import { useAppContext } from '../../context/app-context';
+import type { ModIssue } from '../../utils/types';
 export function ModPreviewFeature() {
 	const {
+		activeModDiagnostics,
 		closeModPreview,
-		modHighlights,
 		previewMessage,
 		selectedMod,
 		steamPreview,
@@ -23,15 +24,9 @@ export function ModPreviewFeature() {
 	const lastUpdated = steamPreview?.timeUpdated
 		? new Date(steamPreview.timeUpdated * 1000).toLocaleString()
 		: null;
-	const highlights = modHighlights.get(
+	const diagnostics = activeModDiagnostics.byPackageId.get(
 		normalizedPackageId(selectedMod.packageId),
 	);
-	const missingDependencyNames = highlights?.missingDependencies
-		.map((dependency) => dependency.name)
-		.join(', ');
-	const loadOrderDetails = highlights?.loadOrderViolations
-		.map(({ relation, packageId }) => `Should load ${relation} ${packageId}`)
-		.join('. ');
 
 	return (
 		<Card className='mt-4'>
@@ -66,37 +61,25 @@ export function ModPreviewFeature() {
 						</div>
 					)}
 				</dl>
-				{(missingDependencyNames || loadOrderDetails) && (
-					<>
-						<Separator />
-						<section
-							aria-label='Mod compatibility checks'
-							className='flex flex-col gap-2'
-						>
-							<h4 className='font-semibold'>Mod compatibility checks</h4>
-							{missingDependencyNames && (
-								<div className='flex flex-col gap-1'>
-									<Badge className='self-start' variant='destructive'>
-										Missing dependencies
-									</Badge>
-									<p className='text-sm text-muted-foreground'>
-										{missingDependencyNames}
-									</p>
-								</div>
-							)}
-							{loadOrderDetails && (
-								<div className='flex flex-col gap-1'>
-									<Badge className='self-start' variant='outline'>
-										Load order
-									</Badge>
-									<p className='text-sm text-muted-foreground'>
-										{loadOrderDetails}
-									</p>
-								</div>
-							)}
-						</section>
-					</>
-				)}
+				{diagnostics &&
+					(diagnostics.errors.length > 0 || diagnostics.warnings.length > 0) &&
+					(
+						<>
+							<Separator />
+							<section
+								aria-label='Active mod list errors and warnings'
+								className='flex flex-col gap-3'
+							>
+								<h4 className='font-semibold'>Active mod list checks</h4>
+								{diagnostics.errors.map((issue) => (
+									<IssueDetails issue={issue} key={`error-${issue.code}`} />
+								))}
+								{diagnostics.warnings.map((issue) => (
+									<IssueDetails issue={issue} key={`warning-${issue.code}`} />
+								))}
+							</section>
+						</>
+					)}
 				{selectedMod.description && (
 					<>
 						<Separator />
@@ -139,5 +122,26 @@ export function ModPreviewFeature() {
 				</p>
 			</CardContent>
 		</Card>
+	);
+}
+
+type IssueDetailsProps = {
+	issue: ModIssue;
+};
+
+function IssueDetails(props: IssueDetailsProps) {
+	const { issue } = props;
+	return (
+		<div className='flex flex-col gap-1'>
+			<Badge
+				className='self-start'
+				variant={issue.severity === 'error' ? 'destructive' : 'outline'}
+			>
+				{issue.title}
+			</Badge>
+			<ul className='list-inside list-disc text-sm text-muted-foreground'>
+				{issue.details.map((detail) => <li key={detail}>{detail}</li>)}
+			</ul>
+		</div>
 	);
 }

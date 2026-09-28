@@ -35,7 +35,7 @@ export function ModListFeature() {
 		inactiveMods,
 		inactiveSearch,
 		modDetailsByPackageId,
-		modHighlights,
+		activeModDiagnostics,
 		moveMod,
 		sortMods,
 		selectMod,
@@ -76,6 +76,35 @@ export function ModListFeature() {
 			<p className='mb-3 text-sm text-muted-foreground'>
 				Drag mods between the lists to change activation.
 			</p>
+			<p
+				aria-live='polite'
+				className='mb-3 flex flex-wrap items-center gap-2 text-sm'
+				role={activeModDiagnostics.errorCount ? 'alert' : 'status'}
+			>
+				<span>Active mod list checks:</span>
+				{!hasModList
+					? <Badge variant='secondary'>No active list loaded</Badge>
+					: activeModDiagnostics.errorCount > 0
+					? (
+						<Badge variant='destructive'>
+							{activeModDiagnostics.errorCount} mods with errors
+						</Badge>
+					)
+					: <Badge variant='secondary'>No errors</Badge>}
+				{activeModDiagnostics.warningCount > 0 && (
+					<Badge variant='outline'>
+						{activeModDiagnostics.warningCount} mods with warnings
+					</Badge>
+				)}
+				{hasModList &&
+					(activeModDiagnostics.errorCount > 0 ||
+						activeModDiagnostics.warningCount > 0) &&
+					(
+						<span className='text-muted-foreground'>
+							Select a highlighted mod for details.
+						</span>
+					)}
+			</p>
 			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 				<ModListPanel
 					count={activeMods.length}
@@ -83,7 +112,7 @@ export function ModListFeature() {
 						? 'No active mods.'
 						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
 					mods={visibleActiveMods}
-					modHighlights={modHighlights}
+					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -96,7 +125,7 @@ export function ModListFeature() {
 					count={inactiveMods.length}
 					emptyMessage='No inactive mods found. Configure paths in Settings.'
 					mods={visibleInactiveMods}
-					modHighlights={modHighlights}
+					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
 					modDetailsByPackageId={modDetailsByPackageId}
 					onDropMod={moveMod}
 					onSelectMod={selectMod}
@@ -118,7 +147,7 @@ type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
-	modHighlights: ReadonlyMap<string, ModHighlightState>;
+	activeDiagnosticsByPackageId: ReadonlyMap<string, ModHighlightState>;
 	mods: VisibleMod[];
 	onSelectMod: (packageId: string) => void;
 	onDropMod: (
@@ -136,7 +165,7 @@ function ModListPanel({
 	count,
 	emptyMessage,
 	modDetailsByPackageId,
-	modHighlights,
+	activeDiagnosticsByPackageId,
 	mods,
 	onSelectMod,
 	onDropMod,
@@ -189,35 +218,34 @@ function ModListPanel({
 							const mod = modDetailsByPackageId.get(
 								normalizedPackageId(packageId),
 							);
-							const highlights = type === 'active'
-								? modHighlights.get(normalizedPackageId(packageId))
-								: undefined;
-							const missingDependencyNames = highlights?.missingDependencies
-								.map((dependency) => dependency.name)
-								.join(', ');
-							const orderViolationLabels = highlights?.loadOrderViolations
-								.map(({ relation, packageId: targetPackageId }) =>
-									`load ${relation} ${targetPackageId}`
+							const diagnostics = type === 'active'
+								? activeDiagnosticsByPackageId.get(
+									normalizedPackageId(packageId),
 								)
-								.join(', ');
-							const warningLabel = [
-								missingDependencyNames &&
-								`Missing dependencies: ${missingDependencyNames}`,
-								orderViolationLabels &&
-								`Load-order violations: ${orderViolationLabels}`,
+								: undefined;
+							const errorDetails = diagnostics?.errors
+								.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
+								.join('. ');
+							const warningDetails = diagnostics?.warnings
+								.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
+								.join('. ');
+							const accessibleIssues = [
+								errorDetails && `Errors: ${errorDetails}`,
+								warningDetails && `Warnings: ${warningDetails}`,
 							].filter(Boolean).join('. ');
 
 							return (
 								<Fragment key={`${packageId}-${index}`}>
 									<Button
 										aria-label={`Show details for ${mod?.name ?? packageId}${
-											warningLabel ? `. ${warningLabel}` : ''
+											accessibleIssues ? `. ${accessibleIssues}` : ''
 										}`}
 										className={cn(
 											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal cursor-grab active:cursor-grabbing',
-											missingDependencyNames &&
+											diagnostics?.errors.length &&
 												'border-l-2 border-destructive',
-											!missingDependencyNames && orderViolationLabels &&
+											!diagnostics?.errors.length &&
+												diagnostics?.warnings.length &&
 												'border-l-2 border-muted-foreground',
 										)}
 										draggable
@@ -241,22 +269,24 @@ function ModListPanel({
 													<Badge variant='outline'>{mod.source}</Badge>
 												</span>
 											)}
-											{missingDependencyNames && (
+											{diagnostics?.errors.map((issue) => (
 												<Badge
-													title={missingDependencyNames}
+													key={issue.code}
+													title={issue.details.join(', ')}
 													variant='destructive'
 												>
-													Missing dependencies
+													{issue.title}
 												</Badge>
-											)}
-											{orderViolationLabels && (
+											))}
+											{diagnostics?.warnings.map((issue) => (
 												<Badge
-													title={orderViolationLabels}
+													key={issue.code}
+													title={issue.details.join(', ')}
 													variant='outline'
 												>
-													Load order
+													{issue.title}
 												</Badge>
-											)}
+											))}
 										</span>
 									</Button>
 									{modIndex < mods.length - 1 && <Separator />}

@@ -25,6 +25,12 @@ Steam Workshop database, and load-order violations from `About.xml` or Community
 Rules. Selecting a highlighted mod shows the missing dependency names and the
 required relative order. Updating either database refreshes the highlights.
 
+The active-list checks report missing installed mods, duplicate active IDs,
+unmet `About.xml` or SteamDB dependencies, and active `incompatibleWith` pairs
+as errors. Community and About load-order violations and game-version mismatches
+are warnings. A summary shows affected mod counts, rows show severity badges,
+and each installed mod's details list the relevant package IDs.
+
 At startup, the app reads active IDs from the configured `ModsConfig.xml` and
 scans the configured game `Data`, local mods, and Steam Workshop folders for
 `About/About.xml`. Discovered mods appear in the active or inactive list; rows

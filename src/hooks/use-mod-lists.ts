@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { createActiveModHighlights } from '../utils/mod_highlights';
+import { createActiveModDiagnostics } from '../utils/mod_highlights';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import { useState } from 'react';
 import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
@@ -161,9 +161,10 @@ export function useModLists(setStatus: (message: string) => void) {
 		const key = normalizedPackageId(mod.packageId);
 		if (!modDetailsByPackageId.has(key)) modDetailsByPackageId.set(key, mod);
 	}
-	const modHighlights = createActiveModHighlights(
+	const activeModDiagnostics = createActiveModDiagnostics(
 		activeMods,
 		modDetailsByPackageId,
+		gameVersion,
 	);
 	const visibleMods = (mods: string[], search: string): VisibleMod[] =>
 		mods
@@ -184,7 +185,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		initialize,
 		importModList,
 		modDetailsByPackageId,
-		modHighlights,
+		activeModDiagnostics,
 		moveMod,
 		refreshInstalledMods,
 		setActiveSearch,
