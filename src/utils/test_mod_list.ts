@@ -1,0 +1,94 @@
+import type { InstalledMod, ModListFile } from './types';
+
+type TestModListFixture = {
+	installedMods: InstalledMod[];
+	modList: ModListFile;
+};
+
+export const TEST_MOD_LIST: TestModListFixture = {
+	installedMods: [
+		{
+			name: 'Core',
+			packageId: 'ludeon.rimworld',
+			description: 'Base game content used by the sample list.',
+			publishedFileId: null,
+			loadAfter: [],
+			loadBefore: [],
+			incompatibleWith: [],
+			supportedVersions: ['1.6'],
+			path: 'Sample data/Core',
+			source: 'game',
+			dependencies: [],
+		},
+		{
+			name: 'Harmony',
+			packageId: 'brrainz.harmony',
+			description: 'A sample framework mod.',
+			publishedFileId: null,
+			loadAfter: ['ludeon.rimworld'],
+			loadBefore: [],
+			incompatibleWith: [],
+			supportedVersions: ['1.6'],
+			path: 'Sample data/Mods/Harmony',
+			source: 'local',
+			dependencies: [],
+		},
+		{
+			name: 'Sample Framework',
+			packageId: 'sample.framework',
+			description:
+				'Drag this framework into Active to resolve the sample dependency warning.',
+			publishedFileId: null,
+			loadAfter: ['brrainz.harmony'],
+			loadBefore: ['sample.vehiclemod'],
+			incompatibleWith: [],
+			supportedVersions: ['1.6'],
+			path: 'Sample data/Mods/SampleFramework',
+			source: 'local',
+			dependencies: [],
+		},
+		{
+			name: 'Sample Vehicle Mod',
+			packageId: 'sample.vehiclemod',
+			description:
+				'This sample intentionally has a missing framework dependency. Use it to exercise active-mod diagnostics.',
+			publishedFileId: null,
+			loadAfter: ['sample.framework'],
+			loadBefore: [],
+			incompatibleWith: [],
+			supportedVersions: ['1.6'],
+			path: 'Sample data/Mods/SampleVehicleMod',
+			source: 'local',
+			dependencies: [
+				{
+					packageId: 'sample.framework',
+					name: 'Sample Framework',
+					alternativePackageIds: [],
+				},
+			],
+		},
+		{
+			name: 'Sample Patch Pack',
+			packageId: 'sample.patchpack',
+			description:
+				'A second inactive sample mod for search and drag-and-drop testing.',
+			publishedFileId: null,
+			loadAfter: ['sample.vehiclemod'],
+			loadBefore: [],
+			incompatibleWith: [],
+			supportedVersions: ['1.6'],
+			path: 'Sample data/Mods/SamplePatchPack',
+			source: 'local',
+			dependencies: [],
+		},
+	],
+	modList: {
+		version: '1.6',
+		activeMods: [
+			'ludeon.rimworld',
+			'brrainz.harmony',
+			'sample.vehiclemod',
+		],
+		knownExpansions: [],
+	},
+};

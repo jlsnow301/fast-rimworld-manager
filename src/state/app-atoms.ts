@@ -10,6 +10,7 @@ import type {
 	PathSettings,
 	SteamModPreview,
 } from '../utils/types';
+import { TEST_MOD_LIST } from '../utils/test_mod_list';
 
 export const settingsOpenAtom = atom(false);
 export const pathSettingsAtom = atom<PathSettings>(EMPTY_PATH_SETTINGS);
@@ -41,6 +42,87 @@ export const inactiveSearchAtom = atom('');
 export const savedSnapshotAtom = atom<ModListSnapshot>(
 	createModListSnapshot('1.4', [], []),
 );
+
+type TestModeBackup = {
+	installedMods: InstalledMod[];
+	activeMods: string[];
+	inactiveMods: string[];
+	knownExpansions: string[];
+	gameVersion: string;
+	sourceName: string;
+	savedSnapshot: ModListSnapshot;
+	activeSearch: string;
+	inactiveSearch: string;
+};
+
+export const isTestModeAtom = atom(false);
+const testModeBackupAtom = atom<TestModeBackup | null>(null);
+
+export const toggleTestModeAtom = atom(null, (get, set) => {
+	const backup = get(testModeBackupAtom);
+	if (get(isTestModeAtom) && backup) {
+		set(installedModsAtom, backup.installedMods);
+		set(activeModsAtom, backup.activeMods);
+		set(inactiveModsAtom, backup.inactiveMods);
+		set(knownExpansionsAtom, backup.knownExpansions);
+		set(gameVersionAtom, backup.gameVersion);
+		set(sourceNameAtom, backup.sourceName);
+		set(savedSnapshotAtom, backup.savedSnapshot);
+		set(activeSearchAtom, backup.activeSearch);
+		set(inactiveSearchAtom, backup.inactiveSearch);
+		set(testModeBackupAtom, null);
+		set(isTestModeAtom, false);
+		set(selectedModAtom, null);
+		set(steamPreviewAtom, null);
+		set(previewMessageAtom, '');
+		set(statusAtom, 'Exited test mode and restored the previous mod list.');
+		return;
+	}
+
+	if (get(isTestModeAtom)) return;
+	set(testModeBackupAtom, {
+		installedMods: get(installedModsAtom),
+		activeMods: get(activeModsAtom),
+		inactiveMods: get(inactiveModsAtom),
+		knownExpansions: get(knownExpansionsAtom),
+		gameVersion: get(gameVersionAtom),
+		sourceName: get(sourceNameAtom),
+		savedSnapshot: get(savedSnapshotAtom),
+		activeSearch: get(activeSearchAtom),
+		inactiveSearch: get(inactiveSearchAtom),
+	});
+	set(installedModsAtom, TEST_MOD_LIST.installedMods);
+	set(activeModsAtom, [...TEST_MOD_LIST.modList.activeMods]);
+	set(
+		inactiveModsAtom,
+		TEST_MOD_LIST.installedMods
+			.filter((mod) =>
+				!TEST_MOD_LIST.modList.activeMods.includes(mod.packageId)
+			)
+			.map((mod) => mod.packageId),
+	);
+	set(knownExpansionsAtom, [...TEST_MOD_LIST.modList.knownExpansions]);
+	set(gameVersionAtom, TEST_MOD_LIST.modList.version);
+	set(sourceNameAtom, 'Sample test mod list');
+	set(
+		savedSnapshotAtom,
+		createModListSnapshot(
+			TEST_MOD_LIST.modList.version,
+			TEST_MOD_LIST.modList.activeMods,
+			TEST_MOD_LIST.modList.knownExpansions,
+		),
+	);
+	set(activeSearchAtom, '');
+	set(inactiveSearchAtom, '');
+	set(isTestModeAtom, true);
+	set(selectedModAtom, null);
+	set(steamPreviewAtom, null);
+	set(previewMessageAtom, '');
+	set(
+		statusAtom,
+		'Test mode loaded. Changes stay in memory and cannot be saved to RimWorld.',
+	);
+});
 
 export const modDetailsByPackageIdAtom = atom((get) => {
 	const modDetailsByPackageId = new Map<string, InstalledMod>();

@@ -1,19 +1,27 @@
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
 	hasModListAtom,
 	isModListDirtyAtom,
+	isTestModeAtom,
 	settingsOpenAtom,
 	sourceNameAtom,
+	toggleTestModeAtom,
 } from '../../state/app-atoms';
 import { useAppContext } from '../../context/app-context';
 export function AppHeader() {
-	const { importModList, toggleSettings, saveModList } = useAppContext();
+	const {
+		importModList,
+		toggleSettings,
+		saveModList,
+	} = useAppContext();
 	const hasModList = useAtomValue(hasModListAtom);
 	const isModListDirty = useAtomValue(isModListDirtyAtom);
+	const isTestMode = useAtomValue(isTestModeAtom);
 	const settingsOpen = useAtomValue(settingsOpenAtom);
 	const sourceName = useAtomValue(sourceNameAtom);
+	const toggleTestMode = useSetAtom(toggleTestModeAtom);
 
 	return (
 		<header className='flex items-center justify-between gap-4 border-b px-5 py-3'>
@@ -25,12 +33,14 @@ export function AppHeader() {
 			</div>
 			<div className='flex items-center gap-2'>
 				<Badge variant='outline'>{sourceName || 'No mod list loaded'}</Badge>
+				{isTestMode && <Badge variant='secondary'>TEST MODE</Badge>}
 				{isModListDirty && (
 					<Badge variant='secondary' aria-live='polite'>Unsaved changes</Badge>
 				)}
 				<Button
 					variant='outline'
 					size='sm'
+					disabled={isTestMode}
 					onClick={importModList}
 				>
 					Import list
@@ -38,10 +48,18 @@ export function AppHeader() {
 				<Button
 					variant='outline'
 					size='sm'
-					disabled={!hasModList}
+					disabled={!hasModList || isTestMode}
 					onClick={saveModList}
 				>
 					Save to RimWorld
+				</Button>
+				<Button
+					variant={isTestMode ? 'secondary' : 'outline'}
+					size='sm'
+					aria-pressed={isTestMode}
+					onClick={() => toggleTestMode()}
+				>
+					{isTestMode ? 'Exit test mode' : 'Load sample list'}
 				</Button>
 				<Button
 					variant='outline'

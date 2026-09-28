@@ -1,0 +1,106 @@
+import { createStore } from 'jotai';
+import {
+	activeModDiagnosticsAtom,
+	activeModsAtom,
+	activeSearchAtom,
+	gameVersionAtom,
+	inactiveModsAtom,
+	inactiveSearchAtom,
+	installedModsAtom,
+	isModListDirtyAtom,
+	isTestModeAtom,
+	savedSnapshotAtom,
+	sourceNameAtom,
+	toggleTestModeAtom,
+} from './src/state/app-atoms.ts';
+import { createModListSnapshot } from './src/utils/dirty_state.ts';
+import { TEST_MOD_LIST } from './src/utils/test_mod_list.ts';
+import type { InstalledMod } from './src/utils/types.ts';
+
+function installedMod(packageId: string): InstalledMod {
+	return {
+		name: packageId,
+		packageId,
+		description: '',
+		publishedFileId: null,
+		loadAfter: [],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: [],
+		path: '',
+		source: 'local',
+		dependencies: [],
+	};
+}
+
+Deno.test('test mode loads sample mods and diagnostics without dirtying the list', () => {
+	const store = createStore();
+
+	store.set(toggleTestModeAtom);
+
+	if (!store.get(isTestModeAtom)) {
+		throw new Error('Test mode should become active.');
+	}
+	if (
+		store.get(installedModsAtom).length !== TEST_MOD_LIST.installedMods.length
+	) {
+		throw new Error('Test mode should expose the sample installed mods.');
+	}
+	if (store.get(activeModsAtom)[2] !== 'sample.vehiclemod') {
+		throw new Error('Test mode should load the sample active mod list.');
+	}
+	if (store.get(activeModDiagnosticsAtom).errorCount !== 1) {
+		throw new Error('The sample missing dependency should produce one error.');
+	}
+	if (store.get(isModListDirtyAtom)) {
+		throw new Error('The sample list should start from a clean snapshot.');
+	}
+});
+
+Deno.test('exiting test mode restores prior user list and search state', () => {
+	const store = createStore();
+	const originalInstalledMods = [installedMod('actual.mod')];
+	const originalActiveMods = ['actual.mod'];
+	const originalInactiveMods = ['actual.other'];
+	const originalSavedSnapshot = createModListSnapshot('1.5', [], []);
+	store.set(installedModsAtom, originalInstalledMods);
+	store.set(activeModsAtom, originalActiveMods);
+	store.set(inactiveModsAtom, originalInactiveMods);
+	store.set(gameVersionAtom, '1.5');
+	store.set(sourceNameAtom, 'ModsConfig.xml');
+	store.set(savedSnapshotAtom, originalSavedSnapshot);
+	store.set(activeSearchAtom, 'actual');
+	store.set(inactiveSearchAtom, 'other');
+
+	store.set(toggleTestModeAtom);
+	store.set(activeModsAtom, ['sample.framework']);
+	store.set(toggleTestModeAtom);
+
+	if (store.get(isTestModeAtom)) {
+		throw new Error('Test mode should become inactive.');
+	}
+	if (store.get(installedModsAtom) !== originalInstalledMods) {
+		throw new Error('The original installed mods should be restored.');
+	}
+	if (store.get(activeModsAtom) !== originalActiveMods) {
+		throw new Error('The original active list should be restored.');
+	}
+	if (store.get(inactiveModsAtom) !== originalInactiveMods) {
+		throw new Error('The original inactive list should be restored.');
+	}
+	if (
+		store.get(gameVersionAtom) !== '1.5' ||
+		store.get(sourceNameAtom) !== 'ModsConfig.xml'
+	) {
+		throw new Error('The original source and game version should be restored.');
+	}
+	if (
+		store.get(activeSearchAtom) !== 'actual' ||
+		store.get(inactiveSearchAtom) !== 'other'
+	) {
+		throw new Error('The original search queries should be restored.');
+	}
+	if (!store.get(isModListDirtyAtom)) {
+		throw new Error('The original dirty state should be restored.');
+	}
+});

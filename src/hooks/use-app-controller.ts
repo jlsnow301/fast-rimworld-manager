@@ -1,10 +1,11 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import {
 	closeModPreviewAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
+	isTestModeAtom,
 	pathSettingsAtom,
 	selectedModAtom,
 	settingsMessageAtom,
@@ -32,6 +33,7 @@ export function useAppController() {
 	const [, setStatus] = useAtom(statusAtom);
 	const setSelectedMod = useSetAtom(selectedModAtom);
 	const closeModPreview = useSetAtom(closeModPreviewAtom);
+	const isTestMode = useAtomValue(isTestModeAtom);
 	const modLists = useModLists(setStatus);
 	useSteamPreview();
 
@@ -206,6 +208,10 @@ export function useAppController() {
 	}
 
 	async function saveModList() {
+		if (isTestMode) {
+			setStatus('Saving is disabled in test mode.');
+			return;
+		}
 		setStatus('Saving ModsConfig.xml…');
 		const snapshot = {
 			version: modLists.gameVersion,

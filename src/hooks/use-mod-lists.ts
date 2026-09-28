@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useStore } from 'jotai';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import { getInactivePackageIds } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
@@ -23,6 +23,7 @@ import {
 	inactiveSearchAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
+	isTestModeAtom,
 	knownExpansionsAtom,
 	modDetailsByPackageIdAtom,
 	savedSnapshotAtom,
@@ -32,6 +33,7 @@ import {
 } from '../state/app-atoms';
 
 export function useModLists(setStatus: (message: string) => void) {
+	const store = useStore();
 	const [installedMods, setInstalledMods] = useAtom(installedModsAtom);
 	const [activeMods, setActiveMods] = useAtom(activeModsAtom);
 	const [inactiveMods, setInactiveMods] = useAtom(inactiveModsAtom);
@@ -49,6 +51,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		modsError: unknown,
 		configPathConfigured: boolean,
 	) {
+		if (store.get(isTestModeAtom)) return;
 		setSavedSnapshot(createModListSnapshot('1.4', [], []));
 		setInstalledMods(foundMods);
 		setActiveMods([]);
@@ -92,6 +95,7 @@ export function useModLists(setStatus: (message: string) => void) {
 	}
 
 	function refreshInstalledMods(foundMods: InstalledMod[]) {
+		if (store.get(isTestModeAtom)) return;
 		setInstalledMods(foundMods);
 		setInactiveMods(getInactivePackageIds(foundMods, activeMods));
 	}
@@ -120,6 +124,7 @@ export function useModLists(setStatus: (message: string) => void) {
 				'load_mod_list_file',
 				{ path },
 			);
+			if (store.get(isTestModeAtom)) return;
 			const parsed = applyModList(imported.contents, imported.fileName);
 			setStatus(
 				`Loaded ${parsed.activeMods.length} active mods from ${imported.fileName}.`,
