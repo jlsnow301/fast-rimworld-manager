@@ -1,15 +1,18 @@
 {
-  "fmt": {
-    "useTabs": true,
-    "singleQuote": true,
-    "json.trailingCommas": "jsonc"
-  },
-  "lint": {
-    "rules":{
-    "exclude": [
-      "no-sloppy-imports",
-      "jsx-button-has-type"
-    ]
-  }
-  }
+	"fmt": {
+		"useTabs": true,
+		"singleQuote": true,
+		"json.trailingCommas": "jsonc"
+	},
+	"tasks": {
+		"test": "deno test --allow-env=NODE_ENV"
+	},
+	"lint": {
+		"rules": {
+			"exclude": [
+				"no-sloppy-imports",
+				"jsx-button-has-type"
+			]
+		}
+	}
 }

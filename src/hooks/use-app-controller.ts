@@ -1,6 +1,17 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { useEffect, useState } from 'react';
-import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
+import { useAtom, useSetAtom } from 'jotai';
+import { useEffect } from 'react';
+import {
+	closeModPreviewAtom,
+	databaseMessageAtom,
+	downloadingDatabaseAtom,
+	pathSettingsAtom,
+	selectedModAtom,
+	settingsMessageAtom,
+	settingsOpenAtom,
+	statusAtom,
+} from '../state/app-atoms';
+import { normalizedPackageId } from '../utils/mods';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import type {
 	DatabaseDownloadResult,
@@ -13,25 +24,16 @@ import { useModLists } from './use-mod-lists';
 import { useSteamPreview } from './use-steam-preview';
 
 export function useAppController() {
-	const [settingsOpen, setSettingsOpen] = useState(false);
-	const [pathSettings, setPathSettings] = useState<PathSettings>(
-		EMPTY_PATH_SETTINGS,
-	);
-	const [settingsMessage, setSettingsMessage] = useState(
-		'Loading saved paths.',
-	);
-	const [databaseMessage, setDatabaseMessage] = useState(
-		'Databases are saved in the app data folder.',
-	);
-	const [downloadingDatabase, setDownloadingDatabase] = useState<
-		DatabaseKind | null
-	>(null);
-	const [status, setStatus] = useState(
-		'Waiting for configured mods. Set the RimWorld paths in Settings.',
-	);
-	const [selectedMod, setSelectedMod] = useState<InstalledMod | null>(null);
+	const [, setSettingsOpen] = useAtom(settingsOpenAtom);
+	const [pathSettings, setPathSettings] = useAtom(pathSettingsAtom);
+	const [, setSettingsMessage] = useAtom(settingsMessageAtom);
+	const [, setDatabaseMessage] = useAtom(databaseMessageAtom);
+	const [, setDownloadingDatabase] = useAtom(downloadingDatabaseAtom);
+	const [, setStatus] = useAtom(statusAtom);
+	const setSelectedMod = useSetAtom(selectedModAtom);
+	const closeModPreview = useSetAtom(closeModPreviewAtom);
 	const modLists = useModLists(setStatus);
-	const { previewMessage, steamPreview } = useSteamPreview(selectedMod);
+	useSteamPreview();
 
 	useEffect(() => {
 		let cancelled = false;
@@ -242,26 +244,18 @@ export function useAppController() {
 	}
 
 	return {
-		...modLists,
-		databaseMessage,
-		downloadDatabase,
-		downloadingDatabase,
-		browsePath,
-		autoDetectPaths,
-		closeModPreview: () => setSelectedMod(null),
-		pathSettings,
-		previewMessage,
+		importModList: modLists.importModList,
+		moveMod: modLists.moveMod,
 		saveModList,
-		savePathSettings,
-		selectedMod,
-		selectMod,
-		settingsMessage,
-		settingsOpen,
-		status,
-		steamPreview,
 		toggleSettings,
+		autoDetectPaths,
+		browsePath,
+		downloadDatabase,
+		savePathSettings,
 		updatePath,
+		closeModPreview,
 		sortMods,
+		selectMod,
 	};
 }
 

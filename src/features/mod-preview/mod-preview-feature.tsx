@@ -1,3 +1,4 @@
+import { useAtomValue } from 'jotai';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,17 +9,22 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { normalizedPackageId } from '../../utils/mods';
 import { useAppContext } from '../../context/app-context';
+import {
+	activeModDiagnosticsAtom,
+	previewMessageAtom,
+	selectedModAtom,
+	steamPreviewAtom,
+} from '../../state/app-atoms';
+import { normalizedPackageId } from '../../utils/mods';
 import type { ModIssue } from '../../utils/types';
+
 export function ModPreviewFeature() {
-	const {
-		activeModDiagnostics,
-		closeModPreview,
-		previewMessage,
-		selectedMod,
-		steamPreview,
-	} = useAppContext();
+	const { closeModPreview } = useAppContext();
+	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
+	const previewMessage = useAtomValue(previewMessageAtom);
+	const selectedMod = useAtomValue(selectedModAtom);
+	const steamPreview = useAtomValue(steamPreviewAtom);
 	if (!selectedMod) return null;
 
 	const lastUpdated = steamPreview?.timeUpdated

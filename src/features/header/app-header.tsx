@@ -1,16 +1,19 @@
+import { useAtomValue } from 'jotai';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	hasModListAtom,
+	isModListDirtyAtom,
+	settingsOpenAtom,
+	sourceNameAtom,
+} from '../../state/app-atoms';
 import { useAppContext } from '../../context/app-context';
 export function AppHeader() {
-	const {
-		hasModList,
-		isModListDirty,
-		importModList,
-		settingsOpen,
-		sourceName,
-		toggleSettings,
-		saveModList,
-	} = useAppContext();
+	const { importModList, toggleSettings, saveModList } = useAppContext();
+	const hasModList = useAtomValue(hasModListAtom);
+	const isModListDirty = useAtomValue(isModListDirtyAtom);
+	const settingsOpen = useAtomValue(settingsOpenAtom);
+	const sourceName = useAtomValue(sourceNameAtom);
 
 	return (
 		<header className='flex items-center justify-between gap-4 border-b px-5 py-3'>

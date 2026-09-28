@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useAtom } from 'jotai';
+import { useEffect } from 'react';
 import { invokeDesktop } from '../utils/tauri';
-import type { InstalledMod, SteamModPreview } from '../utils/types';
+import type { SteamModPreview } from '../utils/types';
+import {
+	previewMessageAtom,
+	selectedModAtom,
+	steamPreviewAtom,
+} from '../state/app-atoms';
 
-export function useSteamPreview(selectedMod: InstalledMod | null) {
-	const [steamPreview, setSteamPreview] = useState<SteamModPreview | null>(
-		null,
-	);
-	const [previewMessage, setPreviewMessage] = useState('');
+export function useSteamPreview() {
+	const [selectedMod] = useAtom(selectedModAtom);
+	const [steamPreview, setSteamPreview] = useAtom(steamPreviewAtom);
+	const [previewMessage, setPreviewMessage] = useAtom(previewMessageAtom);
 
 	useEffect(() => {
 		if (!selectedMod) return;

@@ -1,4 +1,18 @@
 import { type DragEvent as ReactDragEvent, Fragment } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import {
+	activeModDiagnosticsAtom,
+	activeModsAtom,
+	activeSearchAtom,
+	gameVersionAtom,
+	hasModListAtom,
+	inactiveModsAtom,
+	inactiveSearchAtom,
+	modDetailsByPackageIdAtom,
+	statusAtom,
+	visibleActiveModsAtom,
+	visibleInactiveModsAtom,
+} from '../../state/app-atoms';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,24 +43,20 @@ import type {
 import { ModPreviewFeature } from '../mod-preview/mod-preview-feature';
 
 export function ModListFeature() {
-	const {
-		activeMods,
-		activeSearch,
-		inactiveMods,
-		inactiveSearch,
-		modDetailsByPackageId,
-		activeModDiagnostics,
-		moveMod,
-		sortMods,
-		selectMod,
-		setActiveSearch,
-		setInactiveSearch,
-		status,
-		visibleActiveMods,
-		visibleInactiveMods,
-		gameVersion,
-		hasModList,
-	} = useAppContext();
+	const { moveMod, sortMods, selectMod } = useAppContext();
+	const activeMods = useAtomValue(activeModsAtom);
+	const activeSearch = useAtomValue(activeSearchAtom);
+	const inactiveMods = useAtomValue(inactiveModsAtom);
+	const inactiveSearch = useAtomValue(inactiveSearchAtom);
+	const modDetailsByPackageId = useAtomValue(modDetailsByPackageIdAtom);
+	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
+	const setActiveSearch = useSetAtom(activeSearchAtom);
+	const setInactiveSearch = useSetAtom(inactiveSearchAtom);
+	const status = useAtomValue(statusAtom);
+	const visibleActiveMods = useAtomValue(visibleActiveModsAtom);
+	const visibleInactiveMods = useAtomValue(visibleInactiveModsAtom);
+	const gameVersion = useAtomValue(gameVersionAtom);
+	const hasModList = useAtomValue(hasModListAtom);
 
 	return (
 		<section className='mx-auto w-full max-w-7xl p-6'>

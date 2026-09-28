@@ -1,14 +1,11 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { createActiveModDiagnostics } from '../utils/mod_highlights';
+import { useAtom, useAtomValue } from 'jotai';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
-import { useState } from 'react';
-import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
+import { getInactivePackageIds } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
 import { parseModsConfig } from '../utils/mods_config';
-import { filterVisibleMods } from '../utils/mod_search';
 import {
 	createModListSnapshot,
-	hasModListChanges,
 	type ModListSnapshot,
 } from '../utils/dirty_state';
 import type {
@@ -16,19 +13,34 @@ import type {
 	InstalledMod,
 	ModListType,
 } from '../utils/types';
+import {
+	activeModDiagnosticsAtom,
+	activeModsAtom,
+	activeSearchAtom,
+	gameVersionAtom,
+	hasModListAtom,
+	inactiveModsAtom,
+	inactiveSearchAtom,
+	installedModsAtom,
+	isModListDirtyAtom,
+	knownExpansionsAtom,
+	modDetailsByPackageIdAtom,
+	savedSnapshotAtom,
+	sourceNameAtom,
+	visibleActiveModsAtom,
+	visibleInactiveModsAtom,
+} from '../state/app-atoms';
 
 export function useModLists(setStatus: (message: string) => void) {
-	const [installedMods, setInstalledMods] = useState<InstalledMod[]>([]);
-	const [activeMods, setActiveMods] = useState<string[]>([]);
-	const [inactiveMods, setInactiveMods] = useState<string[]>([]);
-	const [knownExpansions, setKnownExpansions] = useState<string[]>([]);
-	const [gameVersion, setGameVersion] = useState('1.4');
-	const [sourceName, setSourceName] = useState('');
-	const [activeSearch, setActiveSearch] = useState('');
-	const [inactiveSearch, setInactiveSearch] = useState('');
-	const [savedSnapshot, setSavedSnapshot] = useState(() =>
-		createModListSnapshot('1.4', [], [])
-	);
+	const [installedMods, setInstalledMods] = useAtom(installedModsAtom);
+	const [activeMods, setActiveMods] = useAtom(activeModsAtom);
+	const [inactiveMods, setInactiveMods] = useAtom(inactiveModsAtom);
+	const [knownExpansions, setKnownExpansions] = useAtom(knownExpansionsAtom);
+	const [gameVersion, setGameVersion] = useAtom(gameVersionAtom);
+	const [sourceName, setSourceName] = useAtom(sourceNameAtom);
+	const [activeSearch, setActiveSearch] = useAtom(activeSearchAtom);
+	const [inactiveSearch, setInactiveSearch] = useAtom(inactiveSearchAtom);
+	const [, setSavedSnapshot] = useAtom(savedSnapshotAtom);
 
 	function initialize(
 		foundMods: InstalledMod[],
@@ -150,29 +162,18 @@ export function useModLists(setStatus: (message: string) => void) {
 			),
 		);
 	}
-	const isModListDirty = hasModListChanges(savedSnapshot, {
-		version: gameVersion,
-		activeMods,
-		knownExpansions,
-	});
-
-	const modDetailsByPackageId = new Map<string, InstalledMod>();
-	for (const mod of installedMods) {
-		const key = normalizedPackageId(mod.packageId);
-		if (!modDetailsByPackageId.has(key)) modDetailsByPackageId.set(key, mod);
-	}
-	const activeModDiagnostics = createActiveModDiagnostics(
-		activeMods,
-		modDetailsByPackageId,
-		gameVersion,
-	);
+	const isModListDirty = useAtomValue(isModListDirtyAtom);
+	const hasModList = useAtomValue(hasModListAtom);
+	const modDetailsByPackageId = useAtomValue(modDetailsByPackageIdAtom);
+	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
+	const visibleActiveMods = useAtomValue(visibleActiveModsAtom);
+	const visibleInactiveMods = useAtomValue(visibleInactiveModsAtom);
 	return {
 		activeMods,
 		activeSearch,
 		gameVersion,
 		knownExpansions,
-		hasModList: sourceName.length > 0 || activeMods.length > 0 ||
-			inactiveMods.length > 0,
+		hasModList,
 		inactiveMods,
 		inactiveSearch,
 		initialize,
@@ -184,16 +185,8 @@ export function useModLists(setStatus: (message: string) => void) {
 		setActiveSearch,
 		setInactiveSearch,
 		sourceName,
-		visibleActiveMods: filterVisibleMods(
-			activeMods,
-			modDetailsByPackageId,
-			activeSearch,
-		),
-		visibleInactiveMods: filterVisibleMods(
-			inactiveMods,
-			modDetailsByPackageId,
-			inactiveSearch,
-		),
+		visibleActiveMods,
+		visibleInactiveMods,
 		isModListDirty,
 		markModListSaved,
 		applySortedActiveMods,

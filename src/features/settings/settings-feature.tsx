@@ -8,6 +8,13 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useAtomValue } from 'jotai';
+import {
+	databaseMessageAtom,
+	downloadingDatabaseAtom,
+	pathSettingsAtom,
+	settingsMessageAtom,
+} from '../../state/app-atoms';
 import { useAppContext } from '../../context/app-context';
 import { PATH_FIELDS } from '../../utils/mods';
 import type { DatabaseKind, PathSettings } from '../../utils/types';
@@ -35,14 +42,14 @@ export function SettingsFeature() {
 	const {
 		autoDetectPaths,
 		browsePath,
-		databaseMessage,
 		downloadDatabase,
-		downloadingDatabase,
-		pathSettings,
 		savePathSettings,
-		settingsMessage,
 		updatePath,
 	} = useAppContext();
+	const databaseMessage = useAtomValue(databaseMessageAtom);
+	const downloadingDatabase = useAtomValue(downloadingDatabaseAtom);
+	const pathSettings = useAtomValue(pathSettingsAtom);
+	const settingsMessage = useAtomValue(settingsMessageAtom);
 
 	return (
 		<section className='mx-auto w-full max-w-5xl p-6'>
