@@ -10,7 +10,8 @@
     "npm:@tauri-apps/plugin-opener@^2.6.0": "2.6.0",
     "npm:@types/react-dom@^19.1.6": "19.2.3_@types+react@19.2.17",
     "npm:@types/react@^19.1.8": "19.2.17",
-    "npm:@vitejs/plugin-react@^6.0.2": "6.0.3_vite@8.1.0",
+    "npm:@vitejs/plugin-react@^6.0.2": "6.0.3_babel-plugin-react-compiler@1.0.0_vite@8.1.0",
+    "npm:babel-plugin-react-compiler@1": "1.0.0",
     "npm:class-variance-authority@~0.7.1": "0.7.1",
     "npm:cn@0.4": "0.4.0",
     "npm:jotai@3": "3.0.0_@types+react@19.2.17_react@19.2.7",
@@ -728,11 +729,15 @@
     "@types/validate-npm-package-name@4.0.2": {
       "integrity": "sha512-lrpDziQipxCEeK5kWxvljWYhUvOiB2A9izZd9B2AFarYAkqZshb4lPbRs7zKEic6eGtH8V/2qJW+dPp9OtF6bw=="
     },
-    "@vitejs/plugin-react@6.0.3_vite@8.1.0": {
+    "@vitejs/plugin-react@6.0.3_babel-plugin-react-compiler@1.0.0_vite@8.1.0": {
       "integrity": "sha512-vmFvco5/QuC2f9Oj+wTk0+9XeDFkHxSamwZKYc7MxYwKICfvUvlMhqKI0VuICPltGqh1neqBKDvO4kes1ya8vg==",
       "dependencies": [
         "@rolldown/pluginutils",
+        "babel-plugin-react-compiler",
         "vite"
+      ],
+      "optionalPeers": [
+        "babel-plugin-react-compiler"
       ]
     },
     "accepts@2.0.0": {
@@ -789,6 +794,12 @@
     },
     "atomically@1.7.0": {
       "integrity": "sha512-Xcz9l0z7y9yQ9rdDaxlmaI4uJHf/T8g9hOEzJcsEqX2SjCj4J20uK7+ldkDHMbpJDK76wF7xEIgxc/vSlsfw5w=="
+    },
+    "babel-plugin-react-compiler@1.0.0": {
+      "integrity": "sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==",
+      "dependencies": [
+        "@babel/types"
+      ]
     },
     "balanced-match@4.0.4": {
       "integrity": "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="
@@ -2339,6 +2350,7 @@
         "npm:@types/react-dom@^19.1.6",
         "npm:@types/react@^19.1.8",
         "npm:@vitejs/plugin-react@^6.0.2",
+        "npm:babel-plugin-react-compiler@1",
         "npm:class-variance-authority@~0.7.1",
         "npm:cn@0.4",
         "npm:jotai@3",
