@@ -12,6 +12,7 @@ import {
 	savedSnapshotAtom,
 	sourceNameAtom,
 	toggleTestModeAtom,
+	workshopUpdateResultAtom,
 } from './src/state/app-atoms.ts';
 import { createModListSnapshot } from './src/utils/dirty_state.ts';
 import { TEST_MOD_LIST } from './src/utils/test_mod_list.ts';
@@ -52,6 +53,12 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 	if (store.get(activeModDiagnosticsAtom).errorCount !== 1) {
 		throw new Error('The sample missing dependency should produce one error.');
 	}
+	if (
+		store.get(workshopUpdateResultAtom)?.outdatedMods[0]?.packageId !==
+			'sample.vehiclemod'
+	) {
+		throw new Error('Test mode should include sample update-dialog data.');
+	}
 	if (store.get(isModListDirtyAtom)) {
 		throw new Error('The sample list should start from a clean snapshot.');
 	}
@@ -69,6 +76,18 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 	store.set(gameVersionAtom, '1.5');
 	store.set(sourceNameAtom, 'ModsConfig.xml');
 	store.set(savedSnapshotAtom, originalSavedSnapshot);
+	const originalWorkshopUpdateResult = {
+		checkedCount: 1,
+		skippedCount: 0,
+		outdatedMods: [{
+			name: 'Actual Workshop Mod',
+			packageId: 'actual.mod',
+			publishedFileId: '55',
+			installedTimeUpdated: 1,
+			steamTimeUpdated: 2,
+		}],
+	};
+	store.set(workshopUpdateResultAtom, originalWorkshopUpdateResult);
 	store.set(activeSearchAtom, 'actual');
 	store.set(inactiveSearchAtom, 'other');
 
@@ -99,6 +118,9 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		store.get(inactiveSearchAtom) !== 'other'
 	) {
 		throw new Error('The original search queries should be restored.');
+	}
+	if (store.get(workshopUpdateResultAtom) !== originalWorkshopUpdateResult) {
+		throw new Error('The previous Workshop update results should be restored.');
 	}
 	if (!store.get(isModListDirtyAtom)) {
 		throw new Error('The original dirty state should be restored.');

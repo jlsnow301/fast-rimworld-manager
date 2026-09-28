@@ -1,8 +1,13 @@
-import type { InstalledMod, ModListFile } from './types';
+import type {
+	InstalledMod,
+	ModListFile,
+	WorkshopUpdateCheckResult,
+} from './types';
 
 type TestModListFixture = {
 	installedMods: InstalledMod[];
 	modList: ModListFile;
+	updateCheckResult: WorkshopUpdateCheckResult;
 };
 
 export const TEST_MOD_LIST: TestModListFixture = {
@@ -90,5 +95,18 @@ export const TEST_MOD_LIST: TestModListFixture = {
 			'sample.vehiclemod',
 		],
 		knownExpansions: [],
+	},
+	updateCheckResult: {
+		checkedCount: 1,
+		skippedCount: 0,
+		outdatedMods: [
+			{
+				name: 'Sample Vehicle Mod',
+				packageId: 'sample.vehiclemod',
+				publishedFileId: '123456789',
+				installedTimeUpdated: 1700000000,
+				steamTimeUpdated: 1700000100,
+			},
+		],
 	},
 };

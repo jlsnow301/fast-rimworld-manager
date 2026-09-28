@@ -93,6 +93,11 @@ export type WorkshopUpdateCheckResult = {
 	outdatedMods: OutdatedWorkshopMod[];
 };
 
+export type WorkshopUpdateDispatchResult = {
+	openedCount: number;
+	failedCount: number;
+};
+
 export type ModListType = 'active' | 'inactive';
 
 export type ModListFile = {

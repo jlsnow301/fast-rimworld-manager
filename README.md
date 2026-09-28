@@ -14,7 +14,8 @@ libraries; non-Steam game scans cover standard install folders. Other platforms
 can still edit paths manually, but autodetection is currently Windows-only.
 
 Settings use native folder pickers for RimWorld paths. The import action opens a
-native XML file picker and reads the selected mod list through the Tauri backend.
+native XML file picker and reads the selected mod list through the Tauri
+backend.
 
 Settings can download RimSort's Community Rules and Steam Workshop databases to
 the app configuration directory. The downloaded `communityRules.json` and
@@ -50,14 +51,23 @@ values or saving successfully clears the indicator.
 
 Settings also accept a personal 32-character Steam Web API key, available at
 `https://steamcommunity.com/dev/apikey`. The key is stored in Windows Credential
-Manager and is not returned to the frontend after saving. Use **Test connection**
-to verify access to an authenticated Steam API method. Workshop previews continue
-to use their public endpoint and do not require this key.
+Manager and is not returned to the frontend after saving. Use **Test
+connection** to verify access to an authenticated Steam API method. Workshop
+previews continue to use their public endpoint and do not require this key.
 
 **Check for updates** compares Steam's latest Workshop `time_updated` with the
-installed timestamp in `appworkshop_294100.acf` and marks newer versions on their
-mod rows. It does not download or modify mods. This public Workshop endpoint
-does not require the saved API key.
+installed timestamp in `appworkshop_294100.acf` and marks newer versions on
+their mod rows. It does not download or modify mods. This public Workshop
+endpoint does not require the saved API key.
+
+When updates are found, one confirmation dialog lists all outdated mods and
+sends the full set to the Steam client with **Update all mods**. There are no
+per-mod update actions; Steam must be installed, running, and signed in to
+complete the downloads.
+
+**Load sample list** enables test mode with sample update results so the bulk
+confirmation dialog can be previewed. Steam handoff remains disabled in test
+mode; exiting restores the previous list and update results.
 
 ## Run
 

@@ -135,7 +135,7 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 	);
 	set(activeSearchAtom, '');
 	set(inactiveSearchAtom, '');
-	set(workshopUpdateResultAtom, null);
+	set(workshopUpdateResultAtom, TEST_MOD_LIST.updateCheckResult);
 	set(checkingWorkshopUpdatesAtom, false);
 	set(isTestModeAtom, true);
 	set(selectedModAtom, null);

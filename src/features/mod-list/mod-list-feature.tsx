@@ -1,4 +1,4 @@
-import { type DragEvent as ReactDragEvent, Fragment } from 'react';
+import { type DragEvent as ReactDragEvent, Fragment, useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
 	activeModDiagnosticsAtom,
@@ -16,7 +16,18 @@ import {
 	statusAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
+	workshopUpdateResultAtom,
 } from '../../state/app-atoms';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,7 +59,13 @@ import type {
 import { ModPreviewFeature } from '../mod-preview/mod-preview-feature';
 
 export function ModListFeature() {
-	const { moveMod, sortMods, selectMod, checkForModUpdates } = useAppContext();
+	const {
+		moveMod,
+		sortMods,
+		selectMod,
+		checkForModUpdates,
+		updateAllOutdatedWorkshopMods,
+	} = useAppContext();
 	const activeMods = useAtomValue(activeModsAtom);
 	const activeSearch = useAtomValue(activeSearchAtom);
 	const inactiveMods = useAtomValue(inactiveModsAtom);
@@ -68,6 +85,39 @@ export function ModListFeature() {
 	const outdatedWorkshopModsByPackageId = useAtomValue(
 		outdatedWorkshopModsByPackageIdAtom,
 	);
+	const workshopUpdateResult = useAtomValue(workshopUpdateResultAtom);
+	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+	const [dispatchingUpdates, setDispatchingUpdates] = useState(false);
+	const [dispatchMessage, setDispatchMessage] = useState('');
+
+	async function handleCheckForUpdates() {
+		setDispatchMessage('');
+		const result = await checkForModUpdates();
+		setUpdateDialogOpen(Boolean(result?.outdatedMods.length));
+	}
+
+	async function handleUpdateAll() {
+		if (isTestMode) {
+			setDispatchMessage(
+				'Test mode preview only. Steam update requests are disabled.',
+			);
+			return;
+		}
+		setDispatchingUpdates(true);
+		setDispatchMessage('');
+		try {
+			const result = await updateAllOutdatedWorkshopMods();
+			if (result.openedCount > 0) {
+				setUpdateDialogOpen(false);
+			} else {
+				setDispatchMessage(
+					'Could not send Workshop update requests to Steam. Check that the Steam client is installed and running.',
+				);
+			}
+		} finally {
+			setDispatchingUpdates(false);
+		}
+	}
 
 	return (
 		<section className='mx-auto w-full max-w-7xl p-6'>
@@ -86,13 +136,16 @@ export function ModListFeature() {
 					</Badge>
 					<Button
 						aria-busy={checkingWorkshopUpdates}
-						disabled={!hasWorkshopMods || checkingWorkshopUpdates || isTestMode}
-						onClick={checkForModUpdates}
+						disabled={checkingWorkshopUpdates ||
+							(!isTestMode && !hasWorkshopMods)}
+						onClick={handleCheckForUpdates}
 						size='sm'
 						variant='outline'
 					>
 						{checkingWorkshopUpdates
 							? 'Checking Workshop…'
+							: isTestMode
+							? 'Preview update dialog'
 							: 'Check for updates'}
 					</Button>
 					<Button
@@ -173,6 +226,61 @@ export function ModListFeature() {
 			<p aria-live='polite' className='mt-3 text-sm text-muted-foreground'>
 				{status}
 			</p>
+			<AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							Update all {workshopUpdateResult?.outdatedMods.length ?? 0}{' '}
+							outdated Workshop mods?
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{isTestMode
+								? 'Test mode preview only. No Steam requests will be sent.'
+								: 'RimSort will send an update request for every mod below to the Steam client. Steam must be installed, running, and signed in to download them.'}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<ul
+						aria-label='Outdated Workshop mods'
+						className='flex max-h-60 flex-col gap-2 overflow-y-auto'
+					>
+						{(workshopUpdateResult?.outdatedMods ?? []).map((mod) => (
+							<li
+								className='flex flex-wrap items-center justify-between gap-2 border-b pb-2'
+								key={mod.publishedFileId}
+							>
+								<span>{mod.name}</span>
+								<Badge variant='outline'>{mod.packageId}</Badge>
+							</li>
+						))}
+					</ul>
+					{(workshopUpdateResult?.skippedCount ?? 0) > 0 && (
+						<p className='text-sm text-muted-foreground'>
+							{workshopUpdateResult?.skippedCount}{' '}
+							Workshop mods could not be compared and will not be included.
+						</p>
+					)}
+					{dispatchMessage && (
+						<p aria-live='polite' className='text-sm text-destructive'>
+							{dispatchMessage}
+						</p>
+					)}
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={dispatchingUpdates}>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={dispatchingUpdates || isTestMode}
+							onClick={handleUpdateAll}
+						>
+							{isTestMode
+								? 'Steam updates disabled in test mode'
+								: dispatchingUpdates
+								? 'Sending to Steam…'
+								: 'Update all mods'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</section>
 	);
 }
