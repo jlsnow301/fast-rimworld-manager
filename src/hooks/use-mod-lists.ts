@@ -1,3 +1,5 @@
+import { open } from '@tauri-apps/plugin-dialog';
+import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import { useState } from 'react';
 import { getInactivePackageIds, normalizedPackageId } from '../utils/mods';
 import { moveModBetweenLists } from '../utils/mod_lists';
@@ -7,7 +9,12 @@ import {
 	hasModListChanges,
 	type ModListSnapshot,
 } from '../utils/dirty_state';
-import type { InstalledMod, ModListType, VisibleMod } from '../utils/types';
+import type {
+	ImportedModListFile,
+	InstalledMod,
+	ModListType,
+	VisibleMod,
+} from '../utils/types';
 
 export function useModLists(setStatus: (message: string) => void) {
 	const [installedMods, setInstalledMods] = useState<InstalledMod[]>([]);
@@ -86,13 +93,23 @@ export function useModLists(setStatus: (message: string) => void) {
 		return parsed;
 	}
 
-	async function importModList(file: File | null) {
-		if (!file) return;
-
+	async function importModList() {
 		try {
-			const parsed = applyModList(await file.text(), file.name);
+			ensureDesktopRuntime();
+			const path = await open({
+				filters: [{ name: 'XML files', extensions: ['xml'] }],
+				multiple: false,
+				title: 'Import RimWorld mod list',
+			});
+			if (typeof path !== 'string') return;
+
+			const imported = await invokeDesktop<ImportedModListFile>(
+				'load_mod_list_file',
+				{ path },
+			);
+			const parsed = applyModList(imported.contents, imported.fileName);
 			setStatus(
-				`Loaded ${parsed.activeMods.length} active mods from ${file.name}.`,
+				`Loaded ${parsed.activeMods.length} active mods from ${imported.fileName}.`,
 			);
 		} catch (error) {
 			setStatus(

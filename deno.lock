@@ -6,7 +6,8 @@
     "npm:@tailwindcss/vite@^4.3.3": "4.3.3_vite@8.1.0",
     "npm:@tauri-apps/api@2": "2.12.0",
     "npm:@tauri-apps/cli@2": "2.12.0",
-    "npm:@tauri-apps/plugin-opener@2": "2.5.5",
+    "npm:@tauri-apps/plugin-dialog@^2.8.0": "2.8.0",
+    "npm:@tauri-apps/plugin-opener@^2.6.0": "2.6.0",
     "npm:@types/react-dom@^19.1.6": "19.2.3_@types+react@19.2.17",
     "npm:@types/react@^19.1.8": "19.2.17",
     "npm:@vitejs/plugin-react@^6.0.2": "6.0.3_vite@8.1.0",
@@ -685,8 +686,14 @@
       ],
       "bin": true
     },
-    "@tauri-apps/plugin-opener@2.5.5": {
-      "integrity": "sha512-xvzGai5aQds8j8R8RsUK/lW6pGG50YgOYIPLzvkqmkwAj7dfySOD7sGtejRzvVdMmv1EQfKVEFh1MvmDp8QR0g==",
+    "@tauri-apps/plugin-dialog@2.8.0": {
+      "integrity": "sha512-HSSD5C8UFE9ijD1wue84F7jjaIReFmj8AAPtS+xyjYRltJafIc4BiWHY7SJ6vbbew6u+YljEJHfyNfy5VwywXg==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
+    "@tauri-apps/plugin-opener@2.6.0": {
+      "integrity": "sha512-KIl9qkBGyAUrbzfCtdk+NRPTXUOwpMyUKsKN57H6/qA0q8auVywXpfUyWClqX6I/iH8PHmqAUa/KK9YZPWVQew==",
       "dependencies": [
         "@tauri-apps/api"
       ]
@@ -2315,7 +2322,8 @@
         "npm:@tailwindcss/vite@^4.3.3",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
-        "npm:@tauri-apps/plugin-opener@2",
+        "npm:@tauri-apps/plugin-dialog@^2.8.0",
+        "npm:@tauri-apps/plugin-opener@^2.6.0",
         "npm:@types/react-dom@^19.1.6",
         "npm:@types/react@^19.1.8",
         "npm:@vitejs/plugin-react@^6.0.2",

@@ -34,6 +34,7 @@ const DATABASES: DatabaseOption[] = [
 export function SettingsFeature() {
 	const {
 		autoDetectPaths,
+		browsePath,
 		databaseMessage,
 		downloadDatabase,
 		downloadingDatabase,
@@ -58,13 +59,14 @@ export function SettingsFeature() {
 						<Button onClick={savePathSettings}>Save paths</Button>
 					</div>
 					<FieldGroup className='gap-4'>
-						{PATH_FIELDS.map(({ key, label }) => (
+						{PATH_FIELDS.map((field) => (
 							<PathField
-								key={key}
-								label={label}
-								name={key}
+								key={field.key}
+								label={field.label}
+								name={field.key}
+								onBrowse={() => browsePath(field.key, field.label)}
 								onChange={updatePath}
-								value={pathSettings[key]}
+								value={pathSettings[field.key]}
 							/>
 						))}
 					</FieldGroup>
@@ -116,22 +118,29 @@ export function SettingsFeature() {
 type PathFieldProps = {
 	label: string;
 	name: keyof PathSettings;
+	onBrowse: () => void;
 	onChange: (key: keyof PathSettings, value: string) => void;
 	value: string;
 };
 
-function PathField({ label, name, onChange, value }: PathFieldProps) {
+function PathField(props: PathFieldProps) {
+	const { label, name, onBrowse, onChange, value } = props;
 	return (
 		<Field>
 			<FieldLabel htmlFor={`path-${name}`}>{label}</FieldLabel>
-			<Input
-				autoComplete='off'
-				id={`path-${name}`}
-				onChange={(event) => onChange(name, event.currentTarget.value)}
-				placeholder='Enter folder path'
-				spellCheck={false}
-				value={value}
-			/>
+			<div className='flex gap-2'>
+				<Input
+					autoComplete='off'
+					id={`path-${name}`}
+					onChange={(event) => onChange(name, event.currentTarget.value)}
+					placeholder='Enter folder path'
+					spellCheck={false}
+					value={value}
+				/>
+				<Button onClick={onBrowse} variant='outline'>
+					Browse
+				</Button>
+			</div>
 		</Field>
 	);
 }

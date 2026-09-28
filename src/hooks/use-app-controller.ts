@@ -1,6 +1,7 @@
+import { open } from '@tauri-apps/plugin-dialog';
 import { useEffect, useState } from 'react';
 import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
-import { invokeDesktop } from '../utils/tauri';
+import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import type {
 	DatabaseDownloadResult,
 	DatabaseKind,
@@ -87,6 +88,25 @@ export function useAppController() {
 
 	function updatePath(key: keyof PathSettings, value: string) {
 		setPathSettings((settings) => ({ ...settings, [key]: value }));
+	}
+	async function browsePath(key: keyof PathSettings, label: string) {
+		try {
+			ensureDesktopRuntime();
+			const selectedPath = await open({
+				defaultPath: pathSettings[key] || undefined,
+				directory: true,
+				multiple: false,
+				title: `Choose ${label}`,
+			});
+			if (typeof selectedPath !== 'string') return;
+
+			updatePath(key, selectedPath);
+			setSettingsMessage(`${label} selected. Save paths to apply it.`);
+		} catch (error) {
+			setSettingsMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		}
 	}
 
 	async function autoDetectPaths() {
@@ -214,6 +234,7 @@ export function useAppController() {
 		databaseMessage,
 		downloadDatabase,
 		downloadingDatabase,
+		browsePath,
 		autoDetectPaths,
 		closeModPreview: () => setSelectedMod(null),
 		pathSettings,

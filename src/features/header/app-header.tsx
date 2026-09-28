@@ -1,9 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useRef } from 'react';
 import { useAppContext } from '../../context/app-context';
 export function AppHeader() {
-	const fileInput = useRef<HTMLInputElement>(null);
 	const {
 		hasModList,
 		isModListDirty,
@@ -30,7 +28,7 @@ export function AppHeader() {
 				<Button
 					variant='outline'
 					size='sm'
-					onClick={() => fileInput.current?.click()}
+					onClick={importModList}
 				>
 					Import list
 				</Button>
@@ -50,17 +48,6 @@ export function AppHeader() {
 				>
 					{settingsOpen ? 'Back' : 'Settings'}
 				</Button>
-				<input
-					ref={fileInput}
-					aria-label='Import RimWorld ModsConfig.xml'
-					accept='.xml'
-					hidden
-					onChange={(event) => {
-						void importModList(event.currentTarget.files?.[0] ?? null);
-						event.currentTarget.value = '';
-					}}
-					type='file'
-				/>
 			</div>
 		</header>
 	);

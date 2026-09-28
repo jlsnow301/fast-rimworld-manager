@@ -13,6 +13,9 @@ Workshop paths. Autodetection checks the Windows Steam registry and Steam
 libraries; non-Steam game scans cover standard install folders. Other platforms
 can still edit paths manually, but autodetection is currently Windows-only.
 
+Settings use native folder pickers for RimWorld paths. The import action opens a
+native XML file picker and reads the selected mod list through the Tauri backend.
+
 Settings can download RimSort's Community Rules and Steam Workshop databases to
 the app configuration directory. The downloaded `communityRules.json` and
 `steamDB.json` files are stored for metadata features.

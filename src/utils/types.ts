@@ -5,6 +5,10 @@ export type PathSettings = {
 	workshopPath: string;
 };
 
+export type ImportedModListFile = {
+	fileName: string;
+	contents: string;
+};
 export type DatabaseKind = 'communityRules' | 'steamWorkshop';
 
 export type DatabaseDownloadResult = {
