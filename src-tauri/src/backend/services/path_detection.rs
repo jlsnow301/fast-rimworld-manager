@@ -151,6 +151,27 @@ fn serialize_mods_config(args: &SaveModListArgs) -> String {
     xml
 }
 
+fn normalize_windows_path(path: &str) -> String {
+    path.replace('/', "\\")
+}
+
+fn detected_path(path: &Path) -> String {
+    normalize_windows_path(&path.to_string_lossy())
+}
+
+#[cfg(test)]
+mod windows_path_tests {
+    use super::normalize_windows_path;
+
+    #[test]
+    fn normalizes_mixed_path_separators_to_backslashes() {
+        assert_eq!(
+            normalize_windows_path(r"C:\Games/Steam\steamapps/RimWorld"),
+            r"C:\Games\Steam\steamapps\RimWorld",
+        );
+    }
+}
+
 pub(crate) fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
     #[cfg(target_os = "windows")]
     {
@@ -179,10 +200,31 @@ fn detect_windows_paths() -> DetectedPaths {
         .filter(|path| path.is_dir());
 
     DetectedPaths {
-        game_path: game.map(|(path, _)| path.to_string_lossy().into_owned()),
-        config_path: config.map(|path| path.to_string_lossy().into_owned()),
-        local_mods_path: local_mods.map(|path| path.to_string_lossy().into_owned()),
-        workshop_path: workshop.map(|path| path.to_string_lossy().into_owned()),
+        game_path: game.map(|(path, _)| detected_path(&path)),
+        config_path: config.map(|path| detected_path(&path)),
+        local_mods_path: local_mods.map(|path| detected_path(&path)),
+        workshop_path: workshop.map(|path| detected_path(&path)),
+    }
+}
+#[cfg(test)]
+mod path_format_tests {
+    use super::detected_path;
+    use std::path::Path;
+
+    #[test]
+    fn detected_path_uses_windows_separators_consistently() {
+        assert_eq!(
+            detected_path(Path::new(r"C:\Games/Steam\steamapps/RimWorld")),
+            r"C:\Games\Steam\steamapps\RimWorld",
+        );
+    }
+
+    #[test]
+    fn detected_unc_path_keeps_its_network_root() {
+        assert_eq!(
+            detected_path(Path::new("//server/share\\RimWorld")),
+            "\\\\server\\share\\RimWorld",
+        );
     }
 }
 
@@ -221,7 +263,7 @@ fn parse_library_paths(contents: &str) -> Vec<PathBuf> {
             }
             quoted
                 .nth(1)
-                .map(|value| PathBuf::from(value.replace("\\\\", "\\")))
+                .map(|value| PathBuf::from(normalize_windows_path(&value.replace("\\\\", "\\"))))
         })
         .collect()
 }
@@ -309,7 +351,7 @@ fn steam_registry_path() -> Vec<PathBuf> {
 fn parse_registry_install_path(output: &str) -> Option<PathBuf> {
     output.lines().find_map(|line| {
         let (name, value) = line.split_once("REG_SZ")?;
-        (name.trim() == "InstallPath").then(|| PathBuf::from(value.trim()))
+        (name.trim() == "InstallPath").then(|| PathBuf::from(normalize_windows_path(value.trim())))
     })
 }
 
@@ -431,6 +473,20 @@ mod tests {
 
         assert_eq!(found, Some((game, library)));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+    #[test]
+    fn normalizes_mixed_separators_in_steam_library_vdf() {
+        let paths = parse_library_paths(
+            r#""libraryfolders"
+		{
+			"1"
+			{
+				"path" "D:/Steam\Library"
+			}
+		}"#,
+        );
+
+        assert_eq!(paths, vec![PathBuf::from(r"D:\Steam\Library")]);
     }
 
     #[test]
@@ -587,7 +643,7 @@ mod tests {
     #[test]
     fn reads_steam_install_path_from_registry_output() {
         let path = parse_registry_install_path(
-            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam\n    InstallPath    REG_SZ    D:\\Games\\Steam\n",
+			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam\n    InstallPath    REG_SZ    D:/Games\\Steam\n",
         );
 
         assert_eq!(path, Some(PathBuf::from(r"D:\Games\Steam")));
