@@ -20,3 +20,6 @@ lists.
 Workshop update checks show progress while running, then report available
 updates, no updates found, or when some installed Workshop mods could not be
 compared.
+
+The update dialog lists outdated Workshop mods with checkboxes. All are selected
+by default, and only selected mods are sent to Steam.

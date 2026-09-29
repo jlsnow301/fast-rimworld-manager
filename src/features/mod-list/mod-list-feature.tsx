@@ -51,6 +51,11 @@ import { Separator } from '@/components/ui/separator';
 import { useAppContext } from '../../context/app-context';
 import { MOD_DRAG_MIME, parseModDragPayload } from '../../utils/mod_drag';
 import { normalizedPackageId } from '../../utils/mods';
+import {
+	allWorkshopUpdateIds,
+	getSelectedWorkshopMods,
+	toggleWorkshopUpdateSelection,
+} from '../../utils/workshop_update_selection';
 import type {
 	InstalledMod,
 	ModHighlightState,
@@ -66,7 +71,7 @@ export function ModListFeature() {
 		sortMods,
 		selectMod,
 		checkForModUpdates,
-		updateAllOutdatedWorkshopMods,
+		updateSelectedOutdatedWorkshopMods,
 	} = useAppContext();
 	const activeMods = useAtomValue(activeModsAtom);
 	const activeSearch = useAtomValue(activeSearchAtom);
@@ -91,25 +96,36 @@ export function ModListFeature() {
 	const workshopUpdateResult = useAtomValue(workshopUpdateResultAtom);
 	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 	const [dispatchingUpdates, setDispatchingUpdates] = useState(false);
+	const [selectedUpdateIds, setSelectedUpdateIds] = useState<string[]>([]);
+	const outdatedWorkshopMods = workshopUpdateResult?.outdatedMods ?? [];
+	const selectedWorkshopMods = getSelectedWorkshopMods(
+		outdatedWorkshopMods,
+		selectedUpdateIds,
+	);
 	const [dispatchMessage, setDispatchMessage] = useState('');
 
 	async function handleCheckForUpdates() {
 		setDispatchMessage('');
 		const result = await checkForModUpdates();
-		setUpdateDialogOpen(Boolean(result?.outdatedMods.length));
+		const outdatedMods = result?.outdatedMods ?? [];
+		setSelectedUpdateIds(allWorkshopUpdateIds(outdatedMods));
+		setUpdateDialogOpen(outdatedMods.length > 0);
 	}
 
-	async function handleUpdateAll() {
+	async function handleUpdateSelected() {
 		if (isTestMode) {
 			setDispatchMessage(
 				'Test mode preview only. Steam update requests are disabled.',
 			);
 			return;
 		}
+		if (selectedWorkshopMods.length === 0) return;
 		setDispatchingUpdates(true);
 		setDispatchMessage('');
 		try {
-			const result = await updateAllOutdatedWorkshopMods();
+			const result = await updateSelectedOutdatedWorkshopMods(
+				selectedWorkshopMods,
+			);
 			if (result.openedCount > 0) {
 				setUpdateDialogOpen(false);
 			} else {
@@ -256,26 +272,44 @@ export function ModListFeature() {
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>
-							Update all {workshopUpdateResult?.outdatedMods.length ?? 0}{' '}
-							outdated Workshop mods?
+							Update selected {selectedWorkshopMods.length} of{' '}
+							{outdatedWorkshopMods.length} outdated Workshop mods?
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{isTestMode
 								? 'Test mode preview only. No Steam requests will be sent.'
-								: 'The app will send an update request for every mod below to the Steam client. Steam must be installed, running, and signed in to download them.'}
+								: 'The app will send update requests only for the selected mods to the Steam client. Steam must be installed, running, and signed in to download them.'}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<ul
 						aria-label='Outdated Workshop mods'
 						className='flex max-h-60 flex-col gap-2 overflow-y-auto'
 					>
-						{(workshopUpdateResult?.outdatedMods ?? []).map((mod) => (
-							<li
-								className='flex flex-wrap items-center justify-between gap-2 border-b pb-2'
-								key={mod.publishedFileId}
-							>
-								<span>{mod.name}</span>
-								<Badge variant='outline'>{mod.packageId}</Badge>
+						{outdatedWorkshopMods.map((mod) => (
+							<li key={mod.publishedFileId}>
+								<label className='flex cursor-pointer items-center gap-3 border-b pb-2'>
+									<input
+										aria-label={`Select ${mod.name} for update`}
+										checked={selectedUpdateIds.includes(mod.publishedFileId)}
+										disabled={dispatchingUpdates}
+										className='size-4 shrink-0 accent-primary'
+										onChange={(event) => {
+											const checked = event.currentTarget.checked;
+											setSelectedUpdateIds((selectedIds) =>
+												toggleWorkshopUpdateSelection(
+													selectedIds,
+													mod.publishedFileId,
+													checked,
+												)
+											);
+										}}
+										type='checkbox'
+									/>
+									<span className='min-w-0 flex-1'>
+										<span className='block'>{mod.name}</span>
+										<Badge variant='outline'>{mod.packageId}</Badge>
+									</span>
+								</label>
 							</li>
 						))}
 					</ul>
@@ -295,14 +329,17 @@ export function ModListFeature() {
 							Cancel
 						</AlertDialogCancel>
 						<AlertDialogAction
-							disabled={dispatchingUpdates || isTestMode}
-							onClick={handleUpdateAll}
+							disabled={dispatchingUpdates || isTestMode ||
+								selectedWorkshopMods.length === 0}
+							onClick={handleUpdateSelected}
 						>
 							{isTestMode
 								? 'Steam updates disabled in test mode'
 								: dispatchingUpdates
 								? 'Sending to Steam…'
-								: 'Update all mods'}
+								: `Update ${selectedWorkshopMods.length} selected mod${
+									selectedWorkshopMods.length === 1 ? '' : 's'
+								}`}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

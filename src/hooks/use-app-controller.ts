@@ -26,6 +26,7 @@ import type {
 	DatabaseKind,
 	DetectedPaths,
 	InstalledMod,
+	OutdatedWorkshopMod,
 	PathSettings,
 	WorkshopUpdateCheckResult,
 	WorkshopUpdateDispatchResult,
@@ -325,17 +326,20 @@ export function useAppController() {
 		}
 	}
 
-	async function updateAllOutdatedWorkshopMods(): Promise<
-		WorkshopUpdateDispatchResult
-	> {
+	async function updateSelectedOutdatedWorkshopMods(
+		selectedMods: readonly OutdatedWorkshopMod[],
+	): Promise<WorkshopUpdateDispatchResult> {
+		if (selectedMods.length === 0) {
+			setStatus('No Workshop mods selected for update.');
+			return { openedCount: 0, failedCount: 0 };
+		}
 		if (store.get(isTestModeAtom)) {
 			setStatus('Workshop downloads are disabled in test mode.');
 			return { openedCount: 0, failedCount: 0 };
 		}
-		const result = store.get(workshopUpdateResultAtom);
-		const urls = steamWorkshopDownloadUrls(result?.outdatedMods ?? []);
+		const urls = steamWorkshopDownloadUrls(selectedMods);
 		if (urls.length === 0) {
-			setStatus('No valid outdated Workshop items are available to update.');
+			setStatus('No valid outdated Workshop items are selected for update.');
 			return { openedCount: 0, failedCount: 0 };
 		}
 		try {
@@ -448,7 +452,7 @@ export function useAppController() {
 		sortMods,
 		selectMod,
 		checkForModUpdates,
-		updateAllOutdatedWorkshopMods,
+		updateSelectedOutdatedWorkshopMods,
 		refreshSteamApiKeyStatus,
 		saveSteamApiKey,
 		testSteamApiConnection,
