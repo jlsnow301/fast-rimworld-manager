@@ -1,4 +1,4 @@
-import type { InstalledMod, PathField, PathSettings } from './types';
+import type { InstalledMod, PathField, PathSettings } from '@/utils/types';
 
 export const EMPTY_PATH_SETTINGS: PathSettings = {
 	gamePath: '',

@@ -1,6 +1,9 @@
 import { useAtom } from 'jotai';
-import { invokeDesktop } from '../../utils/tauri';
-import { steamApiKeyConfiguredAtom, steamApiMessageAtom } from './atoms';
+import { invokeDesktop } from '@/utils/tauri';
+import {
+	steamApiKeyConfiguredAtom,
+	steamApiMessageAtom,
+} from '@/features/settings/atoms';
 
 let steamApiKeyStatusRequest: Promise<boolean> | null = null;
 

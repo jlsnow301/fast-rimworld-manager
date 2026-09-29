@@ -1,4 +1,4 @@
-import { normalizedPackageId } from './mods';
+import { normalizedPackageId } from '@/utils/mods';
 export type ModListTransfer = {
 	active: string[];
 	inactive: string[];

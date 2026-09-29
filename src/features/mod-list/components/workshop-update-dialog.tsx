@@ -23,12 +23,15 @@ import {
 	FieldSet,
 	FieldTitle,
 } from '@/components/ui/field';
-import { useAppContext } from '../../../context/app-context';
-import { isTestModeAtom, workshopUpdateResultAtom } from '../atoms';
+import { useAppContext } from '@/context/app-context';
+import {
+	isTestModeAtom,
+	workshopUpdateResultAtom,
+} from '@/features/mod-list/atoms';
 import {
 	getSelectedWorkshopMods,
 	toggleWorkshopUpdateSelection,
-} from '../../../utils/workshop_update_selection';
+} from '@/utils/workshop_update_selection';
 
 type WorkshopUpdateDialogProps = {
 	open: boolean;

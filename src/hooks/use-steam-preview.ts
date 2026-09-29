@@ -1,12 +1,12 @@
 import { useAtom } from 'jotai';
 import { useEffect } from 'react';
-import { invokeDesktop } from '../utils/tauri';
-import type { SteamModPreview } from '../utils/types';
+import { invokeDesktop } from '@/utils/tauri';
+import type { SteamModPreview } from '@/utils/types';
 import {
 	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
-} from '../features/mod-preview/atoms';
+} from '@/features/mod-preview/atoms';
 
 export function useSteamPreview() {
 	const [selectedMod] = useAtom(selectedModAtom);

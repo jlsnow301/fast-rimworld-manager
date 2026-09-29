@@ -3,9 +3,9 @@ import {
 	checkingWorkshopUpdatesAtom,
 	workshopUpdateResultAtom,
 	workshopUpdateStatusAtom,
-} from '../src/features/mod-list/atoms.ts';
-import { getWorkshopUpdateStatus } from '../src/utils/workshop_update_status.ts';
-import type { WorkshopUpdateCheckResult } from '../src/utils/types.ts';
+} from '@/features/mod-list/atoms.ts';
+import { getWorkshopUpdateStatus } from '@/utils/workshop_update_status.ts';
+import type { WorkshopUpdateCheckResult } from '@/utils/types.ts';
 
 function updateResult(
 	checkedCount: number,

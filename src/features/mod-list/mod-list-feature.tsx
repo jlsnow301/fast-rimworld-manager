@@ -18,14 +18,14 @@ import {
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateStatusAtom,
-} from './atoms';
+} from '@/features/mod-list/atoms';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAppContext } from '../../context/app-context';
-import { allWorkshopUpdateIds } from '../../utils/workshop_update_selection';
-import { ModPreviewFeature } from '../mod-preview/mod-preview-feature';
-import { ModListPanel } from './components/mod-list-panel';
-import { WorkshopUpdateDialog } from './components/workshop-update-dialog';
+import { useAppContext } from '@/context/app-context';
+import { allWorkshopUpdateIds } from '@/utils/workshop_update_selection';
+import { ModPreviewFeature } from '@/features/mod-preview/mod-preview-feature';
+import { ModListPanel } from '@/features/mod-list/components/mod-list-panel';
+import { WorkshopUpdateDialog } from '@/features/mod-list/components/workshop-update-dialog';
 
 export function ModListFeature() {
 	const { moveMod, sortMods, selectMod, checkForModUpdates } =

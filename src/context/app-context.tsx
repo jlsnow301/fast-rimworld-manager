@@ -1,5 +1,5 @@
 import { createContext, type PropsWithChildren, useContext } from 'react';
-import type { AppController } from '../hooks/use-app-controller';
+import type { AppController } from '@/hooks/use-app-controller';
 
 const AppContext = createContext<AppController | null>(null);
 

@@ -1,4 +1,4 @@
-import type { OutdatedWorkshopMod } from './types';
+import type { OutdatedWorkshopMod } from '@/utils/types';
 
 const WORKSHOP_ID_PATTERN = /^[0-9]+$/;
 const MAX_WORKSHOP_ID = '18446744073709551615';

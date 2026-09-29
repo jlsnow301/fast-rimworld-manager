@@ -1,11 +1,11 @@
-import { normalizedPackageId } from './mods';
+import { normalizedPackageId } from '@/utils/mods';
 import type {
 	ActiveModDiagnostics,
 	InstalledMod,
 	ModHighlightState,
 	ModIssueCode,
 	ModIssueSeverity,
-} from './types';
+} from '@/utils/types';
 
 export function createActiveModDiagnostics(
 	activeMods: string[],

@@ -17,15 +17,15 @@ import {
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { MOD_DRAG_MIME, parseModDragPayload } from '../../../utils/mod_drag';
-import { normalizedPackageId } from '../../../utils/mods';
+import { MOD_DRAG_MIME, parseModDragPayload } from '@/utils/mod_drag';
+import { normalizedPackageId } from '@/utils/mods';
 import type {
 	InstalledMod,
 	ModHighlightState,
 	ModListType,
 	OutdatedWorkshopMod,
 	VisibleMod,
-} from '../../../utils/types';
+} from '@/utils/types';
 
 export type ModListPanelProps = {
 	count: number;

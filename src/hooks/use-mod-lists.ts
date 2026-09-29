@@ -1,18 +1,18 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { useAtom, useAtomValue, useStore } from 'jotai';
-import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
-import { getInactivePackageIds } from '../utils/mods';
-import { moveModBetweenLists } from '../utils/mod_lists';
-import { parseModsConfig } from '../utils/mods_config';
+import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
+import { getInactivePackageIds } from '@/utils/mods';
+import { moveModBetweenLists } from '@/utils/mod_lists';
+import { parseModsConfig } from '@/utils/mods_config';
 import {
 	createModListSnapshot,
 	type ModListSnapshot,
-} from '../utils/dirty_state';
+} from '@/utils/dirty_state';
 import type {
 	ImportedModListFile,
 	InstalledMod,
 	ModListType,
-} from '../utils/types';
+} from '@/utils/types';
 import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
@@ -32,7 +32,7 @@ import {
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateResultAtom,
-} from '../features/mod-list/atoms';
+} from '@/features/mod-list/atoms';
 
 export function useModLists(setStatus: (message: string) => void) {
 	const store = useStore();

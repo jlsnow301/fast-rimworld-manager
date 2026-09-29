@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import type { InstalledMod, SteamModPreview } from '../../utils/types';
+import type { InstalledMod, SteamModPreview } from '@/utils/types';
 
 export const selectedModAtom = atom<InstalledMod | null>(null);
 export const previewMessageAtom = atom('');

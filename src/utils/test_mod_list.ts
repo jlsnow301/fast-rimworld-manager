@@ -2,7 +2,7 @@ import type {
 	InstalledMod,
 	ModListFile,
 	WorkshopUpdateCheckResult,
-} from './types';
+} from '@/utils/types';
 
 type TestModListFixture = {
 	installedMods: InstalledMod[];

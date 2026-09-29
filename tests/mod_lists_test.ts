@@ -1,4 +1,4 @@
-import { moveModBetweenLists } from '../src/utils/mod_lists.ts';
+import { moveModBetweenLists } from '@/utils/mod_lists.ts';
 
 Deno.test('deactivating removes a mod from active and appends it to inactive', () => {
 	const result = moveModBetweenLists(

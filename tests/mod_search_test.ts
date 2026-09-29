@@ -1,4 +1,4 @@
-import { filterVisibleMods } from '../src/utils/mod_search.ts';
+import { filterVisibleMods } from '@/utils/mod_search.ts';
 
 Deno.test('search matches package IDs case-insensitively and keeps source indices', () => {
 	const packageIds = ['Core', 'Author.Mod', 'Author.Other'];

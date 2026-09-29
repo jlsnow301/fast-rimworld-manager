@@ -1,4 +1,4 @@
-import type { ModListFile } from './types';
+import type { ModListFile } from '@/utils/types';
 
 export function parseModsConfig(content: string): ModListFile {
 	const document = new DOMParser().parseFromString(

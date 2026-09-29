@@ -1,5 +1,5 @@
-import { steamWorkshopDownloadUrls } from '../src/utils/workshop_update_urls.ts';
-import type { OutdatedWorkshopMod } from '../src/utils/types.ts';
+import { steamWorkshopDownloadUrls } from '@/utils/workshop_update_urls.ts';
+import type { OutdatedWorkshopMod } from '@/utils/types.ts';
 
 function outdatedMod(publishedFileId: string): OutdatedWorkshopMod {
 	return {

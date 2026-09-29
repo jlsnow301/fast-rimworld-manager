@@ -1,25 +1,22 @@
 import { atom } from 'jotai';
-import {
-	createModListSnapshot,
-	hasModListChanges,
-} from '../../utils/dirty_state';
-import { createActiveModDiagnostics } from '../../utils/mod_highlights';
-import { filterVisibleMods } from '../../utils/mod_search';
-import { resolveGameVersion } from '../../utils/game_version';
-import { normalizedPackageId } from '../../utils/mods';
-import { getWorkshopUpdateStatus } from '../../utils/workshop_update_status';
-import type { ModListSnapshot } from '../../utils/dirty_state';
+import { createModListSnapshot, hasModListChanges } from '@/utils/dirty_state';
+import { createActiveModDiagnostics } from '@/utils/mod_highlights';
+import { filterVisibleMods } from '@/utils/mod_search';
+import { resolveGameVersion } from '@/utils/game_version';
+import { normalizedPackageId } from '@/utils/mods';
+import { getWorkshopUpdateStatus } from '@/utils/workshop_update_status';
+import type { ModListSnapshot } from '@/utils/dirty_state';
 import type {
 	InstalledMod,
 	OutdatedWorkshopMod,
 	WorkshopUpdateCheckResult,
-} from '../../utils/types';
-import { TEST_MOD_LIST } from '../../utils/test_mod_list';
+} from '@/utils/types';
+import { TEST_MOD_LIST } from '@/utils/test_mod_list';
 import {
 	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
-} from '../mod-preview/atoms';
+} from '@/features/mod-preview/atoms';
 
 export const statusAtom = atom(
 	'Waiting for configured mods. Set the RimWorld paths in Settings.',

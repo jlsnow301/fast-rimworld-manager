@@ -1,4 +1,4 @@
-import type { WorkshopUpdateCheckResult } from './types';
+import type { WorkshopUpdateCheckResult } from '@/utils/types';
 
 export type WorkshopUpdateStatus = {
 	state: 'checking' | 'updates' | 'no-updates' | 'incomplete';

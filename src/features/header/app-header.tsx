@@ -7,9 +7,9 @@ import {
 	isTestModeAtom,
 	sourceNameAtom,
 	toggleTestModeAtom,
-} from '../mod-list/atoms';
-import { settingsOpenAtom } from '../settings/atoms';
-import { useAppContext } from '../../context/app-context';
+} from '@/features/mod-list/atoms';
+import { settingsOpenAtom } from '@/features/settings/atoms';
+import { useAppContext } from '@/context/app-context';
 
 export function AppHeader() {
 	const {

@@ -9,11 +9,15 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useAppContext } from '../../context/app-context';
-import { activeModDiagnosticsAtom } from '../mod-list/atoms';
-import { previewMessageAtom, selectedModAtom, steamPreviewAtom } from './atoms';
-import { normalizedPackageId } from '../../utils/mods';
-import type { ModIssue } from '../../utils/types';
+import { useAppContext } from '@/context/app-context';
+import { activeModDiagnosticsAtom } from '@/features/mod-list/atoms';
+import {
+	previewMessageAtom,
+	selectedModAtom,
+	steamPreviewAtom,
+} from '@/features/mod-preview/atoms';
+import { normalizedPackageId } from '@/utils/mods';
+import type { ModIssue } from '@/utils/types';
 
 export function ModPreviewFeature() {
 	const { closeModPreview } = useAppContext();

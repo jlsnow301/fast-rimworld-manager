@@ -17,10 +17,10 @@ import {
 	settingsMessageAtom,
 	steamApiKeyConfiguredAtom,
 	steamApiMessageAtom,
-} from './atoms';
-import { useAppContext } from '../../context/app-context';
-import { PATH_FIELDS } from '../../utils/mods';
-import type { DatabaseKind, PathSettings } from '../../utils/types';
+} from '@/features/settings/atoms';
+import { useAppContext } from '@/context/app-context';
+import { PATH_FIELDS } from '@/utils/mods';
+import type { DatabaseKind, PathSettings } from '@/utils/types';
 
 type DatabaseOption = {
 	id: DatabaseKind;

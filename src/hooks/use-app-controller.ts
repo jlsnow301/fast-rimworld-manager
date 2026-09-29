@@ -7,26 +7,26 @@ import {
 	isTestModeAtom,
 	statusAtom,
 	workshopUpdateResultAtom,
-} from '../features/mod-list/atoms';
+} from '@/features/mod-list/atoms';
 import {
 	closeModPreviewAtom,
 	selectedModAtom,
-} from '../features/mod-preview/atoms';
-import { settingsOpenAtom } from '../features/settings/atoms';
-import { normalizedPackageId } from '../utils/mods';
-import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
-import { steamWorkshopDownloadUrls } from '../utils/workshop_update_urls';
+} from '@/features/mod-preview/atoms';
+import { settingsOpenAtom } from '@/features/settings/atoms';
+import { normalizedPackageId } from '@/utils/mods';
+import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
+import { steamWorkshopDownloadUrls } from '@/utils/workshop_update_urls';
 import type {
 	InstalledMod,
 	OutdatedWorkshopMod,
 	PathSettings,
 	WorkshopUpdateCheckResult,
 	WorkshopUpdateDispatchResult,
-} from '../utils/types';
-import { useModLists } from './use-mod-lists';
-import { useSettingsController } from '../features/settings/use-settings-controller';
-import { useSteamApiKeyController } from '../features/settings/use-steam-api-key-controller';
-import { useSteamPreview } from './use-steam-preview';
+} from '@/utils/types';
+import { useModLists } from '@/hooks/use-mod-lists';
+import { useSettingsController } from '@/features/settings/use-settings-controller';
+import { useSteamApiKeyController } from '@/features/settings/use-steam-api-key-controller';
+import { useSteamPreview } from '@/hooks/use-steam-preview';
 
 export function useAppController() {
 	const [, setSettingsOpen] = useAtom(settingsOpenAtom);

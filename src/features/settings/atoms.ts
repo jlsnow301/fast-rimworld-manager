@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
-import { EMPTY_PATH_SETTINGS } from '../../utils/mods';
-import type { DatabaseKind, PathSettings } from '../../utils/types';
+import { EMPTY_PATH_SETTINGS } from '@/utils/mods';
+import type { DatabaseKind, PathSettings } from '@/utils/types';
 
 export const settingsOpenAtom = atom(false);
 export const pathSettingsAtom = atom<PathSettings>(EMPTY_PATH_SETTINGS);

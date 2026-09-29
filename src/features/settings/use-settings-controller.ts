@@ -1,20 +1,23 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { useAtom, useStore } from 'jotai';
-import { ensureDesktopRuntime, invokeDesktop } from '../../utils/tauri';
+import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
 import type {
 	DatabaseDownloadResult,
 	DatabaseKind,
 	DetectedPaths,
 	InstalledMod,
 	PathSettings,
-} from '../../utils/types';
-import { installedGameVersionAtom, isTestModeAtom } from '../mod-list/atoms';
+} from '@/utils/types';
+import {
+	installedGameVersionAtom,
+	isTestModeAtom,
+} from '@/features/mod-list/atoms';
 import {
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
 	pathSettingsAtom,
 	settingsMessageAtom,
-} from './atoms';
+} from '@/features/settings/atoms';
 
 type RefreshInstalledMods = (mods: InstalledMod[]) => void;
 type SetStatus = (message: string) => void;

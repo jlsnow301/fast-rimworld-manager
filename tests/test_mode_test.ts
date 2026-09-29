@@ -15,10 +15,10 @@ import {
 	sourceNameAtom,
 	toggleTestModeAtom,
 	workshopUpdateResultAtom,
-} from '../src/features/mod-list/atoms.ts';
-import { createModListSnapshot } from '../src/utils/dirty_state.ts';
-import { TEST_MOD_LIST } from '../src/utils/test_mod_list.ts';
-import type { InstalledMod } from '../src/utils/types.ts';
+} from '@/features/mod-list/atoms.ts';
+import { createModListSnapshot } from '@/utils/dirty_state.ts';
+import { TEST_MOD_LIST } from '@/utils/test_mod_list.ts';
+import type { InstalledMod } from '@/utils/types.ts';
 
 function installedMod(packageId: string): InstalledMod {
 	return {

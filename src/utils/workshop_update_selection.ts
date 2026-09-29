@@ -1,4 +1,4 @@
-import type { OutdatedWorkshopMod } from './types';
+import type { OutdatedWorkshopMod } from '@/utils/types';
 
 export function allWorkshopUpdateIds(
 	mods: readonly OutdatedWorkshopMod[],

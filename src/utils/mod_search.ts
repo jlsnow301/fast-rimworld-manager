@@ -1,5 +1,5 @@
-import { normalizedPackageId } from './mods';
-import type { InstalledMod, VisibleMod } from './types';
+import { normalizedPackageId } from '@/utils/mods';
+import type { InstalledMod, VisibleMod } from '@/utils/types';
 
 type ModSearchDetails = Pick<InstalledMod, 'name'>;
 type ModSearchIndex = ReadonlyMap<string, ModSearchDetails>;

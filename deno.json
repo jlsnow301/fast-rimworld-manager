@@ -5,6 +5,9 @@
 		"singleQuote": true,
 		"json.trailingCommas": "jsonc"
 	},
+	"imports": {
+		"@/": "./src/"
+	},
 	"tasks": {
 		"test": "deno test --allow-env=NODE_ENV tests"
 	},
