@@ -18,7 +18,7 @@ import {
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateStatusAtom,
-} from '../../state/app-atoms';
+} from './atoms';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '../../context/app-context';

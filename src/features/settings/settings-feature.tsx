@@ -17,7 +17,7 @@ import {
 	settingsMessageAtom,
 	steamApiKeyConfiguredAtom,
 	steamApiMessageAtom,
-} from '../../state/app-atoms';
+} from './atoms';
 import { useAppContext } from '../../context/app-context';
 import { PATH_FIELDS } from '../../utils/mods';
 import type { DatabaseKind, PathSettings } from '../../utils/types';

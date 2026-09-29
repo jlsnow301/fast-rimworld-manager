@@ -11,7 +11,7 @@ import {
 	isModListDirtyAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
-} from '../src/state/app-atoms.ts';
+} from '../src/features/mod-list/atoms.ts';
 import type { InstalledMod } from '../src/utils/types.ts';
 
 function installedMod(packageId: string, name: string): InstalledMod {

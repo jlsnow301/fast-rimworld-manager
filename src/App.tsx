@@ -1,6 +1,6 @@
 import './globals.css';
 import { useAtomValue } from 'jotai';
-import { settingsOpenAtom } from './state/app-atoms';
+import { settingsOpenAtom } from './features/settings/atoms';
 import { AppProvider } from './context/app-context';
 import { AppHeader } from './features/header/app-header';
 import { ModListFeature } from './features/mod-list/mod-list-feature';

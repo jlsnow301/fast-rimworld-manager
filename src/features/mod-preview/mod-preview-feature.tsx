@@ -10,12 +10,8 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAppContext } from '../../context/app-context';
-import {
-	activeModDiagnosticsAtom,
-	previewMessageAtom,
-	selectedModAtom,
-	steamPreviewAtom,
-} from '../../state/app-atoms';
+import { activeModDiagnosticsAtom } from '../mod-list/atoms';
+import { previewMessageAtom, selectedModAtom, steamPreviewAtom } from './atoms';
 import { normalizedPackageId } from '../../utils/mods';
 import type { ModIssue } from '../../utils/types';
 

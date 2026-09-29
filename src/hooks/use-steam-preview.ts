@@ -6,7 +6,7 @@ import {
 	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
-} from '../state/app-atoms';
+} from '../features/mod-preview/atoms';
 
 export function useSteamPreview() {
 	const [selectedMod] = useAtom(selectedModAtom);

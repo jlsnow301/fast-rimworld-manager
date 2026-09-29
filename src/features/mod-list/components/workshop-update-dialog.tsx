@@ -24,10 +24,7 @@ import {
 	FieldTitle,
 } from '@/components/ui/field';
 import { useAppContext } from '../../../context/app-context';
-import {
-	isTestModeAtom,
-	workshopUpdateResultAtom,
-} from '../../../state/app-atoms';
+import { isTestModeAtom, workshopUpdateResultAtom } from '../atoms';
 import {
 	getSelectedWorkshopMods,
 	toggleWorkshopUpdateSelection,

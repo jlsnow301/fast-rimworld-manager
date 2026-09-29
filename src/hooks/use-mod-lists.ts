@@ -32,7 +32,7 @@ import {
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateResultAtom,
-} from '../state/app-atoms';
+} from '../features/mod-list/atoms';
 
 export function useModLists(setStatus: (message: string) => void) {
 	const store = useStore();

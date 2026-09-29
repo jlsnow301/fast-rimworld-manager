@@ -1,5 +1,5 @@
 import { type DragEvent as ReactDragEvent, Fragment } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,7 @@ import type {
 	OutdatedWorkshopMod,
 	VisibleMod,
 } from '../../../utils/types';
+
 export type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;

@@ -1,43 +1,29 @@
 import { atom } from 'jotai';
-import { createModListSnapshot, hasModListChanges } from '../utils/dirty_state';
-import { createActiveModDiagnostics } from '../utils/mod_highlights';
-import { filterVisibleMods } from '../utils/mod_search';
-import { resolveGameVersion } from '../utils/game_version';
-import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
-import { getWorkshopUpdateStatus } from '../utils/workshop_update_status';
-import type { ModListSnapshot } from '../utils/dirty_state';
+import {
+	createModListSnapshot,
+	hasModListChanges,
+} from '../../utils/dirty_state';
+import { createActiveModDiagnostics } from '../../utils/mod_highlights';
+import { filterVisibleMods } from '../../utils/mod_search';
+import { resolveGameVersion } from '../../utils/game_version';
+import { normalizedPackageId } from '../../utils/mods';
+import { getWorkshopUpdateStatus } from '../../utils/workshop_update_status';
+import type { ModListSnapshot } from '../../utils/dirty_state';
 import type {
-	DatabaseKind,
 	InstalledMod,
 	OutdatedWorkshopMod,
-	PathSettings,
-	SteamModPreview,
 	WorkshopUpdateCheckResult,
-} from '../utils/types';
-import { TEST_MOD_LIST } from '../utils/test_mod_list';
+} from '../../utils/types';
+import { TEST_MOD_LIST } from '../../utils/test_mod_list';
+import {
+	previewMessageAtom,
+	selectedModAtom,
+	steamPreviewAtom,
+} from '../mod-preview/atoms';
 
-export const settingsOpenAtom = atom(false);
-export const pathSettingsAtom = atom<PathSettings>(EMPTY_PATH_SETTINGS);
-export const settingsMessageAtom = atom('Loading saved paths.');
-export const databaseMessageAtom = atom(
-	'Databases are saved in the app data folder.',
-);
-export const steamApiKeyConfiguredAtom = atom(false);
-export const steamApiMessageAtom = atom(
-	'Steam Web API key status has not been checked.',
-);
-export const downloadingDatabaseAtom = atom<DatabaseKind | null>(null);
 export const statusAtom = atom(
 	'Waiting for configured mods. Set the RimWorld paths in Settings.',
 );
-export const selectedModAtom = atom<InstalledMod | null>(null);
-export const previewMessageAtom = atom('');
-export const steamPreviewAtom = atom<SteamModPreview | null>(null);
-export const closeModPreviewAtom = atom(null, (_get, set) => {
-	set(selectedModAtom, null);
-	set(steamPreviewAtom, null);
-	set(previewMessageAtom, '');
-});
 
 export const installedModsAtom = atom<InstalledMod[]>([]);
 export const activeModsAtom = atom<string[]>([]);
@@ -209,6 +195,7 @@ export const hasModListAtom = atom((get) => {
 	return sourceName.length > 0 || activeMods.length > 0 ||
 		inactiveMods.length > 0;
 });
+
 export const hasWorkshopModsAtom = atom((get) =>
 	get(installedModsAtom).some(
 		(mod) => mod.source === 'workshop' && mod.publishedFileId !== null,

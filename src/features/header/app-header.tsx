@@ -5,11 +5,12 @@ import {
 	hasModListAtom,
 	isModListDirtyAtom,
 	isTestModeAtom,
-	settingsOpenAtom,
 	sourceNameAtom,
 	toggleTestModeAtom,
-} from '../../state/app-atoms';
+} from '../mod-list/atoms';
+import { settingsOpenAtom } from '../settings/atoms';
 import { useAppContext } from '../../context/app-context';
+
 export function AppHeader() {
 	const {
 		importModList,

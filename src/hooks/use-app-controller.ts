@@ -4,20 +4,24 @@ import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
 import { useEffect } from 'react';
 import {
 	checkingWorkshopUpdatesAtom,
-	closeModPreviewAtom,
-	databaseMessageAtom,
-	downloadingDatabaseAtom,
 	installedGameVersionAtom,
 	isTestModeAtom,
-	pathSettingsAtom,
+	statusAtom,
+	workshopUpdateResultAtom,
+} from '../features/mod-list/atoms';
+import {
+	closeModPreviewAtom,
 	selectedModAtom,
+} from '../features/mod-preview/atoms';
+import {
+	databaseMessageAtom,
+	downloadingDatabaseAtom,
+	pathSettingsAtom,
 	settingsMessageAtom,
 	settingsOpenAtom,
-	statusAtom,
 	steamApiKeyConfiguredAtom,
 	steamApiMessageAtom,
-	workshopUpdateResultAtom,
-} from '../state/app-atoms';
+} from '../features/settings/atoms';
 import { normalizedPackageId } from '../utils/mods';
 import { ensureDesktopRuntime, invokeDesktop } from '../utils/tauri';
 import { steamWorkshopDownloadUrls } from '../utils/workshop_update_urls';
