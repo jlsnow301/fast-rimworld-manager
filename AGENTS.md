@@ -7,3 +7,5 @@
 - This project uses deno. Do not use `npm` here.
 - Do not inline destructure component props. Destructure inside the component body.
 - Do not inline types. These should be named.
+- Do not inject custom styling into global ui components. You must only use default shadcn components.
+
