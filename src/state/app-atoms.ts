@@ -2,6 +2,7 @@ import { atom } from 'jotai';
 import { createModListSnapshot, hasModListChanges } from '../utils/dirty_state';
 import { createActiveModDiagnostics } from '../utils/mod_highlights';
 import { filterVisibleMods } from '../utils/mod_search';
+import { resolveGameVersion } from '../utils/game_version';
 import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
 import type { ModListSnapshot } from '../utils/dirty_state';
 import type {
@@ -41,7 +42,15 @@ export const installedModsAtom = atom<InstalledMod[]>([]);
 export const activeModsAtom = atom<string[]>([]);
 export const inactiveModsAtom = atom<string[]>([]);
 export const knownExpansionsAtom = atom<string[]>([]);
-export const gameVersionAtom = atom('1.4');
+
+export const installedGameVersionAtom = atom<string | null>(null);
+export const configuredGameVersionAtom = atom<string | null>(null);
+export const gameVersionAtom = atom((get) =>
+	resolveGameVersion(
+		get(installedGameVersionAtom),
+		get(configuredGameVersionAtom),
+	)
+);
 export const sourceNameAtom = atom('');
 export const activeSearchAtom = atom('');
 export const inactiveSearchAtom = atom('');
@@ -66,7 +75,8 @@ type TestModeBackup = {
 	activeMods: string[];
 	inactiveMods: string[];
 	knownExpansions: string[];
-	gameVersion: string;
+	installedGameVersion: string | null;
+	configuredGameVersion: string | null;
 	sourceName: string;
 	savedSnapshot: ModListSnapshot;
 	activeSearch: string;
@@ -83,8 +93,9 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		set(installedModsAtom, backup.installedMods);
 		set(activeModsAtom, backup.activeMods);
 		set(inactiveModsAtom, backup.inactiveMods);
+		set(installedGameVersionAtom, backup.installedGameVersion);
+		set(configuredGameVersionAtom, backup.configuredGameVersion);
 		set(knownExpansionsAtom, backup.knownExpansions);
-		set(gameVersionAtom, backup.gameVersion);
 		set(sourceNameAtom, backup.sourceName);
 		set(savedSnapshotAtom, backup.savedSnapshot);
 		set(activeSearchAtom, backup.activeSearch);
@@ -105,7 +116,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		activeMods: get(activeModsAtom),
 		inactiveMods: get(inactiveModsAtom),
 		knownExpansions: get(knownExpansionsAtom),
-		gameVersion: get(gameVersionAtom),
+		installedGameVersion: get(installedGameVersionAtom),
+		configuredGameVersion: get(configuredGameVersionAtom),
 		sourceName: get(sourceNameAtom),
 		savedSnapshot: get(savedSnapshotAtom),
 		activeSearch: get(activeSearchAtom),
@@ -122,8 +134,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 			)
 			.map((mod) => mod.packageId),
 	);
-	set(knownExpansionsAtom, [...TEST_MOD_LIST.modList.knownExpansions]);
-	set(gameVersionAtom, TEST_MOD_LIST.modList.version);
+	set(installedGameVersionAtom, null);
+	set(configuredGameVersionAtom, TEST_MOD_LIST.modList.version);
 	set(sourceNameAtom, 'Sample test mod list');
 	set(
 		savedSnapshotAtom,

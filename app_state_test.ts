@@ -2,8 +2,11 @@ import { createStore } from 'jotai';
 import {
 	activeModsAtom,
 	activeSearchAtom,
+	configuredGameVersionAtom,
+	gameVersionAtom,
 	inactiveModsAtom,
 	inactiveSearchAtom,
+	installedGameVersionAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
 	visibleActiveModsAtom,
@@ -72,5 +75,24 @@ Deno.test('Jotai tracks mod-list dirty state through source atom transitions', (
 
 	if (store.get(isModListDirtyAtom)) {
 		throw new Error('Restoring the saved mod list should clear dirty state.');
+	}
+});
+
+Deno.test('installed game version takes precedence over ModsConfig version', () => {
+	const store = createStore();
+	store.set(configuredGameVersionAtom, '1.5');
+	store.set(installedGameVersionAtom, '1.6.4871 rev573');
+
+	if (store.get(gameVersionAtom) !== '1.6.4871 rev573') {
+		throw new Error('The installed game version should take precedence.');
+	}
+});
+
+Deno.test('ModsConfig version is used when the installed game version is unknown', () => {
+	const store = createStore();
+	store.set(configuredGameVersionAtom, '1.5');
+
+	if (store.get(gameVersionAtom) !== '1.5') {
+		throw new Error('The configured version should be used as a fallback.');
 	}
 });

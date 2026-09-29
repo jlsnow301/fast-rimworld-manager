@@ -7,6 +7,7 @@ import {
 	closeModPreviewAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
+	installedGameVersionAtom,
 	isTestModeAtom,
 	pathSettingsAtom,
 	selectedModAtom,
@@ -40,6 +41,7 @@ export function useAppController() {
 	const [, setDatabaseMessage] = useAtom(databaseMessageAtom);
 	const [, setDownloadingDatabase] = useAtom(downloadingDatabaseAtom);
 	const [, setStatus] = useAtom(statusAtom);
+	const [, setInstalledGameVersion] = useAtom(installedGameVersionAtom);
 	const store = useStore();
 	const setCheckingWorkshopUpdates = useSetAtom(checkingWorkshopUpdatesAtom);
 	const setWorkshopUpdateResult = useSetAtom(workshopUpdateResultAtom);
@@ -72,13 +74,22 @@ export function useAppController() {
 			setPathSettings(settings);
 			setSettingsMessage('Saved paths loaded.');
 
-			const [modsResult, configResult] = await Promise.allSettled([
-				invokeDesktop<InstalledMod[]>('list_installed_mods'),
-				settings.configPath
-					? invokeDesktop<string | null>('load_startup_mod_list')
-					: Promise.resolve(null),
-			]);
+			const [modsResult, configResult, versionResult] = await Promise
+				.allSettled([
+					invokeDesktop<InstalledMod[]>('list_installed_mods'),
+					settings.configPath
+						? invokeDesktop<string | null>('load_startup_mod_list')
+						: Promise.resolve(null),
+					settings.gamePath
+						? invokeDesktop<string | null>('detect_rimworld_version', {
+							gamePath: settings.gamePath,
+						})
+						: Promise.resolve(null),
+				]);
 			if (cancelled) return;
+			setInstalledGameVersion(
+				versionResult.status === 'fulfilled' ? versionResult.value : null,
+			);
 
 			const foundMods = modsResult.status === 'fulfilled'
 				? modsResult.value
@@ -157,6 +168,23 @@ export function useAppController() {
 		}
 	}
 
+	async function refreshInstalledGameVersion(gamePath: string) {
+		if (store.get(isTestModeAtom)) return;
+		if (!gamePath.trim()) {
+			setInstalledGameVersion(null);
+			return;
+		}
+		try {
+			const version = await invokeDesktop<string | null>(
+				'detect_rimworld_version',
+				{ gamePath },
+			);
+			setInstalledGameVersion(version);
+		} catch {
+			setInstalledGameVersion(null);
+		}
+	}
+
 	async function savePathSettings() {
 		setSettingsMessage('Saving paths…');
 		try {
@@ -168,6 +196,7 @@ export function useAppController() {
 			);
 			return;
 		}
+		await refreshInstalledGameVersion(pathSettings.gamePath);
 
 		try {
 			const foundMods = await invokeDesktop<InstalledMod[]>(

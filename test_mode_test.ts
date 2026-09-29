@@ -3,9 +3,11 @@ import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
 	activeSearchAtom,
+	configuredGameVersionAtom,
 	gameVersionAtom,
 	inactiveModsAtom,
 	inactiveSearchAtom,
+	installedGameVersionAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
 	isTestModeAtom,
@@ -73,7 +75,8 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 	store.set(installedModsAtom, originalInstalledMods);
 	store.set(activeModsAtom, originalActiveMods);
 	store.set(inactiveModsAtom, originalInactiveMods);
-	store.set(gameVersionAtom, '1.5');
+	store.set(configuredGameVersionAtom, '1.5');
+	store.set(installedGameVersionAtom, '1.5.2812 rev1');
 	store.set(sourceNameAtom, 'ModsConfig.xml');
 	store.set(savedSnapshotAtom, originalSavedSnapshot);
 	const originalWorkshopUpdateResult = {
@@ -108,7 +111,7 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		throw new Error('The original inactive list should be restored.');
 	}
 	if (
-		store.get(gameVersionAtom) !== '1.5' ||
+		store.get(gameVersionAtom) !== '1.5.2812 rev1' ||
 		store.get(sourceNameAtom) !== 'ModsConfig.xml'
 	) {
 		throw new Error('The original source and game version should be restored.');

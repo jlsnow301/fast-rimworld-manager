@@ -49,6 +49,41 @@ fn settings_file(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|error| format!("Could not resolve the settings directory: {error}"))
 }
 
+pub(crate) fn detect_rimworld_version(game_path: &str) -> Result<Option<String>, String> {
+    if game_path.trim().is_empty() {
+        return Ok(None);
+    }
+
+    let version_path = Path::new(game_path).join("Version.txt");
+    match fs::read_to_string(&version_path) {
+        Ok(contents) => Ok(parse_rimworld_version(&contents)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!(
+            "Could not read RimWorld version at {}: {error}",
+            version_path.display()
+        )),
+    }
+}
+
+fn parse_rimworld_version(contents: &str) -> Option<String> {
+    let version = contents
+        .trim_start_matches('\u{feff}')
+        .lines()
+        .next()?
+        .trim();
+    let mut components = version.split('.');
+    let major = components.next()?;
+    let minor = components.next()?;
+    if major.is_empty()
+        || minor.is_empty()
+        || !major.chars().all(|character| character.is_ascii_digit())
+        || !minor.chars().all(|character| character.is_ascii_digit())
+    {
+        return None;
+    }
+    Some(version.to_string())
+}
+
 pub(crate) fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
     load_configured_mod_list(&settings_file(&app)?)
 }
@@ -228,21 +263,8 @@ fn is_rimworld_installation(path: &Path) -> bool {
 
 #[cfg(target_os = "windows")]
 fn has_valid_version_file(path: &Path) -> bool {
-    let Ok(version) = fs::read_to_string(path.join("Version.txt")) else {
-        return false;
-    };
-    let Some(version_number) = version.lines().next().map(str::trim) else {
-        return false;
-    };
-    let mut parts = version_number.split('.');
-    matches!(
-        (parts.next(), parts.next()),
-        (Some(major), Some(minor))
-            if !major.is_empty()
-                && !minor.is_empty()
-                && major.chars().all(|character| character.is_ascii_digit())
-                && minor.chars().all(|character| character.is_ascii_digit())
-    )
+    fs::read_to_string(path.join("Version.txt"))
+        .is_ok_and(|contents| parse_rimworld_version(&contents).is_some())
 }
 
 #[cfg(target_os = "windows")]
@@ -317,6 +339,61 @@ fn config_directory() -> Option<PathBuf> {
 #[cfg(target_os = "windows")]
 fn home_directory() -> Option<PathBuf> {
     std::env::var_os("USERPROFILE").map(PathBuf::from)
+}
+
+#[cfg(test)]
+mod version_tests {
+    use super::*;
+
+    #[test]
+    fn parses_rimworld_version_with_revision_suffix() {
+        assert_eq!(
+            parse_rimworld_version("\u{feff}1.6.4871 rev573\n"),
+            Some("1.6.4871 rev573".to_string()),
+        );
+    }
+
+    #[test]
+    fn rejects_non_numeric_major_and_minor_versions() {
+        assert_eq!(parse_rimworld_version("version 1.6"), None);
+        assert_eq!(parse_rimworld_version("1.beta.4871"), None);
+    }
+
+    #[test]
+    fn detects_version_from_game_install_folder() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be after the epoch")
+            .as_nanos();
+        let game_path = std::env::temp_dir().join(format!("rimworld-version-{nonce}"));
+        fs::create_dir_all(&game_path).expect("game folder should be created");
+        fs::write(game_path.join("Version.txt"), "1.5.4104 rev123\n")
+            .expect("version marker should be written");
+
+        let version = detect_rimworld_version(game_path.to_str().expect("path should be UTF-8"))
+            .expect("version file should be readable");
+
+        assert_eq!(version, Some("1.5.4104 rev123".to_string()));
+        fs::remove_dir_all(game_path).expect("game folder should be removed");
+    }
+
+    #[test]
+    fn missing_version_marker_returns_none() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be after the epoch")
+            .as_nanos();
+        let game_path = std::env::temp_dir().join(format!("missing-rimworld-version-{nonce}"));
+        assert_eq!(
+            detect_rimworld_version(game_path.to_str().expect("path should be UTF-8"))
+                .expect("missing Version.txt is not an error"),
+            None,
+        );
+    }
 }
 
 #[cfg(all(test, target_os = "windows"))]

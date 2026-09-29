@@ -15,3 +15,8 @@ pub fn save_path_settings(app: tauri::AppHandle, settings: PathSettings) -> Resu
 pub fn detect_rimworld_paths() -> Result<DetectedPaths, String> {
     path_detection::detect_rimworld_paths()
 }
+
+#[tauri::command]
+pub fn detect_rimworld_version(game_path: String) -> Result<Option<String>, String> {
+    path_detection::detect_rimworld_version(&game_path)
+}

@@ -17,6 +17,7 @@ import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
 	activeSearchAtom,
+	configuredGameVersionAtom,
 	gameVersionAtom,
 	hasModListAtom,
 	inactiveModsAtom,
@@ -39,12 +40,13 @@ export function useModLists(setStatus: (message: string) => void) {
 	const [activeMods, setActiveMods] = useAtom(activeModsAtom);
 	const [inactiveMods, setInactiveMods] = useAtom(inactiveModsAtom);
 	const [knownExpansions, setKnownExpansions] = useAtom(knownExpansionsAtom);
-	const [gameVersion, setGameVersion] = useAtom(gameVersionAtom);
+	const gameVersion = useAtomValue(gameVersionAtom);
 	const [sourceName, setSourceName] = useAtom(sourceNameAtom);
 	const [activeSearch, setActiveSearch] = useAtom(activeSearchAtom);
 	const [inactiveSearch, setInactiveSearch] = useAtom(inactiveSearchAtom);
 	const [, setSavedSnapshot] = useAtom(savedSnapshotAtom);
 	const [, setWorkshopUpdateResult] = useAtom(workshopUpdateResultAtom);
+	const [, setConfiguredGameVersion] = useAtom(configuredGameVersionAtom);
 
 	function initialize(
 		foundMods: InstalledMod[],
@@ -54,7 +56,10 @@ export function useModLists(setStatus: (message: string) => void) {
 		configPathConfigured: boolean,
 	) {
 		if (store.get(isTestModeAtom)) return;
-		setSavedSnapshot(createModListSnapshot('1.4', [], []));
+		setConfiguredGameVersion(null);
+		setSavedSnapshot(
+			createModListSnapshot(store.get(gameVersionAtom), [], []),
+		);
 		setInstalledMods(foundMods);
 		setActiveMods([]);
 		setInactiveMods(getInactivePackageIds(foundMods, []));
@@ -65,11 +70,11 @@ export function useModLists(setStatus: (message: string) => void) {
 				const parsed = parseModsConfig(content);
 				setActiveMods(parsed.activeMods);
 				setInactiveMods(getInactivePackageIds(foundMods, parsed.activeMods));
+				setConfiguredGameVersion(parsed.version);
 				setKnownExpansions(parsed.knownExpansions);
-				setGameVersion(parsed.version);
 				setSavedSnapshot(
 					createModListSnapshot(
-						parsed.version,
+						store.get(gameVersionAtom),
 						parsed.activeMods,
 						parsed.knownExpansions,
 					),
@@ -109,7 +114,7 @@ export function useModLists(setStatus: (message: string) => void) {
 		setActiveMods(parsed.activeMods);
 		setInactiveMods(getInactivePackageIds(mods, parsed.activeMods));
 		setKnownExpansions(parsed.knownExpansions);
-		setGameVersion(parsed.version);
+		setConfiguredGameVersion(parsed.version);
 		setSourceName(source);
 		return parsed;
 	}
