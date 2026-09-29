@@ -16,3 +16,7 @@ can be moved between Active and Inactive.
 At desktop widths, the selected-mod preview is on the left and the Active and
 Inactive mod lists are on the right. Narrow layouts stack the preview above the
 lists.
+
+Workshop update checks show progress while running, then report available
+updates, no updates found, or when some installed Workshop mods could not be
+compared.

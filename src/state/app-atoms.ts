@@ -4,6 +4,7 @@ import { createActiveModDiagnostics } from '../utils/mod_highlights';
 import { filterVisibleMods } from '../utils/mod_search';
 import { resolveGameVersion } from '../utils/game_version';
 import { EMPTY_PATH_SETTINGS, normalizedPackageId } from '../utils/mods';
+import { getWorkshopUpdateStatus } from '../utils/workshop_update_status';
 import type { ModListSnapshot } from '../utils/dirty_state';
 import type {
 	DatabaseKind,
@@ -61,6 +62,12 @@ export const workshopUpdateResultAtom = atom<WorkshopUpdateCheckResult | null>(
 	null,
 );
 export const checkingWorkshopUpdatesAtom = atom(false);
+export const workshopUpdateStatusAtom = atom((get) =>
+	getWorkshopUpdateStatus(
+		get(checkingWorkshopUpdatesAtom),
+		get(workshopUpdateResultAtom),
+	)
+);
 export const outdatedWorkshopModsByPackageIdAtom = atom((get) => {
 	const result = get(workshopUpdateResultAtom);
 	const updates = new Map<string, OutdatedWorkshopMod>();

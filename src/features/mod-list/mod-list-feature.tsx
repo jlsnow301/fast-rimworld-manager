@@ -1,3 +1,4 @@
+import { Check, LoaderCircle } from 'lucide-react';
 import { type DragEvent as ReactDragEvent, Fragment, useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
@@ -17,6 +18,7 @@ import {
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateResultAtom,
+	workshopUpdateStatusAtom,
 } from '../../state/app-atoms';
 import {
 	AlertDialog,
@@ -85,6 +87,7 @@ export function ModListFeature() {
 	const outdatedWorkshopModsByPackageId = useAtomValue(
 		outdatedWorkshopModsByPackageIdAtom,
 	);
+	const workshopUpdateStatus = useAtomValue(workshopUpdateStatusAtom);
 	const workshopUpdateResult = useAtomValue(workshopUpdateResultAtom);
 	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 	const [dispatchingUpdates, setDispatchingUpdates] = useState(false);
@@ -157,6 +160,27 @@ export function ModListFeature() {
 						Sort active mods
 					</Button>
 				</div>
+				{workshopUpdateStatus && (
+					<Badge
+						aria-live='polite'
+						role='status'
+						variant={workshopUpdateStatus.state === 'updates'
+							? 'secondary'
+							: 'outline'}
+					>
+						{workshopUpdateStatus.state === 'checking'
+							? (
+								<LoaderCircle
+									className='animate-spin'
+									data-icon='inline-start'
+								/>
+							)
+							: workshopUpdateStatus.state === 'no-updates'
+							? <Check data-icon='inline-start' />
+							: null}
+						{workshopUpdateStatus.message}
+					</Badge>
+				)}
 			</div>
 			<p className='mb-3 text-sm text-muted-foreground'>
 				Drag mods between the lists to change activation.
