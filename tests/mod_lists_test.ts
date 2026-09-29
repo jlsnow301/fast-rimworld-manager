@@ -15,7 +15,9 @@ Deno.test('deactivating removes a mod from active and appends it to inactive', (
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });
@@ -35,7 +37,9 @@ Deno.test('activating removes a mod from inactive and appends it to active', () 
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });
@@ -74,7 +78,9 @@ Deno.test('RimWorld Core stays active while DLC can be deactivated', () => {
 	};
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });

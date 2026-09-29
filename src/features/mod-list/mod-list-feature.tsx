@@ -162,7 +162,8 @@ export function ModListFeature() {
 				</div>
 				<div className='flex items-center gap-3'>
 					<Badge variant='secondary'>
-						{activeMods.length} active · {inactiveMods.length} inactive
+						{activeMods.length} active · {inactiveMods.length}{' '}
+						inactive
 					</Badge>
 					<Button
 						aria-busy={checkingWorkshopUpdates}
@@ -250,7 +251,8 @@ export function ModListFeature() {
 							? 'No active mods.'
 							: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
 						mods={visibleActiveMods}
-						activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+						activeDiagnosticsByPackageId={activeModDiagnostics
+							.byPackageId}
 						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 						modDetailsByPackageId={modDetailsByPackageId}
 						onDropMod={moveMod}
@@ -264,7 +266,8 @@ export function ModListFeature() {
 						count={inactiveMods.length}
 						emptyMessage='No inactive mods found. Configure paths in Settings.'
 						mods={visibleInactiveMods}
-						activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+						activeDiagnosticsByPackageId={activeModDiagnostics
+							.byPackageId}
 						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 						modDetailsByPackageId={modDetailsByPackageId}
 						onDropMod={moveMod}
@@ -276,15 +279,20 @@ export function ModListFeature() {
 					/>
 				</div>
 			</div>
-			<p aria-live='polite' className='mt-3 text-sm text-muted-foreground'>
+			<p
+				aria-live='polite'
+				className='mt-3 text-sm text-muted-foreground'
+			>
 				{status}
 			</p>
 			<Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>
-							Update selected {selectedWorkshopMods.length} of{' '}
-							{outdatedWorkshopMods.length} outdated Workshop mods?
+							Update selected {selectedWorkshopMods.length} of
+							{' '}
+							{outdatedWorkshopMods.length}{' '}
+							outdated Workshop mods?
 						</DialogTitle>
 						<DialogDescription>
 							{isTestMode
@@ -293,10 +301,13 @@ export function ModListFeature() {
 						</DialogDescription>
 					</DialogHeader>
 					<FieldSet>
-						<FieldLegend variant='label'>Outdated Workshop mods</FieldLegend>
+						<FieldLegend variant='label'>
+							Outdated Workshop mods
+						</FieldLegend>
 						<FieldGroup className='max-h-60 gap-3 overflow-y-auto'>
 							{outdatedWorkshopMods.map((mod) => {
-								const id = `workshop-update-${mod.publishedFileId}`;
+								const id =
+									`workshop-update-${mod.publishedFileId}`;
 								return (
 									<Field
 										data-disabled={dispatchingUpdates}
@@ -304,17 +315,19 @@ export function ModListFeature() {
 										orientation='horizontal'
 									>
 										<Checkbox
-											checked={selectedUpdateIds.includes(mod.publishedFileId)}
+											checked={selectedUpdateIds.includes(
+												mod.publishedFileId,
+											)}
 											disabled={dispatchingUpdates}
 											id={id}
 											onCheckedChange={(checked) => {
-												setSelectedUpdateIds((selectedIds) =>
-													toggleWorkshopUpdateSelection(
-														selectedIds,
-														mod.publishedFileId,
-														checked === true,
-													)
-												);
+												setSelectedUpdateIds((
+													selectedIds,
+												) => toggleWorkshopUpdateSelection(
+													selectedIds,
+													mod.publishedFileId,
+													checked === true,
+												));
 											}}
 										/>
 										<FieldLabel
@@ -322,8 +335,12 @@ export function ModListFeature() {
 											htmlFor={id}
 										>
 											<FieldContent>
-												<FieldTitle>{mod.name}</FieldTitle>
-												<Badge variant='outline'>{mod.packageId}</Badge>
+												<FieldTitle>
+													{mod.name}
+												</FieldTitle>
+												<Badge variant='outline'>
+													{mod.packageId}
+												</Badge>
 											</FieldContent>
 										</FieldLabel>
 									</Field>
@@ -333,15 +350,21 @@ export function ModListFeature() {
 						{(workshopUpdateResult?.skippedCount ?? 0) > 0 && (
 							<FieldDescription>
 								{workshopUpdateResult?.skippedCount}{' '}
-								Workshop mods could not be compared and will not be included.
+								Workshop mods could not be compared and will not
+								be included.
 							</FieldDescription>
 						)}
 					</FieldSet>
-					{dispatchMessage && <FieldError>{dispatchMessage}</FieldError>}
+					{dispatchMessage && (
+						<FieldError>{dispatchMessage}</FieldError>
+					)}
 					<DialogFooter>
 						<DialogClose
 							render={
-								<Button disabled={dispatchingUpdates} variant='outline' />
+								<Button
+									disabled={dispatchingUpdates}
+									variant='outline'
+								/>
 							}
 						>
 							Cancel
@@ -434,8 +457,12 @@ function ModListPanel({
 						? (
 							<Empty className='flex-1 p-6'>
 								<EmptyHeader>
-									<EmptyTitle>{count > 0 ? 'No matches' : title}</EmptyTitle>
-									<EmptyDescription>{emptyMessage}</EmptyDescription>
+									<EmptyTitle>
+										{count > 0 ? 'No matches' : title}
+									</EmptyTitle>
+									<EmptyDescription>
+										{emptyMessage}
+									</EmptyDescription>
 								</EmptyHeader>
 							</Empty>
 						)
@@ -449,17 +476,29 @@ function ModListPanel({
 								)
 								: undefined;
 							const errorDetails = diagnostics?.errors
-								.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
+								.map((issue) =>
+									`${issue.title}: ${
+										issue.details.join(', ')
+									}`
+								)
 								.join('. ');
 							const warningDetails = diagnostics?.warnings
-								.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
+								.map((issue) =>
+									`${issue.title}: ${
+										issue.details.join(', ')
+									}`
+								)
 								.join('. ');
-							const outdatedWorkshopMod = outdatedWorkshopModsByPackageId.get(
-								normalizedPackageId(packageId),
-							);
+							const outdatedWorkshopMod =
+								outdatedWorkshopModsByPackageId.get(
+									normalizedPackageId(packageId),
+								);
 							const updateDetails = outdatedWorkshopMod
 								? `Steam update available. Latest Workshop update: ${
-									new Date(outdatedWorkshopMod.steamTimeUpdated * 1000)
+									new Date(
+										outdatedWorkshopMod.steamTimeUpdated *
+											1000,
+									)
 										.toLocaleString()
 								}.`
 								: undefined;
@@ -470,12 +509,17 @@ function ModListPanel({
 							].filter(Boolean).join('. ');
 
 							const canDrag = type !== 'active' ||
-								normalizedPackageId(packageId) !== 'ludeon.rimworld';
+								normalizedPackageId(packageId) !==
+									'ludeon.rimworld';
 							return (
 								<Fragment key={`${packageId}-${index}`}>
 									<Button
-										aria-label={`Show details for ${mod?.name ?? packageId}${
-											accessibleIssues ? `. ${accessibleIssues}` : ''
+										aria-label={`Show details for ${
+											mod?.name ?? packageId
+										}${
+											accessibleIssues
+												? `. ${accessibleIssues}`
+												: ''
 										}`}
 										className={cn(
 											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal',
@@ -491,10 +535,14 @@ function ModListPanel({
 										draggable={canDrag}
 										onClick={() => onSelectMod(packageId)}
 										onDragStart={(event) => {
-											event.dataTransfer.effectAllowed = 'move';
+											event.dataTransfer.effectAllowed =
+												'move';
 											event.dataTransfer.setData(
 												MOD_DRAG_MIME,
-												JSON.stringify({ index, source: type }),
+												JSON.stringify({
+													index,
+													source: type,
+												}),
 											);
 										}}
 										variant='ghost'
@@ -505,23 +553,35 @@ function ModListPanel({
 											</span>
 											{mod && (
 												<span className='flex flex-wrap gap-2'>
-													<Badge variant='secondary'>{mod.packageId}</Badge>
-													<Badge variant='outline'>{mod.source}</Badge>
+													<Badge variant='secondary'>
+														{mod.packageId}
+													</Badge>
+													<Badge variant='outline'>
+														{mod.source}
+													</Badge>
 												</span>
 											)}
-											{diagnostics?.errors.map((issue) => (
+											{diagnostics?.errors.map((
+												issue,
+											) => (
 												<Badge
 													key={issue.code}
-													title={issue.details.join(', ')}
+													title={issue.details.join(
+														', ',
+													)}
 													variant='destructive'
 												>
 													{issue.title}
 												</Badge>
 											))}
-											{diagnostics?.warnings.map((issue) => (
+											{diagnostics?.warnings.map((
+												issue,
+											) => (
 												<Badge
 													key={issue.code}
-													title={issue.details.join(', ')}
+													title={issue.details.join(
+														', ',
+													)}
 													variant='outline'
 												>
 													{issue.title}
@@ -531,7 +591,9 @@ function ModListPanel({
 												<Badge
 													title={`Installed update: ${
 														new Date(
-															outdatedWorkshopMod.installedTimeUpdated * 1000,
+															outdatedWorkshopMod
+																.installedTimeUpdated *
+																1000,
 														).toLocaleString()
 													}`}
 													variant='secondary'
@@ -541,7 +603,9 @@ function ModListPanel({
 											)}
 										</span>
 									</Button>
-									{modIndex < mods.length - 1 && <Separator />}
+									{modIndex < mods.length - 1 && (
+										<Separator />
+									)}
 								</Fragment>
 							);
 						})}

@@ -57,7 +57,9 @@ Deno.test('reports active config errors and warnings by affected mod', () => {
 	const duplicateIssues = diagnostics.byPackageId.get('author.bad');
 	const unknownIssues = diagnostics.byPackageId.get('unknown.mod');
 	if (
-		JSON.stringify(consumerIssues?.errors.map((issue) => issue.code).sort()) !==
+		JSON.stringify(
+			consumerIssues?.errors.map((issue) => issue.code).sort(),
+		) !==
 			JSON.stringify(['incompatibility', 'missing-dependency'])
 	) {
 		throw new Error(
@@ -81,7 +83,9 @@ Deno.test('reports active config errors and warnings by affected mod', () => {
 			JSON.stringify(['duplicate-mod', 'incompatibility'])
 	) {
 		throw new Error(
-			`Unexpected duplicate mod errors: ${JSON.stringify(duplicateIssues)}`,
+			`Unexpected duplicate mod errors: ${
+				JSON.stringify(duplicateIssues)
+			}`,
 		);
 	}
 	if (unknownIssues?.errors[0]?.code !== 'missing-mod') {
@@ -136,6 +140,8 @@ Deno.test('accepts alternative dependencies and supported game versions', () => 
 	);
 
 	if (diagnostics.errorCount || diagnostics.warningCount) {
-		throw new Error(`Expected a clean list: ${JSON.stringify(diagnostics)}`);
+		throw new Error(
+			`Expected a clean list: ${JSON.stringify(diagnostics)}`,
+		);
 	}
 });

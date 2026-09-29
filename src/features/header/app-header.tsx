@@ -34,10 +34,14 @@ export function AppHeader() {
 				</span>
 			</div>
 			<div className='flex items-center gap-2'>
-				<Badge variant='outline'>{sourceName || 'No mod list loaded'}</Badge>
+				<Badge variant='outline'>
+					{sourceName || 'No mod list loaded'}
+				</Badge>
 				{isTestMode && <Badge variant='secondary'>TEST MODE</Badge>}
 				{isModListDirty && (
-					<Badge variant='secondary' aria-live='polite'>Unsaved changes</Badge>
+					<Badge variant='secondary' aria-live='polite'>
+						Unsaved changes
+					</Badge>
 				)}
 				<Button
 					variant='outline'

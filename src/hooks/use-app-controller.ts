@@ -61,7 +61,9 @@ export function useAppController() {
 		async function loadConfiguredMods() {
 			let settings: PathSettings;
 			try {
-				settings = await invokeDesktop<PathSettings>('load_path_settings');
+				settings = await invokeDesktop<PathSettings>(
+					'load_path_settings',
+				);
 			} catch (error) {
 				if (!cancelled) {
 					setSettingsMessage(
@@ -82,14 +84,19 @@ export function useAppController() {
 						? invokeDesktop<string | null>('load_startup_mod_list')
 						: Promise.resolve(null),
 					settings.gamePath
-						? invokeDesktop<string | null>('detect_rimworld_version', {
-							gamePath: settings.gamePath,
-						})
+						? invokeDesktop<string | null>(
+							'detect_rimworld_version',
+							{
+								gamePath: settings.gamePath,
+							},
+						)
 						: Promise.resolve(null),
 				]);
 			if (cancelled) return;
 			setInstalledGameVersion(
-				versionResult.status === 'fulfilled' ? versionResult.value : null,
+				versionResult.status === 'fulfilled'
+					? versionResult.value
+					: null,
 			);
 
 			const foundMods = modsResult.status === 'fulfilled'
@@ -189,7 +196,9 @@ export function useAppController() {
 	async function savePathSettings() {
 		setSettingsMessage('Saving paths…');
 		try {
-			await invokeDesktop('save_path_settings', { settings: pathSettings });
+			await invokeDesktop('save_path_settings', {
+				settings: pathSettings,
+			});
 			setSettingsMessage('Paths saved.');
 		} catch (error) {
 			setSettingsMessage(
@@ -217,7 +226,9 @@ export function useAppController() {
 		setDownloadingDatabase(database);
 		setDatabaseMessage(
 			`Downloading ${
-				database === 'communityRules' ? 'Community Rules' : 'Steam Workshop'
+				database === 'communityRules'
+					? 'Community Rules'
+					: 'Steam Workshop'
 			} database…`,
 		);
 		try {
@@ -318,7 +329,9 @@ export function useAppController() {
 			return result;
 		} catch (error) {
 			if (!store.get(isTestModeAtom)) {
-				setStatus(error instanceof Error ? error.message : String(error));
+				setStatus(
+					error instanceof Error ? error.message : String(error),
+				);
 			}
 			return null;
 		} finally {
@@ -339,7 +352,9 @@ export function useAppController() {
 		}
 		const urls = steamWorkshopDownloadUrls(selectedMods);
 		if (urls.length === 0) {
-			setStatus('No valid outdated Workshop items are selected for update.');
+			setStatus(
+				'No valid outdated Workshop items are selected for update.',
+			);
 			return { openedCount: 0, failedCount: 0 };
 		}
 		try {

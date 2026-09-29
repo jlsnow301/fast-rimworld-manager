@@ -13,7 +13,9 @@ Deno.test('search matches package IDs case-insensitively and keeps source indice
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });
@@ -30,7 +32,9 @@ Deno.test('search matches installed mod display names', () => {
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });
@@ -47,7 +51,9 @@ Deno.test('blank queries show all mods in their original order', () => {
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });

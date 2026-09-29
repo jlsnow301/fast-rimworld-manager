@@ -21,7 +21,10 @@ export function createActiveModDiagnostics(
 			activeIndexes.set(normalizedId, index);
 			activePackageIds.set(normalizedId, packageId);
 		}
-		activeCounts.set(normalizedId, (activeCounts.get(normalizedId) ?? 0) + 1);
+		activeCounts.set(
+			normalizedId,
+			(activeCounts.get(normalizedId) ?? 0) + 1,
+		);
 	}
 
 	const byPackageId = new Map<string, ModHighlightState>();
@@ -44,7 +47,9 @@ export function createActiveModDiagnostics(
 			issue = { code, severity, title, details: [] };
 			issues.push(issue);
 		}
-		if (detail && !issue.details.includes(detail)) issue.details.push(detail);
+		if (detail && !issue.details.includes(detail)) {
+			issue.details.push(detail);
+		}
 	}
 
 	for (const [packageId, occurrenceCount] of activeCounts) {
@@ -85,14 +90,19 @@ export function createActiveModDiagnostics(
 				'error',
 				'missing-dependency',
 				'Missing dependencies',
-				missingDependencies.map((dependency) => dependency.name).join(', '),
+				missingDependencies.map((dependency) => dependency.name).join(
+					', ',
+				),
 			);
 		}
 
 		for (const incompatiblePackageId of mod.incompatibleWith) {
 			const incompatibleId = normalizedPackageId(incompatiblePackageId);
 			const incompatibleMod = modDetailsByPackageId.get(incompatibleId);
-			if (!activeIndexes.has(incompatibleId) || incompatibleId === packageId) {
+			if (
+				!activeIndexes.has(incompatibleId) ||
+				incompatibleId === packageId
+			) {
 				continue;
 			}
 			const pair = [packageId, incompatibleId].sort().join('\0');

@@ -45,7 +45,8 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 		throw new Error('Test mode should become active.');
 	}
 	if (
-		store.get(installedModsAtom).length !== TEST_MOD_LIST.installedMods.length
+		store.get(installedModsAtom).length !==
+			TEST_MOD_LIST.installedMods.length
 	) {
 		throw new Error('Test mode should expose the sample installed mods.');
 	}
@@ -53,7 +54,9 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 		throw new Error('Test mode should load the sample active mod list.');
 	}
 	if (store.get(activeModsAtom)[1] !== 'ludeon.rimworld.royalty') {
-		throw new Error('Test mode should include active DLC in the active list.');
+		throw new Error(
+			'Test mode should include active DLC in the active list.',
+		);
 	}
 	if (!store.get(inactiveModsAtom).includes('ludeon.rimworld.biotech')) {
 		throw new Error(
@@ -61,7 +64,9 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 		);
 	}
 	if (store.get(activeModDiagnosticsAtom).errorCount !== 1) {
-		throw new Error('The sample missing dependency should produce one error.');
+		throw new Error(
+			'The sample missing dependency should produce one error.',
+		);
 	}
 	if (
 		store.get(workshopUpdateResultAtom)?.outdatedMods[0]?.packageId !==
@@ -122,7 +127,9 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		store.get(gameVersionAtom) !== '1.5.2812 rev1' ||
 		store.get(sourceNameAtom) !== 'ModsConfig.xml'
 	) {
-		throw new Error('The original source and game version should be restored.');
+		throw new Error(
+			'The original source and game version should be restored.',
+		);
 	}
 	if (
 		store.get(activeSearchAtom) !== 'actual' ||
@@ -131,7 +138,9 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		throw new Error('The original search queries should be restored.');
 	}
 	if (store.get(workshopUpdateResultAtom) !== originalWorkshopUpdateResult) {
-		throw new Error('The previous Workshop update results should be restored.');
+		throw new Error(
+			'The previous Workshop update results should be restored.',
+		);
 	}
 	if (!store.get(isModListDirtyAtom)) {
 		throw new Error('The original dirty state should be restored.');

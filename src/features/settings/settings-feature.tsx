@@ -94,7 +94,9 @@ export function SettingsFeature() {
 			<Card>
 				<CardHeader>
 					<CardTitle>Settings</CardTitle>
-					<CardDescription>RimWorld and mod folder locations</CardDescription>
+					<CardDescription>
+						RimWorld and mod folder locations
+					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-5'>
 					<div className='flex flex-wrap gap-2'>
@@ -109,13 +111,17 @@ export function SettingsFeature() {
 								key={field.key}
 								label={field.label}
 								name={field.key}
-								onBrowse={() => browsePath(field.key, field.label)}
+								onBrowse={() =>
+									browsePath(field.key, field.label)}
 								onChange={updatePath}
 								value={pathSettings[field.key]}
 							/>
 						))}
 					</FieldGroup>
-					<p aria-live='polite' className='text-sm text-muted-foreground'>
+					<p
+						aria-live='polite'
+						className='text-sm text-muted-foreground'
+					>
 						{settingsMessage}
 					</p>
 				</CardContent>
@@ -124,7 +130,8 @@ export function SettingsFeature() {
 				<CardHeader>
 					<CardTitle>Databases</CardTitle>
 					<CardDescription>
-						Download compatible metadata from community-maintained repositories.
+						Download compatible metadata from community-maintained
+						repositories.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
@@ -134,7 +141,9 @@ export function SettingsFeature() {
 							key={database.id}
 						>
 							<div>
-								<h3 className='font-medium'>{database.label}</h3>
+								<h3 className='font-medium'>
+									{database.label}
+								</h3>
 								<p className='text-sm text-muted-foreground'>
 									{database.description}
 								</p>
@@ -151,7 +160,10 @@ export function SettingsFeature() {
 							</Button>
 						</div>
 					))}
-					<p aria-live='polite' className='text-sm text-muted-foreground'>
+					<p
+						aria-live='polite'
+						className='text-sm text-muted-foreground'
+					>
 						{databaseMessage}
 					</p>
 				</CardContent>
@@ -161,19 +173,23 @@ export function SettingsFeature() {
 					<CardTitle>Steam Web API</CardTitle>
 					<CardDescription>
 						Create a personal 32-character API key at
-						https://steamcommunity.com/dev/apikey. The key is kept in Windows
-						Credential Manager and never shown again.
+						https://steamcommunity.com/dev/apikey. The key is kept
+						in Windows Credential Manager and never shown again.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
 					<FieldGroup>
 						<Field>
-							<FieldLabel htmlFor='steam-api-key'>Steam Web API key</FieldLabel>
+							<FieldLabel htmlFor='steam-api-key'>
+								Steam Web API key
+							</FieldLabel>
 							<Input
 								autoComplete='off'
 								id='steam-api-key'
 								onChange={(event) =>
-									setSteamApiKeyInput(event.currentTarget.value)}
+									setSteamApiKeyInput(
+										event.currentTarget.value,
+									)}
 								placeholder='Enter your 32-character key'
 								spellCheck={false}
 								type='password'
@@ -183,7 +199,8 @@ export function SettingsFeature() {
 					</FieldGroup>
 					<div className='flex flex-wrap gap-2'>
 						<Button
-							disabled={steamApiBusy || steamApiKeyInput.trim().length === 0}
+							disabled={steamApiBusy ||
+								steamApiKeyInput.trim().length === 0}
 							onClick={handleSaveSteamApiKey}
 						>
 							Save API key
@@ -203,7 +220,10 @@ export function SettingsFeature() {
 							Remove key
 						</Button>
 					</div>
-					<p aria-live='polite' className='text-sm text-muted-foreground'>
+					<p
+						aria-live='polite'
+						className='text-sm text-muted-foreground'
+					>
 						{steamApiKeyConfigured
 							? 'A Steam Web API key is stored securely.'
 							: 'No Steam Web API key is stored.'}
@@ -234,7 +254,8 @@ function PathField(props: PathFieldProps) {
 				<Input
 					autoComplete='off'
 					id={`path-${name}`}
-					onChange={(event) => onChange(name, event.currentTarget.value)}
+					onChange={(event) =>
+						onChange(name, event.currentTarget.value)}
 					placeholder='Enter folder path'
 					spellCheck={false}
 					value={value}

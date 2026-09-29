@@ -4,7 +4,9 @@ import {
 } from '../src/utils/dirty_state.ts';
 
 Deno.test('loaded list matches its saved snapshot', () => {
-	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], ['Core']);
+	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], [
+		'Core',
+	]);
 	const current = createModListSnapshot('1.6', ['Core', 'Author.Mod'], [
 		'Core',
 	]);
@@ -15,13 +17,19 @@ Deno.test('loaded list matches its saved snapshot', () => {
 });
 
 Deno.test('active order, version, and expansions changes mark list dirty', () => {
-	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], ['Core']);
+	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], [
+		'Core',
+	]);
 	const changedOrder = createModListSnapshot('1.6', ['Author.Mod', 'Core'], [
 		'Core',
 	]);
-	const changedVersion = createModListSnapshot('1.5', ['Core', 'Author.Mod'], [
-		'Core',
-	]);
+	const changedVersion = createModListSnapshot(
+		'1.5',
+		['Core', 'Author.Mod'],
+		[
+			'Core',
+		],
+	);
 	const changedExpansions = createModListSnapshot(
 		'1.6',
 		['Core', 'Author.Mod'],
@@ -40,7 +48,9 @@ Deno.test('active order, version, and expansions changes mark list dirty', () =>
 });
 
 Deno.test('restoring and saving a mod snapshot clears dirty state', () => {
-	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], ['Core']);
+	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], [
+		'Core',
+	]);
 	const removed = createModListSnapshot('1.6', ['Core'], ['Core']);
 	const restored = createModListSnapshot('1.6', ['Core', 'Author.Mod'], [
 		'Core',
@@ -50,7 +60,9 @@ Deno.test('restoring and saving a mod snapshot clears dirty state', () => {
 		throw new Error('Removing an active mod should mark the list dirty.');
 	}
 	if (hasModListChanges(saved, restored)) {
-		throw new Error('Restoring the saved mod order should clear dirty state.');
+		throw new Error(
+			'Restoring the saved mod order should clear dirty state.',
+		);
 	}
 
 	const savedAfterWrite = createModListSnapshot(

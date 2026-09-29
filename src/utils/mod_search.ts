@@ -21,9 +21,12 @@ export function filterVisibleMods(
 		const modName = modDetailsByPackageId.get(
 			normalizedPackageId(packageId),
 		)?.name;
-		const matchesPackageId = packageId.toLowerCase().includes(normalizedQuery);
-		const matchesModName = modName?.toLowerCase().includes(normalizedQuery) ??
-			false;
+		const matchesPackageId = packageId.toLowerCase().includes(
+			normalizedQuery,
+		);
+		const matchesModName =
+			modName?.toLowerCase().includes(normalizedQuery) ??
+				false;
 		if (matchesPackageId || matchesModName) {
 			visibleMods.push({ packageId, index });
 		}

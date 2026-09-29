@@ -69,7 +69,9 @@ export function useModLists(setStatus: (message: string) => void) {
 			try {
 				const parsed = parseModsConfig(content);
 				setActiveMods(parsed.activeMods);
-				setInactiveMods(getInactivePackageIds(foundMods, parsed.activeMods));
+				setInactiveMods(
+					getInactivePackageIds(foundMods, parsed.activeMods),
+				);
 				setConfiguredGameVersion(parsed.version);
 				setKnownExpansions(parsed.knownExpansions);
 				setSavedSnapshot(
@@ -84,7 +86,9 @@ export function useModLists(setStatus: (message: string) => void) {
 					`Loaded ${parsed.activeMods.length} active mods and found ${foundMods.length} installed mods.`,
 				);
 			} catch (error) {
-				setStatus(error instanceof Error ? error.message : String(error));
+				setStatus(
+					error instanceof Error ? error.message : String(error),
+				);
 			}
 			return;
 		}
@@ -109,7 +113,11 @@ export function useModLists(setStatus: (message: string) => void) {
 		setInactiveMods(getInactivePackageIds(foundMods, activeMods));
 	}
 
-	function applyModList(content: string, source: string, mods = installedMods) {
+	function applyModList(
+		content: string,
+		source: string,
+		mods = installedMods,
+	) {
 		const parsed = parseModsConfig(content);
 		setActiveMods(parsed.activeMods);
 		setInactiveMods(getInactivePackageIds(mods, parsed.activeMods));

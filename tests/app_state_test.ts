@@ -74,7 +74,9 @@ Deno.test('Jotai tracks mod-list dirty state through source atom transitions', (
 	store.set(activeModsAtom, []);
 
 	if (store.get(isModListDirtyAtom)) {
-		throw new Error('Restoring the saved mod list should clear dirty state.');
+		throw new Error(
+			'Restoring the saved mod list should clear dirty state.',
+		);
 	}
 });
 

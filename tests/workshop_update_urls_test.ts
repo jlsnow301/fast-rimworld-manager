@@ -24,7 +24,9 @@ Deno.test('bulk updates include each valid outdated Workshop item once', () => {
 
 	if (JSON.stringify(result) !== JSON.stringify(expected)) {
 		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+			`Expected ${JSON.stringify(expected)}, got ${
+				JSON.stringify(result)
+			}`,
 		);
 	}
 });

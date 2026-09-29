@@ -52,7 +52,11 @@ export function ModPreviewFeature() {
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
 				<CardAction>
-					<Button onClick={closeModPreview} size='sm' variant='outline'>
+					<Button
+						onClick={closeModPreview}
+						size='sm'
+						variant='outline'
+					>
 						Close
 					</Button>
 				</CardAction>
@@ -66,7 +70,9 @@ export function ModPreviewFeature() {
 					<div className='grid grid-cols-[8rem_minmax(0,1fr)] gap-3'>
 						<dt className='font-medium'>Source</dt>
 						<dd>
-							<Badge variant='outline'>{selectedMod.source}</Badge>
+							<Badge variant='outline'>
+								{selectedMod.source}
+							</Badge>
 						</dd>
 					</div>
 					<div className='grid grid-cols-[8rem_minmax(0,1fr)] gap-3'>
@@ -81,7 +87,8 @@ export function ModPreviewFeature() {
 					)}
 				</dl>
 				{diagnostics &&
-					(diagnostics.errors.length > 0 || diagnostics.warnings.length > 0) &&
+					(diagnostics.errors.length > 0 ||
+						diagnostics.warnings.length > 0) &&
 					(
 						<>
 							<Separator />
@@ -89,12 +96,20 @@ export function ModPreviewFeature() {
 								aria-label='Active mod list errors and warnings'
 								className='flex flex-col gap-3'
 							>
-								<h4 className='font-semibold'>Active mod list checks</h4>
+								<h4 className='font-semibold'>
+									Active mod list checks
+								</h4>
 								{diagnostics.errors.map((issue) => (
-									<IssueDetails issue={issue} key={`error-${issue.code}`} />
+									<IssueDetails
+										issue={issue}
+										key={`error-${issue.code}`}
+									/>
 								))}
 								{diagnostics.warnings.map((issue) => (
-									<IssueDetails issue={issue} key={`warning-${issue.code}`} />
+									<IssueDetails
+										issue={issue}
+										key={`warning-${issue.code}`}
+									/>
 								))}
 							</section>
 						</>
