@@ -134,6 +134,7 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 			)
 			.map((mod) => mod.packageId),
 	);
+	set(knownExpansionsAtom, [...TEST_MOD_LIST.modList.knownExpansions]);
 	set(installedGameVersionAtom, null);
 	set(configuredGameVersionAtom, TEST_MOD_LIST.modList.version);
 	set(sourceNameAtom, 'Sample test mod list');

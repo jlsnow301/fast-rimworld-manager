@@ -11,6 +11,15 @@ use crate::backend::models::{
 };
 use crate::backend::services::{mod_metadata, path_detection::load_path_settings_for_app};
 
+const RIMWORLD_GAME_CONTENT_NAMES: &[(&str, &str)] = &[
+    ("ludeon.rimworld", "Core"),
+    ("ludeon.rimworld.royalty", "RimWorld - Royalty"),
+    ("ludeon.rimworld.ideology", "RimWorld - Ideology"),
+    ("ludeon.rimworld.biotech", "RimWorld - Biotech"),
+    ("ludeon.rimworld.anomaly", "RimWorld - Anomaly"),
+    ("ludeon.rimworld.odyssey", "RimWorld - Odyssey"),
+];
+
 #[derive(Clone, Copy)]
 enum AboutField {
     Name,
@@ -80,6 +89,17 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         };
         let Some((name, package_id, description)) = parse_about_xml(&contents) else {
             continue;
+        };
+        let name = if source == "game" && name.eq_ignore_ascii_case(&package_id) {
+            RIMWORLD_GAME_CONTENT_NAMES
+                .iter()
+                .find_map(|(known_id, name)| {
+                    package_id.eq_ignore_ascii_case(known_id).then_some(*name)
+                })
+                .unwrap_or(&name)
+                .to_string()
+        } else {
+            name
         };
         let parsed_rules = parse_about_rules(&contents);
         let supported_versions = parse_xml_list(&contents, "supportedVersions");
@@ -608,6 +628,59 @@ mod tests {
             assert_eq!(listed.name, name);
             assert_eq!(listed.source, source);
         }
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn gives_core_and_dlc_readable_names_when_about_xml_omits_names() {
+        let root = unique_temp_directory("vanilla-content-names");
+        let game_data = root.join("Data");
+        let entries = [
+            ("Core", "Ludeon.RimWorld", "Core"),
+            ("Royalty", "Ludeon.RimWorld.Royalty", "RimWorld - Royalty"),
+            (
+                "Ideology",
+                "Ludeon.RimWorld.Ideology",
+                "RimWorld - Ideology",
+            ),
+            ("Biotech", "Ludeon.RimWorld.Biotech", "RimWorld - Biotech"),
+            ("Anomaly", "Ludeon.RimWorld.Anomaly", "RimWorld - Anomaly"),
+            ("Odyssey", "Ludeon.RimWorld.Odyssey", "RimWorld - Odyssey"),
+        ];
+
+        for (directory, package_id, _) in entries {
+            let about_directory = game_data.join(directory).join("About");
+            fs::create_dir_all(&about_directory).expect("About folder should be created");
+            fs::write(
+                about_directory.join("About.xml"),
+                format!("<ModMetaData><packageId>{package_id}</packageId></ModMetaData>"),
+            )
+            .expect("About.xml should be created");
+        }
+
+        let settings = PathSettings {
+            game_path: root.to_string_lossy().into_owned(),
+            ..PathSettings::default()
+        };
+        let mods = collect_installed_mods(&settings).expect("game data should be scanned");
+        let mut expected: Vec<_> = entries
+            .iter()
+            .map(|(_, package_id, name)| (*name, *package_id, "game"))
+            .collect();
+        expected.sort();
+        let mut actual: Vec<_> = mods
+            .iter()
+            .map(|mod_entry| {
+                (
+                    mod_entry.name.as_str(),
+                    mod_entry.package_id.as_str(),
+                    mod_entry.source.as_str(),
+                )
+            })
+            .collect();
+        actual.sort();
+
+        assert_eq!(actual, expected);
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
 

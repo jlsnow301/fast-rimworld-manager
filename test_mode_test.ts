@@ -49,8 +49,16 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 	) {
 		throw new Error('Test mode should expose the sample installed mods.');
 	}
-	if (store.get(activeModsAtom)[2] !== 'sample.vehiclemod') {
+	if (store.get(activeModsAtom)[3] !== 'sample.vehiclemod') {
 		throw new Error('Test mode should load the sample active mod list.');
+	}
+	if (store.get(activeModsAtom)[1] !== 'ludeon.rimworld.royalty') {
+		throw new Error('Test mode should include active DLC in the active list.');
+	}
+	if (!store.get(inactiveModsAtom).includes('ludeon.rimworld.biotech')) {
+		throw new Error(
+			'Test mode should include inactive DLC in the inactive list.',
+		);
 	}
 	if (store.get(activeModDiagnosticsAtom).errorCount !== 1) {
 		throw new Error('The sample missing dependency should produce one error.');

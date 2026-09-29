@@ -1,3 +1,4 @@
+import { normalizedPackageId } from './mods';
 export type ModListTransfer = {
 	active: string[];
 	inactive: string[];
@@ -13,6 +14,10 @@ export function moveModBetweenLists(
 	const sourceMods = source === 'active' ? active : inactive;
 	const packageId = sourceMods[index];
 	if (packageId === undefined) return null;
+	if (
+		source === 'active' &&
+		normalizedPackageId(packageId) === 'ludeon.rimworld'
+	) return null;
 
 	if (source === 'active') {
 		return {

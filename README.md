@@ -8,3 +8,7 @@ folder. If it cannot be read, the app falls back to the version in
 
 Windows auto-detected folder paths are normalized to use consistent backslash
 separators before they are shown or saved.
+
+Installed Core and DLC entries from RimWorld's `Data` folder appear in the mod
+lists with readable official names. Core cannot be deactivated; installed DLC
+can be moved between Active and Inactive.

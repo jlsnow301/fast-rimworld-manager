@@ -57,3 +57,24 @@ Deno.test('invalid transfer indices leave both lists unchanged', () => {
 		throw new Error('Invalid transfers mutated the input lists.');
 	}
 });
+
+Deno.test('RimWorld Core stays active while DLC can be deactivated', () => {
+	const active = ['Ludeon.RimWorld', 'Ludeon.RimWorld.Royalty'];
+	const inactive = ['Ludeon.RimWorld.Biotech'];
+
+	if (moveModBetweenLists(active, inactive, 0, 'active') !== null) {
+		throw new Error('RimWorld Core must not move to the inactive list.');
+	}
+
+	const result = moveModBetweenLists(active, inactive, 1, 'active');
+	const expected = {
+		active: ['Ludeon.RimWorld'],
+		inactive: ['Ludeon.RimWorld.Biotech', 'Ludeon.RimWorld.Royalty'],
+		packageId: 'Ludeon.RimWorld.Royalty',
+	};
+	if (JSON.stringify(result) !== JSON.stringify(expected)) {
+		throw new Error(
+			`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(result)}`,
+		);
+	}
+});

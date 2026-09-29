@@ -388,6 +388,8 @@ function ModListPanel({
 								updateDetails,
 							].filter(Boolean).join('. ');
 
+							const canDrag = type !== 'active' ||
+								normalizedPackageId(packageId) !== 'ludeon.rimworld';
 							return (
 								<Fragment key={`${packageId}-${index}`}>
 									<Button
@@ -395,14 +397,17 @@ function ModListPanel({
 											accessibleIssues ? `. ${accessibleIssues}` : ''
 										}`}
 										className={cn(
-											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal cursor-grab active:cursor-grabbing',
+											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal',
+											canDrag
+												? 'cursor-grab active:cursor-grabbing'
+												: 'cursor-default',
 											diagnostics?.errors.length &&
 												'border-l-2 border-destructive',
 											!diagnostics?.errors.length &&
 												diagnostics?.warnings.length &&
 												'border-l-2 border-muted-foreground',
 										)}
-										draggable
+										draggable={canDrag}
 										onClick={() => onSelectMod(packageId)}
 										onDragStart={(event) => {
 											event.dataTransfer.effectAllowed = 'move';
