@@ -20,16 +20,27 @@ import {
 	workshopUpdateResultAtom,
 	workshopUpdateStatusAtom,
 } from '../../state/app-atoms';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSet,
+	FieldTitle,
+} from '@/components/ui/field';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -268,67 +279,74 @@ export function ModListFeature() {
 			<p aria-live='polite' className='mt-3 text-sm text-muted-foreground'>
 				{status}
 			</p>
-			<AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
+			<Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
 							Update selected {selectedWorkshopMods.length} of{' '}
 							{outdatedWorkshopMods.length} outdated Workshop mods?
-						</AlertDialogTitle>
-						<AlertDialogDescription>
+						</DialogTitle>
+						<DialogDescription>
 							{isTestMode
 								? 'Test mode preview only. No Steam requests will be sent.'
 								: 'The app will send update requests only for the selected mods to the Steam client. Steam must be installed, running, and signed in to download them.'}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<ul
-						aria-label='Outdated Workshop mods'
-						className='flex max-h-60 flex-col gap-2 overflow-y-auto'
-					>
-						{outdatedWorkshopMods.map((mod) => (
-							<li key={mod.publishedFileId}>
-								<label className='flex cursor-pointer items-center gap-3 border-b pb-2'>
-									<input
-										aria-label={`Select ${mod.name} for update`}
-										checked={selectedUpdateIds.includes(mod.publishedFileId)}
-										disabled={dispatchingUpdates}
-										className='size-4 shrink-0 accent-primary'
-										onChange={(event) => {
-											const checked = event.currentTarget.checked;
-											setSelectedUpdateIds((selectedIds) =>
-												toggleWorkshopUpdateSelection(
-													selectedIds,
-													mod.publishedFileId,
-													checked,
-												)
-											);
-										}}
-										type='checkbox'
-									/>
-									<span className='min-w-0 flex-1'>
-										<span className='block'>{mod.name}</span>
-										<Badge variant='outline'>{mod.packageId}</Badge>
-									</span>
-								</label>
-							</li>
-						))}
-					</ul>
-					{(workshopUpdateResult?.skippedCount ?? 0) > 0 && (
-						<p className='text-sm text-muted-foreground'>
-							{workshopUpdateResult?.skippedCount}{' '}
-							Workshop mods could not be compared and will not be included.
-						</p>
-					)}
-					{dispatchMessage && (
-						<p aria-live='polite' className='text-sm text-destructive'>
-							{dispatchMessage}
-						</p>
-					)}
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={dispatchingUpdates}>
+						</DialogDescription>
+					</DialogHeader>
+					<FieldSet>
+						<FieldLegend variant='label'>Outdated Workshop mods</FieldLegend>
+						<FieldGroup className='max-h-60 gap-3 overflow-y-auto'>
+							{outdatedWorkshopMods.map((mod) => {
+								const id = `workshop-update-${mod.publishedFileId}`;
+								return (
+									<Field
+										data-disabled={dispatchingUpdates}
+										key={mod.publishedFileId}
+										orientation='horizontal'
+									>
+										<Checkbox
+											checked={selectedUpdateIds.includes(mod.publishedFileId)}
+											disabled={dispatchingUpdates}
+											id={id}
+											onCheckedChange={(checked) => {
+												setSelectedUpdateIds((selectedIds) =>
+													toggleWorkshopUpdateSelection(
+														selectedIds,
+														mod.publishedFileId,
+														checked === true,
+													)
+												);
+											}}
+										/>
+										<FieldLabel
+											className='min-w-0 flex-1 font-normal'
+											htmlFor={id}
+										>
+											<FieldContent>
+												<FieldTitle>{mod.name}</FieldTitle>
+												<Badge variant='outline'>{mod.packageId}</Badge>
+											</FieldContent>
+										</FieldLabel>
+									</Field>
+								);
+							})}
+						</FieldGroup>
+						{(workshopUpdateResult?.skippedCount ?? 0) > 0 && (
+							<FieldDescription>
+								{workshopUpdateResult?.skippedCount}{' '}
+								Workshop mods could not be compared and will not be included.
+							</FieldDescription>
+						)}
+					</FieldSet>
+					{dispatchMessage && <FieldError>{dispatchMessage}</FieldError>}
+					<DialogFooter>
+						<DialogClose
+							render={
+								<Button disabled={dispatchingUpdates} variant='outline' />
+							}
+						>
 							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
+						</DialogClose>
+						<Button
 							disabled={dispatchingUpdates || isTestMode ||
 								selectedWorkshopMods.length === 0}
 							onClick={handleUpdateSelected}
@@ -340,10 +358,10 @@ export function ModListFeature() {
 								: `Update ${selectedWorkshopMods.length} selected mod${
 									selectedWorkshopMods.length === 1 ? '' : 's'
 								}`}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }
