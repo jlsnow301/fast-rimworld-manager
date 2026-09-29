@@ -1,5 +1,5 @@
-import { createActiveModDiagnostics } from './src/utils/mod_highlights.ts';
-import type { InstalledMod } from './src/utils/types.ts';
+import { createActiveModDiagnostics } from '../src/utils/mod_highlights.ts';
+import type { InstalledMod } from '../src/utils/types.ts';
 
 function mod(
 	packageId: string,

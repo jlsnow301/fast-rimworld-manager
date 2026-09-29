@@ -1,4 +1,4 @@
-import { resolveGameVersion } from './src/utils/game_version.ts';
+import { resolveGameVersion } from '../src/utils/game_version.ts';
 
 Deno.test('installed RimWorld version takes precedence over config version', () => {
 	const version = resolveGameVersion('1.6.4871 rev573', '1.5');

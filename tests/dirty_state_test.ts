@@ -1,7 +1,7 @@
 import {
 	createModListSnapshot,
 	hasModListChanges,
-} from './src/utils/dirty_state.ts';
+} from '../src/utils/dirty_state.ts';
 
 Deno.test('loaded list matches its saved snapshot', () => {
 	const saved = createModListSnapshot('1.6', ['Core', 'Author.Mod'], ['Core']);

@@ -2,9 +2,9 @@ import {
 	allWorkshopUpdateIds,
 	getSelectedWorkshopMods,
 	toggleWorkshopUpdateSelection,
-} from './src/utils/workshop_update_selection.ts';
-import { steamWorkshopDownloadUrls } from './src/utils/workshop_update_urls.ts';
-import type { OutdatedWorkshopMod } from './src/utils/types.ts';
+} from '../src/utils/workshop_update_selection.ts';
+import { steamWorkshopDownloadUrls } from '../src/utils/workshop_update_urls.ts';
+import type { OutdatedWorkshopMod } from '../src/utils/types.ts';
 
 function outdatedMod(publishedFileId: string): OutdatedWorkshopMod {
 	return {
