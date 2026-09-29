@@ -446,7 +446,7 @@ function ModListPanel({
 					value={search}
 				/>
 				<div
-					className='flex min-h-72 max-h-[calc(100vh-22rem)] flex-col overflow-y-auto border'
+					className='flex min-h-72 max-h-[calc(100dvh-22rem)] flex-col overflow-y-auto border'
 					onDragOver={(event) => {
 						event.preventDefault();
 						event.dataTransfer.dropEffect = 'move';

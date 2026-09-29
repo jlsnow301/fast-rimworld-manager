@@ -23,3 +23,6 @@ compared.
 
 The update dialog lists outdated Workshop mods with checkboxes. All are selected
 by default, and only selected mods are sent to Steam.
+
+The desktop window opens at 1200 × 800 and can be resized down to 720 × 600. The
+interface reflows its columns and scales text with the window width.

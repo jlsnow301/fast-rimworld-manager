@@ -24,7 +24,7 @@ export function AppHeader() {
 	const toggleTestMode = useSetAtom(toggleTestModeAtom);
 
 	return (
-		<header className='flex items-center justify-between gap-4 border-b px-5 py-3'>
+		<header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3'>
 			<div className='grid gap-0.5'>
 				<h1 className='text-lg font-semibold tracking-wide'>
 					Fast RimWorld Manager
@@ -33,8 +33,8 @@ export function AppHeader() {
 					Manage RimWorld mods
 				</span>
 			</div>
-			<div className='flex items-center gap-2'>
-				<Badge variant='outline'>
+			<div className='flex max-w-full flex-wrap items-center justify-end gap-2'>
+				<Badge className='max-w-48 truncate' variant='outline'>
 					{sourceName || 'No mod list loaded'}
 				</Badge>
 				{isTestMode && <Badge variant='secondary'>TEST MODE</Badge>}
