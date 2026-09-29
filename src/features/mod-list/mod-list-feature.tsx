@@ -190,39 +190,41 @@ export function ModListFeature() {
 						</span>
 					)}
 			</p>
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-				<ModListPanel
-					count={activeMods.length}
-					emptyMessage={hasModList
-						? 'No active mods.'
-						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
-					mods={visibleActiveMods}
-					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
-					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-					modDetailsByPackageId={modDetailsByPackageId}
-					onDropMod={moveMod}
-					onSelectMod={selectMod}
-					onSearch={setActiveSearch}
-					search={activeSearch}
-					title='Active mods'
-					type='active'
-				/>
-				<ModListPanel
-					count={inactiveMods.length}
-					emptyMessage='No inactive mods found. Configure paths in Settings.'
-					mods={visibleInactiveMods}
-					activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
-					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-					modDetailsByPackageId={modDetailsByPackageId}
-					onDropMod={moveMod}
-					onSelectMod={selectMod}
-					onSearch={setInactiveSearch}
-					search={inactiveSearch}
-					title='Inactive mods'
-					type='inactive'
-				/>
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)]'>
+				<ModPreviewFeature />
+				<div className='grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2'>
+					<ModListPanel
+						count={activeMods.length}
+						emptyMessage={hasModList
+							? 'No active mods.'
+							: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
+						mods={visibleActiveMods}
+						activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+						modDetailsByPackageId={modDetailsByPackageId}
+						onDropMod={moveMod}
+						onSelectMod={selectMod}
+						onSearch={setActiveSearch}
+						search={activeSearch}
+						title='Active mods'
+						type='active'
+					/>
+					<ModListPanel
+						count={inactiveMods.length}
+						emptyMessage='No inactive mods found. Configure paths in Settings.'
+						mods={visibleInactiveMods}
+						activeDiagnosticsByPackageId={activeModDiagnostics.byPackageId}
+						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+						modDetailsByPackageId={modDetailsByPackageId}
+						onDropMod={moveMod}
+						onSelectMod={selectMod}
+						onSearch={setInactiveSearch}
+						search={inactiveSearch}
+						title='Inactive mods'
+						type='inactive'
+					/>
+				</div>
 			</div>
-			<ModPreviewFeature />
 			<p aria-live='polite' className='mt-3 text-sm text-muted-foreground'>
 				{status}
 			</p>

@@ -25,7 +25,20 @@ export function ModPreviewFeature() {
 	const previewMessage = useAtomValue(previewMessageAtom);
 	const selectedMod = useAtomValue(selectedModAtom);
 	const steamPreview = useAtomValue(steamPreviewAtom);
-	if (!selectedMod) return null;
+	if (!selectedMod) {
+		return (
+			<Card className='min-w-0'>
+				<CardHeader>
+					<CardTitle>Mod preview</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<p className='text-sm text-muted-foreground'>
+						Select a mod to see its details.
+					</p>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	const lastUpdated = steamPreview?.timeUpdated
 		? new Date(steamPreview.timeUpdated * 1000).toLocaleString()
@@ -35,7 +48,7 @@ export function ModPreviewFeature() {
 	);
 
 	return (
-		<Card className='mt-4'>
+		<Card className='min-w-0'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
 				<CardAction>

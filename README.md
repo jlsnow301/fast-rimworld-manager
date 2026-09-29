@@ -12,3 +12,7 @@ separators before they are shown or saved.
 Installed Core and DLC entries from RimWorld's `Data` folder appear in the mod
 lists with readable official names. Core cannot be deactivated; installed DLC
 can be moved between Active and Inactive.
+
+At desktop widths, the selected-mod preview is on the left and the Active and
+Inactive mod lists are on the right. Narrow layouts stack the preview above the
+lists.
