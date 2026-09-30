@@ -2,8 +2,7 @@
 
 This is not ready AT ALL so please don't download this expecting it to work
 
-##   
-Local Development
+## Local Development
 
 You'll need [Deno](https://docs.deno.com/runtime/) and [Rust](https://rust-lang.org/learn/get-started/).  
 Run `deno install` and `deno task tauri dev` 
