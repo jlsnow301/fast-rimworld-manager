@@ -11,6 +11,7 @@ import {
 	installedModsAtom,
 	isTestModeAtom,
 	knownExpansionsAtom,
+	modListLoadStateAtom,
 	savedSnapshotAtom,
 	sourceNameAtom,
 	statusAtom,
@@ -35,6 +36,15 @@ const meta = {
 	component: ModListFeature,
 	parameters: {
 		layout: 'fullscreen',
+		viewport: {
+			options: {
+				application: {
+					name: 'Application',
+					styles: { width: '1200px', height: '800px' },
+					type: 'desktop',
+				},
+			},
+		},
 	},
 	tags: ['autodocs'],
 } satisfies Meta<typeof ModListFeature>;
@@ -157,16 +167,28 @@ const storyMods: InstalledMod[] = [
 	},
 ];
 
+const overflowStoryMods = storyMods.slice(2).flatMap((mod) =>
+	Array.from({ length: 4 }, (_, index) => ({
+		...mod,
+		name: `${mod.name} ${index + 1}`,
+		packageId: `${mod.packageId}.story-${index + 1}`,
+		path: `${mod.path}\\story-${index + 1}`,
+	}))
+);
+const loadedStoryMods = [...storyMods, ...overflowStoryMods];
+
 const initialActiveMods = [
 	'ludeon.rimworld',
 	'ludeon.rimworld.royalty',
 	'brrainz.harmony',
 	'unlimitedhugs.hugslib',
+	...overflowStoryMods.slice(0, 8).map((mod) => mod.packageId),
 ];
 const initialInactiveMods = [
 	'oskarpotocki.vanillafactionsexpanded.core',
 	'unlimitedhugs.allowtool',
 	'mehni.pickupandhaul',
+	...overflowStoryMods.slice(8).map((mod) => mod.packageId),
 ];
 const knownExpansions = ['ludeon.rimworld.royalty'];
 const outdatedWorkshopMod: OutdatedWorkshopMod = {
@@ -184,13 +206,17 @@ const workshopUpdateResult: WorkshopUpdateCheckResult = {
 
 function createModListStoryState(): ModListStoryState {
 	const store = createStore();
-	store.set(installedModsAtom, storyMods);
+	store.set(installedModsAtom, loadedStoryMods);
 	store.set(activeModsAtom, initialActiveMods);
 	store.set(inactiveModsAtom, initialInactiveMods);
 	store.set(knownExpansionsAtom, knownExpansions);
 	store.set(installedGameVersionAtom, '1.5.4104');
+	store.set(modListLoadStateAtom, 'loaded');
 	store.set(sourceNameAtom, 'ModsConfig.xml');
-	store.set(statusAtom, 'Loaded 7 installed mods from ModsConfig.xml.');
+	store.set(
+		statusAtom,
+		`Loaded ${loadedStoryMods.length} installed mods from ModsConfig.xml.`,
+	);
 	store.set(
 		savedSnapshotAtom,
 		createModListSnapshot('1.5.4104', initialActiveMods, knownExpansions),
@@ -221,12 +247,12 @@ function createModListStoryState(): ModListStoryState {
 			const sortedActiveMods = [...store.get(activeModsAtom)].sort(
 				(left, right) => {
 					const leftName =
-						storyMods.find((mod) =>
+						loadedStoryMods.find((mod) =>
 							normalizedPackageId(mod.packageId) ===
 								normalizedPackageId(left)
 						)?.name ?? left;
 					const rightName =
-						storyMods.find((mod) =>
+						loadedStoryMods.find((mod) =>
 							normalizedPackageId(mod.packageId) ===
 								normalizedPackageId(right)
 						)?.name ?? right;
@@ -241,7 +267,7 @@ function createModListStoryState(): ModListStoryState {
 			return Promise.resolve();
 		},
 		selectMod(packageId) {
-			const mod = storyMods.find((installedMod) =>
+			const mod = loadedStoryMods.find((installedMod) =>
 				normalizedPackageId(installedMod.packageId) ===
 					normalizedPackageId(packageId)
 			);
@@ -287,14 +313,48 @@ function ActiveInactiveStory() {
 	const [storyState] = useState(createModListStoryState);
 
 	return (
-		<Provider store={storyState.store}>
-			<AppProvider value={storyState.controller as AppController}>
-				<ModListFeature />
-			</AppProvider>
-		</Provider>
+		<div className='flex h-dvh min-h-0 flex-col overflow-hidden'>
+			<Provider store={storyState.store}>
+				<AppProvider value={storyState.controller as AppController}>
+					<ModListFeature />
+				</AppProvider>
+			</Provider>
+		</div>
 	);
 }
 
 export const LoadedActiveAndInactiveLists: Story = {
+	globals: { viewport: { value: 'application', isRotated: false } },
 	render: () => <ActiveInactiveStory />,
+	play: async (context) => {
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve())
+		);
+		const documentElement =
+			context.canvasElement.ownerDocument.documentElement;
+		if (documentElement.scrollHeight > documentElement.clientHeight) {
+			throw new Error('The mod-list page must fit the viewport.');
+		}
+		const modListCards = Array.from(
+			context.canvasElement.ownerDocument.querySelectorAll(
+				'[data-slot="card"]',
+			),
+		).filter((card) => {
+			const title = card.querySelector('[data-slot="card-title"]')
+				?.textContent?.trim();
+			return title === 'Active mods' || title === 'Inactive mods';
+		});
+		if (modListCards.length !== 2) {
+			throw new Error('Both mod-list panels must be rendered.');
+		}
+		for (const card of modListCards) {
+			const list = card.querySelector<HTMLElement>('.overflow-y-auto');
+			if (
+				!list || list.clientHeight === 0 ||
+				list.scrollHeight <= list.clientHeight
+			) {
+				throw new Error('Both mod lists must scroll independently.');
+			}
+		}
+	},
 };

@@ -75,22 +75,23 @@ export function ModListPanel(props: ModListPanelProps) {
 	}
 
 	return (
-		<Card className='min-w-0' size='sm'>
+		<Card className='flex min-h-0 min-w-0 flex-col' size='sm'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{title}</CardTitle>
 				<CardAction>
 					<Badge variant='outline'>{count}</Badge>
 				</CardAction>
 			</CardHeader>
-			<CardContent className='flex min-h-0 flex-col gap-3'>
+			<CardContent className='flex min-h-0 flex-1 flex-col gap-3'>
 				<Input
 					aria-label={`Search ${title.toLowerCase()}`}
+					className='shrink-0'
 					onChange={(event) => onSearch(event.currentTarget.value)}
 					placeholder='Search names or package IDs'
 					value={search}
 				/>
 				<div
-					className='flex min-h-72 max-h-[calc(100dvh-22rem)] flex-col overflow-y-auto border'
+					className='flex min-h-0 flex-1 flex-col overflow-y-auto border'
 					onDragOver={(event) => {
 						event.preventDefault();
 						event.dataTransfer.dropEffect = 'move';

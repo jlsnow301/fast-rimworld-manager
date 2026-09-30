@@ -130,7 +130,7 @@
 	}
 
 	body {
-		@apply min-h-screen min-w-[680px] bg-background text-foreground;
+		@apply min-h-dvh min-w-[680px] bg-background text-foreground;
 		margin: 0;
 	}
 

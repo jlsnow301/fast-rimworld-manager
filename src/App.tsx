@@ -13,9 +13,17 @@ export function App() {
 
 	return (
 		<AppProvider value={controller}>
-			<main className='min-h-screen'>
-				<AppHeader />
-				{settingsOpen ? <SettingsFeature /> : <ModListFeature />}
+			<main className='flex h-dvh min-h-0 flex-col overflow-hidden'>
+				<div className='shrink-0'>
+					<AppHeader />
+				</div>
+				{settingsOpen
+					? (
+						<div className='min-h-0 flex-1 overflow-y-auto'>
+							<SettingsFeature />
+						</div>
+					)
+					: <ModListFeature />}
 			</main>
 		</AppProvider>
 	);

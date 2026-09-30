@@ -65,7 +65,7 @@ export function ModListFeature() {
 	return (
 		<section
 			aria-busy={modListLoadState === 'loading'}
-			className='mx-auto w-full max-w-7xl p-6'
+			className='mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col p-6'
 		>
 			<div className='mb-4 flex flex-wrap items-end justify-between gap-3'>
 				<div>
@@ -180,9 +180,11 @@ export function ModListFeature() {
 						</>
 					)}
 			</p>
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)]'>
-				<ModPreviewFeature />
-				<div className='grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2'>
+			<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)] lg:grid-rows-1'>
+				<div className='min-h-0 overflow-y-auto'>
+					<ModPreviewFeature />
+				</div>
+				<div className='grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 md:grid-cols-2 md:grid-rows-1'>
 					<ModListPanel
 						count={activeMods.length}
 						isLoading={modListLoadState === 'loading'}
@@ -221,7 +223,7 @@ export function ModListFeature() {
 			</div>
 			<p
 				aria-live='polite'
-				className='mt-3 text-sm text-muted-foreground'
+				className='mt-3 shrink-0 text-sm text-muted-foreground'
 			>
 				{status}
 			</p>
