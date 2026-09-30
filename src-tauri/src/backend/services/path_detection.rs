@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 #[cfg(target_os = "windows")]
 use std::process::Command;
 
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use tauri::{AppHandle, Manager};
 
 use crate::backend::models::{
@@ -110,13 +112,59 @@ fn load_configured_mod_list(
     } else {
         read_mods_config(&settings.config_path)?
     };
-    if configured_mod_list.is_some() {
+    if configured_mod_list
+        .as_deref()
+        .is_some_and(has_active_rimworld_core)
+    {
         return Ok(configured_mod_list);
     }
-    let Some(default_config_directory) = default_config_directory else {
-        return Ok(None);
+    let default_mod_list = if let Some(directory) = default_config_directory {
+        read_mods_config(&directory.to_string_lossy())?
+    } else {
+        None
     };
-    read_mods_config(&default_config_directory.to_string_lossy())
+    if default_mod_list
+        .as_deref()
+        .is_some_and(has_active_rimworld_core)
+    {
+        return Ok(default_mod_list);
+    }
+    Ok(configured_mod_list.or(default_mod_list))
+}
+fn has_active_rimworld_core(xml: &str) -> bool {
+    let mut reader = Reader::from_str(xml);
+    let mut inside_active_mods = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(element))
+                if element
+                    .local_name()
+                    .as_ref()
+                    .eq_ignore_ascii_case("activeMods") =>
+            {
+                inside_active_mods = true;
+            }
+            Ok(Event::End(element))
+                if element
+                    .local_name()
+                    .as_ref()
+                    .eq_ignore_ascii_case("activeMods") =>
+            {
+                inside_active_mods = false;
+            }
+            Ok(Event::Text(text)) if inside_active_mods => {
+                let Ok(value) = quick_xml::escape::unescape(text.as_ref()) else {
+                    return false;
+                };
+                if value.trim().eq_ignore_ascii_case("ludeon.rimworld") {
+                    return true;
+                }
+            }
+            Ok(Event::Eof) | Err(_) => return false,
+            Ok(_) => {}
+        }
+    }
 }
 
 fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
@@ -578,10 +626,8 @@ mod tests {
             .expect("saved config directory should be created");
         fs::create_dir_all(&default_config_directory)
             .expect("default config directory should be created");
-        let saved_xml =
-            "<ModsConfigData><activeMods><li>saved.mod</li></activeMods></ModsConfigData>";
-        let default_xml =
-            "<ModsConfigData><activeMods><li>default.mod</li></activeMods></ModsConfigData>";
+        let saved_xml = "<ModsConfigData><activeMods><li>ludeon.rimworld</li><li>saved.mod</li></activeMods></ModsConfigData>";
+        let default_xml = "<ModsConfigData><activeMods><li>ludeon.rimworld</li><li>default.mod</li></activeMods></ModsConfigData>";
         fs::write(saved_config_directory.join("ModsConfig.xml"), saved_xml)
             .expect("saved ModsConfig.xml should be created");
         fs::write(default_config_directory.join("ModsConfig.xml"), default_xml)
@@ -599,6 +645,38 @@ mod tests {
             .expect("saved mod list should be readable");
 
         assert_eq!(loaded.as_deref(), Some(saved_xml));
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+    #[test]
+    fn falls_back_when_saved_mod_list_does_not_activate_rimworld_core() {
+        let root = unique_temp_directory("config-without-core");
+        let settings_file = root.join("app/paths.json");
+        let saved_config_directory = root.join("saved/Config");
+        let default_config_directory = root.join("default/Config");
+        fs::create_dir_all(&saved_config_directory)
+            .expect("saved config directory should be created");
+        fs::create_dir_all(&default_config_directory)
+            .expect("default config directory should be created");
+        let saved_xml =
+            "<ModsConfigData><activeMods><li>author.old</li></activeMods></ModsConfigData>";
+        let default_xml = "\u{feff}<ModsConfigData><activeMods><li>Ludeon.RimWorld</li><li>author.active</li></activeMods></ModsConfigData>";
+        fs::write(saved_config_directory.join("ModsConfig.xml"), saved_xml)
+            .expect("saved ModsConfig.xml should be created");
+        fs::write(default_config_directory.join("ModsConfig.xml"), default_xml)
+            .expect("default ModsConfig.xml should be created");
+        save_settings_file(
+            &settings_file,
+            &PathSettings {
+                config_path: saved_config_directory.to_string_lossy().into_owned(),
+                ..PathSettings::default()
+            },
+        )
+        .expect("path settings should save");
+
+        let loaded = load_configured_mod_list(&settings_file, Some(&default_config_directory))
+            .expect("default mod list should load when saved list omits Core");
+
+        assert_eq!(loaded.as_deref(), Some(default_xml));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
     #[test]
