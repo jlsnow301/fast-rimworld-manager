@@ -12,3 +12,8 @@ Workshop entries.
 
 Installed package IDs come from direct fields in `About.xml`; nested dependency
 `packageId` entries are not used as a mod's identity.
+
+## Storybook
+
+Run `deno task storybook` to open Storybook at `http://localhost:6006`. Create a
+static build with `deno task build-storybook`.
