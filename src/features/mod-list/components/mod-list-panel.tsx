@@ -1,5 +1,14 @@
 import { type DragEvent as ReactDragEvent, Fragment } from 'react';
 import { cn } from 'cn';
+import {
+	BookOpen,
+	Crown,
+	Dna,
+	Gamepad2,
+	Ghost,
+	type LucideIcon,
+	Rocket,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +38,15 @@ import type {
 } from '@/utils/types';
 
 const LOADING_SKELETON_ROWS = [0, 1, 2, 3];
+
+const OFFICIAL_CONTENT_ICONS: Record<string, LucideIcon> = {
+	'ludeon.rimworld': Gamepad2,
+	'ludeon.rimworld.royalty': Crown,
+	'ludeon.rimworld.ideology': BookOpen,
+	'ludeon.rimworld.biotech': Dna,
+	'ludeon.rimworld.anomaly': Ghost,
+	'ludeon.rimworld.odyssey': Rocket,
+};
 
 export type ModListPanelProps = {
 	count: number;
@@ -129,13 +147,12 @@ export function ModListPanel(props: ModListPanelProps) {
 							</Empty>
 						)
 						: mods.map(({ packageId, index }, modIndex) => {
-							const mod = modDetailsByPackageId.get(
-								normalizedPackageId(packageId),
-							);
+							const normalizedId = normalizedPackageId(packageId);
+							const mod = modDetailsByPackageId.get(normalizedId);
+							const OfficialContentIcon =
+								OFFICIAL_CONTENT_ICONS[normalizedId];
 							const diagnostics = type === 'active'
-								? activeDiagnosticsByPackageId.get(
-									normalizedPackageId(packageId),
-								)
+								? activeDiagnosticsByPackageId.get(normalizedId)
 								: undefined;
 							const errorDetails = diagnostics?.errors
 								.map((issue) =>
@@ -153,7 +170,7 @@ export function ModListPanel(props: ModListPanelProps) {
 								.join('. ');
 							const outdatedWorkshopMod =
 								outdatedWorkshopModsByPackageId.get(
-									normalizedPackageId(packageId),
+									normalizedId,
 								);
 							const updateDetails = outdatedWorkshopMod
 								? `Steam update available. Latest Workshop update: ${
@@ -210,8 +227,18 @@ export function ModListPanel(props: ModListPanelProps) {
 										variant='ghost'
 									>
 										<span className='flex min-w-0 flex-col items-start gap-1'>
-											<span className='break-words'>
-												{mod?.name ?? packageId}
+											<span className='flex min-w-0 items-start gap-2'>
+												{OfficialContentIcon && (
+													<OfficialContentIcon
+														aria-hidden='true'
+														data-icon='inline-start'
+														className='mt-0.5 shrink-0 text-muted-foreground'
+														focusable='false'
+													/>
+												)}
+												<span className='break-words'>
+													{mod?.name ?? packageId}
+												</span>
 											</span>
 											{mod && (
 												<span className='flex flex-wrap gap-2'>

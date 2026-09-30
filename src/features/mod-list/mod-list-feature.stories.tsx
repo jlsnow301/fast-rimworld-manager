@@ -98,6 +98,66 @@ const storyMods: InstalledMod[] = [
 		dependencies: [],
 	},
 	{
+		name: 'Ideology',
+		author: null,
+		packageId: 'ludeon.rimworld.ideology',
+		description: 'Official RimWorld expansion content.',
+		publishedFileId: null,
+		loadAfter: ['ludeon.rimworld'],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: ['1.5'],
+		path: String
+			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Ideology`,
+		source: 'DLC',
+		dependencies: [],
+	},
+	{
+		name: 'Biotech',
+		author: null,
+		packageId: 'ludeon.rimworld.biotech',
+		description: 'Official RimWorld expansion content.',
+		publishedFileId: null,
+		loadAfter: ['ludeon.rimworld'],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: ['1.5'],
+		path: String
+			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Biotech`,
+		source: 'DLC',
+		dependencies: [],
+	},
+	{
+		name: 'Anomaly',
+		author: null,
+		packageId: 'ludeon.rimworld.anomaly',
+		description: 'Official RimWorld expansion content.',
+		publishedFileId: null,
+		loadAfter: ['ludeon.rimworld'],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: ['1.5'],
+		path: String
+			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Anomaly`,
+		source: 'DLC',
+		dependencies: [],
+	},
+	{
+		name: 'Odyssey',
+		author: null,
+		packageId: 'ludeon.rimworld.odyssey',
+		description: 'Official RimWorld expansion content.',
+		publishedFileId: null,
+		loadAfter: ['ludeon.rimworld'],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: ['1.5'],
+		path: String
+			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Odyssey`,
+		source: 'DLC',
+		dependencies: [],
+	},
+	{
 		name: 'Harmony',
 		author: 'Brrainz',
 		packageId: 'brrainz.harmony',
@@ -174,19 +234,25 @@ const storyMods: InstalledMod[] = [
 	},
 ];
 
-const overflowStoryMods = storyMods.slice(2).flatMap((mod) =>
-	Array.from({ length: 4 }, (_, index) => ({
-		...mod,
-		name: `${mod.name} ${index + 1}`,
-		packageId: `${mod.packageId}.story-${index + 1}`,
-		path: `${mod.path}\\story-${index + 1}`,
-	}))
-);
+const overflowStoryMods = storyMods.slice(2)
+	.filter((mod) => mod.source !== 'DLC')
+	.flatMap((mod) =>
+		Array.from({ length: 4 }, (_, index) => ({
+			...mod,
+			name: `${mod.name} ${index + 1}`,
+			packageId: `${mod.packageId}.story-${index + 1}`,
+			path: `${mod.path}\\story-${index + 1}`,
+		}))
+	);
 const loadedStoryMods = [...storyMods, ...overflowStoryMods];
 
 const initialActiveMods = [
 	'ludeon.rimworld',
 	'ludeon.rimworld.royalty',
+	'ludeon.rimworld.ideology',
+	'ludeon.rimworld.biotech',
+	'ludeon.rimworld.anomaly',
+	'ludeon.rimworld.odyssey',
 	'brrainz.harmony',
 	'unlimitedhugs.hugslib',
 	...overflowStoryMods.slice(0, 8).map((mod) => mod.packageId),
@@ -197,7 +263,13 @@ const initialInactiveMods = [
 	'mehni.pickupandhaul',
 	...overflowStoryMods.slice(8).map((mod) => mod.packageId),
 ];
-const knownExpansions = ['ludeon.rimworld.royalty'];
+const knownExpansions = [
+	'ludeon.rimworld.royalty',
+	'ludeon.rimworld.ideology',
+	'ludeon.rimworld.biotech',
+	'ludeon.rimworld.anomaly',
+	'ludeon.rimworld.odyssey',
+];
 const outdatedWorkshopMod: OutdatedWorkshopMod = {
 	name: 'Vanilla Expanded Framework',
 	packageId: 'oskarpotocki.vanillafactionsexpanded.core',
@@ -382,6 +454,38 @@ export const LoadedActiveAndInactiveLists: Story = {
 			) {
 				throw new Error('Both mod lists must scroll independently.');
 			}
+		}
+		const officialContentNames = [
+			'RimWorld',
+			'Royalty',
+			'Ideology',
+			'Biotech',
+			'Anomaly',
+			'Odyssey',
+		];
+		for (const name of officialContentNames) {
+			const row = context.canvasElement.ownerDocument.querySelector(
+				`button[aria-label="Show details for ${name}"]`,
+			);
+			const title = row?.querySelector('.break-words');
+			const icon = row?.querySelector('svg[aria-hidden="true"]');
+			if (!row || !title || !icon || icon.nextElementSibling !== title) {
+				throw new Error(
+					`${name} must show an official icon immediately before its title.`,
+				);
+			}
+		}
+		const ordinaryModRow = context.canvasElement.ownerDocument
+			.querySelector(
+				'button[aria-label="Show details for Harmony"]',
+			);
+		if (
+			!ordinaryModRow ||
+			ordinaryModRow.querySelector('svg[aria-hidden="true"]')
+		) {
+			throw new Error(
+				'Ordinary mod rows must not show official content icons.',
+			);
 		}
 	},
 };
