@@ -127,6 +127,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
 fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
     let mut reader = Reader::from_str(xml);
     let mut current_field = None;
+    let mut depth = 0usize;
     let mut name = String::new();
     let mut package_id = String::new();
     let mut description = String::new();
@@ -134,16 +135,19 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
     loop {
         match reader.read_event() {
             Ok(Event::Start(element)) => {
-                let tag = element.local_name();
-                current_field = if tag.as_ref().eq_ignore_ascii_case("name") {
-                    Some(AboutField::Name)
-                } else if tag.as_ref().eq_ignore_ascii_case("packageId") {
-                    Some(AboutField::PackageId)
-                } else if tag.as_ref().eq_ignore_ascii_case("description") {
-                    Some(AboutField::Description)
-                } else {
-                    current_field
-                };
+                if depth == 1 {
+                    let tag = element.local_name();
+                    current_field = if tag.as_ref().eq_ignore_ascii_case("name") {
+                        Some(AboutField::Name)
+                    } else if tag.as_ref().eq_ignore_ascii_case("packageId") {
+                        Some(AboutField::PackageId)
+                    } else if tag.as_ref().eq_ignore_ascii_case("description") {
+                        Some(AboutField::Description)
+                    } else {
+                        None
+                    };
+                }
+                depth += 1;
             }
             Ok(Event::Text(text)) => {
                 let unescaped = quick_xml::escape::unescape(text.as_ref()).ok()?;
@@ -166,14 +170,11 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
                     &mut description,
                 );
             }
-            Ok(Event::End(element)) => {
-                let tag = element.local_name();
-                if tag.as_ref().eq_ignore_ascii_case("name")
-                    || tag.as_ref().eq_ignore_ascii_case("packageId")
-                    || tag.as_ref().eq_ignore_ascii_case("description")
-                {
+            Ok(Event::End(_)) => {
+                if depth == 2 {
                     current_field = None;
                 }
+                depth = depth.saturating_sub(1);
             }
             Ok(Event::Eof) => break,
             Ok(_) => {}
@@ -685,16 +686,16 @@ mod tests {
     }
 
     #[test]
-    fn parses_about_metadata_with_utf8_bom() {
+    fn about_package_id_ignores_nested_dependency_package_ids() {
         let parsed = parse_about_xml(
-            "\u{feff}<?xml version=\"1.0\" encoding=\"utf-8\"?><ModMetaData><packageId>Ludeon.RimWorld</packageId></ModMetaData>",
+            "<ModMetaData><name>1trickPwnyta's Anomaly Patch</name><packageId>anomalypatch.1trickPwnyta</packageId><modDependencies><li><packageId>brrainz.harmony</packageId></li></modDependencies></ModMetaData>",
         );
 
         assert_eq!(
             parsed,
             Some((
-                "Ludeon.RimWorld".to_string(),
-                "Ludeon.RimWorld".to_string(),
+                "1trickPwnyta's Anomaly Patch".to_string(),
+                "anomalypatch.1trickPwnyta".to_string(),
                 String::new(),
             )),
         );

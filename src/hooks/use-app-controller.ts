@@ -72,7 +72,9 @@ export function useAppController() {
 			const [modsResult, configResult, versionResult] = await Promise
 				.allSettled([
 					invokeDesktop<InstalledMod[]>('list_installed_mods'),
-					invokeDesktop<string | null>('load_startup_mod_list'),
+					settings.configPath
+						? invokeDesktop<string | null>('load_startup_mod_list')
+						: Promise.resolve(null),
 					settings.gamePath
 						? invokeDesktop<string | null>(
 							'detect_rimworld_version',

@@ -37,15 +37,22 @@ Deno.test('package IDs in ModsConfig are matched case-insensitively and with Ste
 });
 
 Deno.test('mods are not classified as inactive before a mod list is loaded', () => {
-	const inactive = getInactivePackageIds(
-		[installedMod('ludeon.rimworld'), installedMod('author.mod')],
-		null,
-	);
+	const installedMods = [
+		installedMod('ludeon.rimworld'),
+		installedMod('author.mod'),
+	];
+	const inactiveForEmptyList = getInactivePackageIds(installedMods, []);
+	const inactiveBeforeLoad = getInactivePackageIds(installedMods, null);
 
-	if (inactive.length !== 0) {
+	if (inactiveForEmptyList.length !== installedMods.length) {
+		throw new Error(
+			'A loaded empty active list should classify all installed mods as inactive.',
+		);
+	}
+	if (inactiveBeforeLoad.length !== 0) {
 		throw new Error(
 			`Unknown mod state must not be classified as inactive: ${
-				JSON.stringify(inactive)
+				JSON.stringify(inactiveBeforeLoad)
 			}.`,
 		);
 	}
