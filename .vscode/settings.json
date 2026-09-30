@@ -1,0 +1,16 @@
+{
+	"$schema": "vscode://schemas/settings/user",
+	"[css][html][javascript][javascriptreact][jsonc][markdown][typescript][typescriptreact][yaml]": {
+		"editor.defaultformatter": "denoland.vscode-deno",
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		}
+	},
+	"deno.enable": true,
+	"editor.formatOnSave": true,
+	"files.insertFinalNewline": true,
+	"files.rulers": [
+		120
+	],
+	"files.trimTrailingWhitespace": true
+}
