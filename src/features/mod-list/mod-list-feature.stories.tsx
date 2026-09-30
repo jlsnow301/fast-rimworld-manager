@@ -69,6 +69,7 @@ type ModListStoryState = {
 const storyMods: InstalledMod[] = [
 	{
 		name: 'RimWorld',
+		author: null,
 		packageId: 'ludeon.rimworld',
 		description: 'The base game content required by every mod list.',
 		publishedFileId: null,
@@ -83,6 +84,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'Royalty',
+		author: null,
 		packageId: 'ludeon.rimworld.royalty',
 		description: 'Official RimWorld expansion content.',
 		publishedFileId: null,
@@ -97,6 +99,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'Harmony',
+		author: 'Brrainz',
 		packageId: 'brrainz.harmony',
 		description: 'Shared library used by many Workshop mods.',
 		publishedFileId: '2009463077',
@@ -111,6 +114,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'HugsLib',
+		author: 'UnlimitedHugs',
 		packageId: 'unlimitedhugs.hugslib',
 		description: 'Library and shared utilities for RimWorld mods.',
 		publishedFileId: '818773962',
@@ -125,6 +129,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'Vanilla Expanded Framework',
+		author: 'Oskar Potocki',
 		packageId: 'oskarpotocki.vanillafactionsexpanded.core',
 		description: 'Framework for the Vanilla Expanded collection.',
 		publishedFileId: '2023507013',
@@ -139,6 +144,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'Allow Tool',
+		author: null,
 		packageId: 'unlimitedhugs.allowtool',
 		description: 'Additional controls for selecting and managing work.',
 		publishedFileId: '761421485',
@@ -153,6 +159,7 @@ const storyMods: InstalledMod[] = [
 	},
 	{
 		name: 'Pick Up And Haul',
+		author: null,
 		packageId: 'mehni.pickupandhaul',
 		description: 'Improves hauling behavior for colonists.',
 		publishedFileId: '1279012058',

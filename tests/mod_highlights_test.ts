@@ -7,6 +7,7 @@ function mod(
 ): InstalledMod {
 	return {
 		name: packageId,
+		author: null,
 		packageId,
 		description: '',
 		publishedFileId: null,

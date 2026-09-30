@@ -176,6 +176,7 @@ mod tests {
     fn installed_mod(package_id: &str, published_file_id: Option<&str>) -> InstalledMod {
         InstalledMod {
             name: package_id.to_string(),
+            author: None,
             package_id: package_id.to_string(),
             description: String::new(),
             published_file_id: published_file_id.map(str::to_string),

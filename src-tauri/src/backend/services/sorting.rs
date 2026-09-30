@@ -168,6 +168,7 @@ mod tests {
     ) -> InstalledMod {
         InstalledMod {
             name: name.to_string(),
+            author: None,
             package_id: package_id.to_string(),
             description: String::new(),
             published_file_id: None,

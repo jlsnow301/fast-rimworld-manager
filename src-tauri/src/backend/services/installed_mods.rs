@@ -23,6 +23,7 @@ const RIMWORLD_GAME_CONTENT_NAMES: &[(&str, &str)] = &[
 #[derive(Clone, Copy)]
 enum AboutField {
     Name,
+    Author,
     PackageId,
     Description,
 }
@@ -87,7 +88,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         let Ok(contents) = fs::read_to_string(about_path) else {
             continue;
         };
-        let Some((name, package_id, description)) = parse_about_xml(&contents) else {
+        let Some((name, author, package_id, description)) = parse_about_xml(&contents) else {
             continue;
         };
         let name = if source == "game" && name.eq_ignore_ascii_case(&package_id) {
@@ -108,6 +109,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
 
         mods.push(InstalledMod {
             name,
+            author,
             package_id,
             description,
             published_file_id,
@@ -124,11 +126,12 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
     Ok(())
 }
 
-fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
+fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, String, String)> {
     let mut reader = Reader::from_str(xml);
     let mut current_field = None;
     let mut depth = 0usize;
     let mut name = String::new();
+    let mut author = String::new();
     let mut package_id = String::new();
     let mut description = String::new();
 
@@ -139,6 +142,8 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
                     let tag = element.local_name();
                     current_field = if tag.as_ref().eq_ignore_ascii_case("name") {
                         Some(AboutField::Name)
+                    } else if tag.as_ref().eq_ignore_ascii_case("author") {
+                        Some(AboutField::Author)
                     } else if tag.as_ref().eq_ignore_ascii_case("packageId") {
                         Some(AboutField::PackageId)
                     } else if tag.as_ref().eq_ignore_ascii_case("description") {
@@ -155,6 +160,7 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
                     current_field,
                     &unescaped,
                     &mut name,
+                    &mut author,
                     &mut package_id,
                     &mut description,
                 );
@@ -166,6 +172,7 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
                     current_field,
                     &unescaped,
                     &mut name,
+                    &mut author,
                     &mut package_id,
                     &mut description,
                 );
@@ -187,12 +194,14 @@ fn parse_about_xml(xml: &str) -> Option<(String, String, String)> {
         return None;
     }
     let name = name.trim();
+    let author = author.trim();
     Some((
         if name.is_empty() {
             package_id.to_string()
         } else {
             name.to_string()
         },
+        (!author.is_empty()).then(|| author.to_string()),
         package_id.to_string(),
         description.trim().to_string(),
     ))
@@ -202,11 +211,13 @@ fn append_about_text(
     field: Option<AboutField>,
     value: &str,
     name: &mut String,
+    author: &mut String,
     package_id: &mut String,
     description: &mut String,
 ) {
     match field {
         Some(AboutField::Name) => name.push_str(value),
+        Some(AboutField::Author) => author.push_str(value),
         Some(AboutField::PackageId) => package_id.push_str(value),
         Some(AboutField::Description) => description.push_str(value),
         None => {}
@@ -523,6 +534,26 @@ fn append_dependency_text(
         None => {}
     }
 }
+
+#[test]
+fn parses_author_from_about_xml_without_guessing_from_package_id() {
+    let parsed = parse_about_xml(
+		"<ModMetaData><name>Example</name><author> Mod Team &amp; Friends </author><packageId>ModTeam.Example</packageId></ModMetaData>",
+	);
+    assert_eq!(
+        parsed,
+        Some((
+            "Example".to_string(),
+            Some("Mod Team & Friends".to_string()),
+            "ModTeam.Example".to_string(),
+            String::new(),
+        )),
+    );
+
+    let without_author =
+        parse_about_xml("<ModMetaData><packageId>ModTeam.Example</packageId></ModMetaData>");
+    assert_eq!(without_author.map(|(_, author, _, _)| author), Some(None));
+}
 #[test]
 fn parses_mod_dependencies_with_nested_alternative_ids() {
     let dependencies = parse_mod_dependencies(
@@ -695,6 +726,7 @@ mod tests {
             parsed,
             Some((
                 "1trickPwnyta's Anomaly Patch".to_string(),
+                None,
                 "anomalypatch.1trickPwnyta".to_string(),
                 String::new(),
             )),
@@ -710,6 +742,7 @@ mod tests {
             parsed,
             Some((
                 "Mod & More".to_string(),
+                None,
                 "Author.Mod".to_string(),
                 "Details & requirements".to_string(),
             ))

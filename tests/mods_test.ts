@@ -4,6 +4,7 @@ import type { InstalledMod } from '@/utils/types.ts';
 function installedMod(packageId: string): InstalledMod {
 	return {
 		name: packageId,
+		author: null,
 		packageId,
 		description: '',
 		publishedFileId: null,

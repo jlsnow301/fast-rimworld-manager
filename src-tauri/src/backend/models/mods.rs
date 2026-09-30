@@ -4,6 +4,7 @@ use serde::Serialize;
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InstalledMod {
     pub(crate) name: String,
+    pub(crate) author: Option<String>,
     pub(crate) package_id: String,
     pub(crate) description: String,
     pub(crate) published_file_id: Option<String>,
