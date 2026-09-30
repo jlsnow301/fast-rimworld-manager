@@ -105,8 +105,13 @@ fn load_configured_mod_list(
     default_config_directory: Option<&Path>,
 ) -> Result<Option<String>, String> {
     let settings = load_settings_file(settings_file)?;
-    if !settings.config_path.trim().is_empty() {
-        return read_mods_config(&settings.config_path);
+    let configured_mod_list = if settings.config_path.trim().is_empty() {
+        None
+    } else {
+        read_mods_config(&settings.config_path)?
+    };
+    if configured_mod_list.is_some() {
+        return Ok(configured_mod_list);
     }
     let Some(default_config_directory) = default_config_directory else {
         return Ok(None);
@@ -594,6 +599,33 @@ mod tests {
             .expect("saved mod list should be readable");
 
         assert_eq!(loaded.as_deref(), Some(saved_xml));
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+    #[test]
+    fn falls_back_when_saved_config_folder_has_no_mods_config() {
+        let root = unique_temp_directory("missing-saved-config");
+        let settings_file = root.join("app/paths.json");
+        let saved_config_directory = root.join("wrong/Config");
+        let default_config_directory = root.join("default/Config");
+        fs::create_dir_all(&default_config_directory)
+            .expect("default config directory should be created");
+        let xml =
+            "<ModsConfigData><activeMods><li>ludeon.rimworld</li></activeMods></ModsConfigData>";
+        fs::write(default_config_directory.join("ModsConfig.xml"), xml)
+            .expect("default ModsConfig.xml should be created");
+        save_settings_file(
+            &settings_file,
+            &PathSettings {
+                config_path: saved_config_directory.to_string_lossy().into_owned(),
+                ..PathSettings::default()
+            },
+        )
+        .expect("path settings should save");
+
+        let loaded = load_configured_mod_list(&settings_file, Some(&default_config_directory))
+            .expect("default mod list should be readable when saved path is stale");
+
+        assert_eq!(loaded.as_deref(), Some(xml));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
 

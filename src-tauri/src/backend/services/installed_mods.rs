@@ -685,6 +685,21 @@ mod tests {
     }
 
     #[test]
+    fn parses_about_metadata_with_utf8_bom() {
+        let parsed = parse_about_xml(
+            "\u{feff}<?xml version=\"1.0\" encoding=\"utf-8\"?><ModMetaData><packageId>Ludeon.RimWorld</packageId></ModMetaData>",
+        );
+
+        assert_eq!(
+            parsed,
+            Some((
+                "Ludeon.RimWorld".to_string(),
+                "Ludeon.RimWorld".to_string(),
+                String::new(),
+            )),
+        );
+    }
+    #[test]
     fn parses_escaped_description_for_preview() {
         let parsed = parse_about_xml(
             "<ModMetaData><name>Mod &amp; More</name><packageId>Author.Mod</packageId><description>Details &amp; requirements</description></ModMetaData>",
