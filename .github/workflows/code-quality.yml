@@ -16,9 +16,19 @@ jobs:
               uses: actions/checkout@v4
             - name: Set up Deno
               uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+            - name: Set up Rust
+              uses: dtolnay/rust-toolchain@stable
+            - name: Install Tauri Linux dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --no-install-recommends -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+            - name: Check Knip
+              run: deno task knip
             - name: Check formatting
-              run: deno fmt --check --ignore=.agents --ignore=.claude --ignore=plans --ignore=README.md --ignore=AGENTS.md
+              run: deno task format
             - name: Lint
-              run: deno lint
+              run: deno task lint
+            - name: Build Tauri application
+              run: deno task tauri build
             - name: Test
               run: deno task test
