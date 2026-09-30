@@ -4,14 +4,29 @@
 		"tests/**/*_test.ts"
 	],
 	"project": [
-		"src/**/*.{js,jsx,ts,tsx}",
-		"src/**/*.css",
-		"tests/**/*.{js,jsx,ts,tsx}",
-		".storybook/**/*.{js,jsx,ts,tsx}"
+		".storybook/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,css}",
+		"src/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,css}",
+		"tests/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}",
+		"*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+	],
+	"include": [
+		"files",
+		"dependencies",
+		"unlisted",
+		"binaries",
+		"catalog",
+		"catalogReferences",
+		"unresolved",
+		"exports",
+		"types",
+		"nsExports",
+		"nsTypes",
+		"enumMembers",
+		"namespaceMembers",
+		"duplicates",
+		"cycles"
 	],
 	"includeEntryExports": true,
-	"treatConfigHintsAsErrors": true,
-	"treatTagHintsAsErrors": true,
 	"rules": {
 		"files": "error",
 		"dependencies": "error",
@@ -30,5 +45,21 @@
 		"namespaceMembers": "error",
 		"duplicates": "error",
 		"cycles": "error"
-	}
+	},
+	"typescript": {
+		"config": [
+			"tsconfig.json",
+			"tsconfig.node.json"
+		]
+	},
+	"vite": {
+		"config": [
+			"vite.config.ts"
+		]
+	},
+	"storybook": true,
+	"github-actions": true,
+	"tauri": true,
+	"treatConfigHintsAsErrors": true,
+	"treatTagHintsAsErrors": true
 }

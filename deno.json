@@ -9,7 +9,9 @@
 		"@/": "./src/"
 	},
 	"tasks": {
-		"test": "deno test --allow-env=NODE_ENV tests"
+		"test": "deno test --allow-env=NODE_ENV tests",
+		"format": "deno fmt --check --ignore=.agents --ignore=.claude --ignore=plans --ignore=README.md --ignore=AGENTS.md --ignore=skills-lock.json",
+		"lint": "deno lint"
 	},
 	"lint": {
 		"rules": {
