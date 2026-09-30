@@ -12,3 +12,7 @@ Workshop entries.
 
 Installed package IDs come from direct fields in `About.xml`; nested dependency
 `packageId` entries are not used as a mod's identity.
+
+During startup, mod panels keep their final height and show Skeleton
+placeholders until loading completes. A failed load, a loaded list, and a
+successful load with no mod list have distinct status messages.

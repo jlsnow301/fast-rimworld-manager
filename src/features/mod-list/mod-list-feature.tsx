@@ -13,6 +13,7 @@ import {
 	inactiveSearchAtom,
 	isTestModeAtom,
 	modDetailsByPackageIdAtom,
+	modListLoadStateAtom,
 	outdatedWorkshopModsByPackageIdAtom,
 	statusAtom,
 	visibleActiveModsAtom,
@@ -39,6 +40,7 @@ export function ModListFeature() {
 	const setActiveSearch = useSetAtom(activeSearchAtom);
 	const setInactiveSearch = useSetAtom(inactiveSearchAtom);
 	const status = useAtomValue(statusAtom);
+	const modListLoadState = useAtomValue(modListLoadStateAtom);
 	const visibleActiveMods = useAtomValue(visibleActiveModsAtom);
 	const visibleInactiveMods = useAtomValue(visibleInactiveModsAtom);
 	const gameVersion = useAtomValue(gameVersionAtom);
@@ -61,7 +63,10 @@ export function ModListFeature() {
 	}
 
 	return (
-		<section className='mx-auto w-full max-w-7xl p-6'>
+		<section
+			aria-busy={modListLoadState === 'loading'}
+			className='mx-auto w-full max-w-7xl p-6'
+		>
 			<div className='mb-4 flex flex-wrap items-end justify-between gap-3'>
 				<div>
 					<h2 className='text-lg font-semibold tracking-wide uppercase'>
@@ -127,30 +132,52 @@ export function ModListFeature() {
 			<p
 				aria-live='polite'
 				className='mb-3 flex flex-wrap items-center gap-2 text-sm'
-				role={activeModDiagnostics.errorCount ? 'alert' : 'status'}
+				role={modListLoadState === 'failed' ||
+						(activeModDiagnostics.errorCount > 0 &&
+							modListLoadState === 'loaded')
+					? 'alert'
+					: 'status'}
 			>
-				<span>Active mod list checks:</span>
-				{!hasModList
-					? <Badge variant='secondary'>No active list loaded</Badge>
-					: activeModDiagnostics.errorCount > 0
+				{modListLoadState === 'loading'
+					? <span>Loading mod list…</span>
+					: modListLoadState === 'failed'
 					? (
 						<Badge variant='destructive'>
-							{activeModDiagnostics.errorCount} mods with errors
+							Mod list failed to load
 						</Badge>
 					)
-					: <Badge variant='secondary'>No errors</Badge>}
-				{activeModDiagnostics.warningCount > 0 && (
-					<Badge variant='outline'>
-						{activeModDiagnostics.warningCount} mods with warnings
-					</Badge>
-				)}
-				{hasModList &&
-					(activeModDiagnostics.errorCount > 0 ||
-						activeModDiagnostics.warningCount > 0) &&
-					(
-						<span className='text-muted-foreground'>
-							Select a highlighted mod for details.
-						</span>
+					: (
+						<>
+							<span>Active mod list checks:</span>
+							{!hasModList
+								? (
+									<Badge variant='secondary'>
+										No active list loaded
+									</Badge>
+								)
+								: activeModDiagnostics.errorCount > 0
+								? (
+									<Badge variant='destructive'>
+										{activeModDiagnostics.errorCount}{' '}
+										mods with errors
+									</Badge>
+								)
+								: <Badge variant='secondary'>No errors</Badge>}
+							{activeModDiagnostics.warningCount > 0 && (
+								<Badge variant='outline'>
+									{activeModDiagnostics.warningCount}{' '}
+									mods with warnings
+								</Badge>
+							)}
+							{hasModList &&
+								(activeModDiagnostics.errorCount > 0 ||
+									activeModDiagnostics.warningCount > 0) &&
+								(
+									<span className='text-muted-foreground'>
+										Select a highlighted mod for details.
+									</span>
+								)}
+						</>
 					)}
 			</p>
 			<div className='grid grid-cols-1 gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)]'>
@@ -158,6 +185,7 @@ export function ModListFeature() {
 				<div className='grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2'>
 					<ModListPanel
 						count={activeMods.length}
+						isLoading={modListLoadState === 'loading'}
 						emptyMessage={hasModList
 							? 'No active mods.'
 							: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
@@ -175,6 +203,7 @@ export function ModListFeature() {
 					/>
 					<ModListPanel
 						count={inactiveMods.length}
+						isLoading={modListLoadState === 'loading'}
 						emptyMessage='No inactive mods found. Configure paths in Settings.'
 						mods={visibleInactiveMods}
 						activeDiagnosticsByPackageId={activeModDiagnostics

@@ -5,6 +5,7 @@ import {
 	checkingWorkshopUpdatesAtom,
 	installedGameVersionAtom,
 	isTestModeAtom,
+	modListLoadStateAtom,
 	statusAtom,
 	workshopUpdateResultAtom,
 } from '@/features/mod-list/atoms';
@@ -33,6 +34,7 @@ export function useAppController() {
 	const [, setStatus] = useAtom(statusAtom);
 	const [, setInstalledGameVersion] = useAtom(installedGameVersionAtom);
 	const store = useStore();
+	const setModListLoadState = useSetAtom(modListLoadStateAtom);
 	const setCheckingWorkshopUpdates = useSetAtom(checkingWorkshopUpdatesAtom);
 	const setWorkshopUpdateResult = useSetAtom(workshopUpdateResultAtom);
 	const setSelectedMod = useSetAtom(selectedModAtom);
@@ -58,9 +60,12 @@ export function useAppController() {
 				);
 			} catch (error) {
 				if (!cancelled) {
-					settingsController.setSettingsMessage(
-						error instanceof Error ? error.message : String(error),
-					);
+					const message = error instanceof Error
+						? error.message
+						: String(error);
+					settingsController.setSettingsMessage(message);
+					setStatus(`Could not load the mod list: ${message}`);
+					setModListLoadState('failed');
 				}
 				return;
 			}
@@ -97,13 +102,14 @@ export function useAppController() {
 			const content = configResult.status === 'fulfilled'
 				? configResult.value
 				: null;
-			modLists.initialize(
+			const loaded = modLists.initialize(
 				foundMods,
 				content,
 				configResult.status === 'rejected' ? configResult.reason : null,
 				modsResult.status === 'rejected' ? modsResult.reason : null,
 				Boolean(settings.configPath),
 			);
+			setModListLoadState(loaded ? 'loaded' : 'failed');
 		}
 
 		void loadConfiguredMods();

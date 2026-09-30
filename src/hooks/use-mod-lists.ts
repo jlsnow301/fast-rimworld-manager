@@ -54,8 +54,8 @@ export function useModLists(setStatus: (message: string) => void) {
 		configError: unknown,
 		modsError: unknown,
 		configPathConfigured: boolean,
-	) {
-		if (store.get(isTestModeAtom)) return;
+	): boolean {
+		if (store.get(isTestModeAtom)) return true;
 		setConfiguredGameVersion(null);
 		setSavedSnapshot(
 			createModListSnapshot(store.get(gameVersionAtom), [], []),
@@ -90,21 +90,34 @@ export function useModLists(setStatus: (message: string) => void) {
 				setStatus(
 					error instanceof Error ? error.message : String(error),
 				);
+				return false;
 			}
-			return;
+			if (modsError !== null) {
+				setStatus(
+					`Could not scan installed mods: ${String(modsError)}`,
+				);
+				return false;
+			}
+			return true;
 		}
-
 		if (configError !== null) {
 			setStatus(String(configError));
-		} else if (configPathConfigured) {
+			return false;
+		}
+		if (modsError !== null) {
+			setStatus(String(modsError));
+			return false;
+		}
+		if (configPathConfigured) {
 			setStatus(
 				`No ModsConfig.xml found. Found ${foundMods.length} installed mods.`,
 			);
-		} else if (modsError !== null) {
-			setStatus(String(modsError));
-		} else if (foundMods.length > 0) {
+			return true;
+		}
+		if (foundMods.length > 0) {
 			setStatus(`Found ${foundMods.length} installed mods.`);
 		}
+		return true;
 	}
 
 	function refreshInstalledMods(foundMods: InstalledMod[]) {
