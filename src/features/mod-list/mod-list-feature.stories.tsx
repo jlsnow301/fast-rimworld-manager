@@ -342,6 +342,26 @@ export const LoadedActiveAndInactiveLists: Story = {
 		if (documentElement.scrollHeight > documentElement.clientHeight) {
 			throw new Error('The mod-list page must fit the viewport.');
 		}
+		const cardTitles = Array.from(
+			context.canvasElement.ownerDocument.querySelectorAll(
+				'[data-slot="card-title"]',
+			),
+		).map((cardTitle) => cardTitle.textContent?.trim() ?? '');
+		const expectedCardTitles = [
+			'Mod preview',
+			'Inactive mods',
+			'Active mods',
+		];
+		if (
+			cardTitles.length !== expectedCardTitles.length ||
+			cardTitles.some((title, index) =>
+				title !== expectedCardTitles[index]
+			)
+		) {
+			throw new Error(
+				'Mod preview and list card titles must appear in preview, inactive, active order.',
+			);
+		}
 		const modListCards = Array.from(
 			context.canvasElement.ownerDocument.querySelectorAll(
 				'[data-slot="card"]',

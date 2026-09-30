@@ -180,46 +180,44 @@ export function ModListFeature() {
 						</>
 					)}
 			</p>
-			<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)] lg:grid-rows-1'>
+			<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
 				<div className='min-h-0 overflow-y-auto'>
 					<ModPreviewFeature />
 				</div>
-				<div className='grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 md:grid-cols-2 md:grid-rows-1'>
-					<ModListPanel
-						count={activeMods.length}
-						isLoading={modListLoadState === 'loading'}
-						emptyMessage={hasModList
-							? 'No active mods.'
-							: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
-						mods={visibleActiveMods}
-						activeDiagnosticsByPackageId={activeModDiagnostics
-							.byPackageId}
-						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-						modDetailsByPackageId={modDetailsByPackageId}
-						onDropMod={moveMod}
-						onSelectMod={selectMod}
-						onSearch={setActiveSearch}
-						search={activeSearch}
-						title='Active mods'
-						type='active'
-					/>
-					<ModListPanel
-						count={inactiveMods.length}
-						isLoading={modListLoadState === 'loading'}
-						emptyMessage='No inactive mods found. Configure paths in Settings.'
-						mods={visibleInactiveMods}
-						activeDiagnosticsByPackageId={activeModDiagnostics
-							.byPackageId}
-						outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-						modDetailsByPackageId={modDetailsByPackageId}
-						onDropMod={moveMod}
-						onSelectMod={selectMod}
-						onSearch={setInactiveSearch}
-						search={inactiveSearch}
-						title='Inactive mods'
-						type='inactive'
-					/>
-				</div>
+				<ModListPanel
+					count={inactiveMods.length}
+					isLoading={modListLoadState === 'loading'}
+					emptyMessage='No inactive mods found. Configure paths in Settings.'
+					mods={visibleInactiveMods}
+					activeDiagnosticsByPackageId={activeModDiagnostics
+						.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+					modDetailsByPackageId={modDetailsByPackageId}
+					onDropMod={moveMod}
+					onSelectMod={selectMod}
+					onSearch={setInactiveSearch}
+					search={inactiveSearch}
+					title='Inactive mods'
+					type='inactive'
+				/>
+				<ModListPanel
+					count={activeMods.length}
+					isLoading={modListLoadState === 'loading'}
+					emptyMessage={hasModList
+						? 'No active mods.'
+						: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
+					mods={visibleActiveMods}
+					activeDiagnosticsByPackageId={activeModDiagnostics
+						.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+					modDetailsByPackageId={modDetailsByPackageId}
+					onDropMod={moveMod}
+					onSelectMod={selectMod}
+					onSearch={setActiveSearch}
+					search={activeSearch}
+					title='Active mods'
+					type='active'
+				/>
 			</div>
 			<p
 				aria-live='polite'
