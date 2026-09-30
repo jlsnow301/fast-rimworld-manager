@@ -16,3 +16,8 @@ Installed package IDs come from direct fields in `About.xml`; nested dependency
 During startup, mod panels keep their final height and show Skeleton
 placeholders until loading completes. A failed load, a loaded list, and a
 successful load with no mod list have distinct status messages.
+
+## Storybook
+
+Run `deno task storybook` to open Storybook at `http://localhost:6006`. Create a
+static build with `deno task build-storybook`.
