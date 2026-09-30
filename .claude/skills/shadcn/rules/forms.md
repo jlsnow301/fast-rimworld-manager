@@ -17,18 +17,19 @@ Always use `FieldGroup` + `Field` — never raw `div` with `space-y-*`:
 
 ```tsx
 <FieldGroup>
-  <Field>
-    <FieldLabel htmlFor="email">Email</FieldLabel>
-    <Input id="email" type="email" />
-  </Field>
-  <Field>
-    <FieldLabel htmlFor="password">Password</FieldLabel>
-    <Input id="password" type="password" />
-  </Field>
-</FieldGroup>
+	<Field>
+		<FieldLabel htmlFor='email'>Email</FieldLabel>
+		<Input id='email' type='email' />
+	</Field>
+	<Field>
+		<FieldLabel htmlFor='password'>Password</FieldLabel>
+		<Input id='password' type='password' />
+	</Field>
+</FieldGroup>;
 ```
 
-Use `Field orientation="horizontal"` for settings pages. Use `FieldLabel className="sr-only"` for visually hidden labels.
+Use `Field orientation="horizontal"` for settings pages. Use
+`FieldLabel className="sr-only"` for visually hidden labels.
 
 **Choosing form controls:**
 
@@ -52,8 +53,8 @@ Never use raw `Input` or `Textarea` inside an `InputGroup`.
 
 ```tsx
 <InputGroup>
-  <Input placeholder="Search..." />
-</InputGroup>
+	<Input placeholder='Search...' />
+</InputGroup>;
 ```
 
 **Correct:**
@@ -70,17 +71,18 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 
 ## Buttons inside inputs use InputGroup + InputGroupAddon
 
-Never place a `Button` directly inside or adjacent to an `Input` with custom positioning.
+Never place a `Button` directly inside or adjacent to an `Input` with custom
+positioning.
 
 **Incorrect:**
 
 ```tsx
-<div className="relative">
-  <Input placeholder="Search..." className="pr-10" />
-  <Button className="absolute right-0 top-0" size="icon">
-    <SearchIcon />
-  </Button>
-</div>
+<div className='relative'>
+	<Input placeholder='Search...' className='pr-10' />
+	<Button className='absolute right-0 top-0' size='icon'>
+		<SearchIcon />
+	</Button>
+</div>;
 ```
 
 **Correct:**
@@ -137,42 +139,47 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 Combine with `Field` for labelled toggle groups:
 
 ```tsx
-<Field orientation="horizontal">
-  <FieldTitle id="theme-label">Theme</FieldTitle>
-  <ToggleGroup aria-labelledby="theme-label" spacing={2}>
-    <ToggleGroupItem value="light">Light</ToggleGroupItem>
-    <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
-    <ToggleGroupItem value="system">System</ToggleGroupItem>
-  </ToggleGroup>
-</Field>
+<Field orientation='horizontal'>
+	<FieldTitle id='theme-label'>Theme</FieldTitle>
+	<ToggleGroup aria-labelledby='theme-label' spacing={2}>
+		<ToggleGroupItem value='light'>Light</ToggleGroupItem>
+		<ToggleGroupItem value='dark'>Dark</ToggleGroupItem>
+		<ToggleGroupItem value='system'>System</ToggleGroupItem>
+	</ToggleGroup>
+</Field>;
 ```
 
-> **Note:** `defaultValue` and `type`/`multiple` props differ between base and radix. See [base-vs-radix.md](./base-vs-radix.md#togglegroup).
+> **Note:** `defaultValue` and `type`/`multiple` props differ between base and
+> radix. See [base-vs-radix.md](./base-vs-radix.md#togglegroup).
 
 ---
 
 ## FieldSet + FieldLegend for grouping related fields
 
-Use `FieldSet` + `FieldLegend` for related checkboxes, radios, or switches — not `div` with a heading:
+Use `FieldSet` + `FieldLegend` for related checkboxes, radios, or switches — not
+`div` with a heading:
 
 ```tsx
 <FieldSet>
-  <FieldLegend variant="label">Preferences</FieldLegend>
-  <FieldDescription>Select all that apply.</FieldDescription>
-  <FieldGroup className="gap-3">
-    <Field orientation="horizontal">
-      <Checkbox id="dark" />
-      <FieldLabel htmlFor="dark" className="font-normal">Dark mode</FieldLabel>
-    </Field>
-  </FieldGroup>
-</FieldSet>
+	<FieldLegend variant='label'>Preferences</FieldLegend>
+	<FieldDescription>Select all that apply.</FieldDescription>
+	<FieldGroup className='gap-3'>
+		<Field orientation='horizontal'>
+			<Checkbox id='dark' />
+			<FieldLabel htmlFor='dark' className='font-normal'>
+				Dark mode
+			</FieldLabel>
+		</Field>
+	</FieldGroup>
+</FieldSet>;
 ```
 
 ---
 
 ## Field validation and disabled states
 
-Both attributes are needed — `data-invalid`/`data-disabled` styles the field (label, description), while `aria-invalid`/`disabled` styles the control.
+Both attributes are needed — `data-invalid`/`data-disabled` styles the field
+(label, description), while `aria-invalid`/`disabled` styles the control.
 
 ```tsx
 // Invalid.
@@ -189,4 +196,5 @@ Both attributes are needed — `data-invalid`/`data-disabled` styles the field (
 </Field>
 ```
 
-Works for all controls: `Input`, `Textarea`, `Select`, `Checkbox`, `RadioGroupItem`, `Switch`, `Slider`, `NativeSelect`, `InputOTP`.
+Works for all controls: `Input`, `Textarea`, `Select`, `Checkbox`,
+`RadioGroupItem`, `Switch`, `Slider`, `NativeSelect`, `InputOTP`.

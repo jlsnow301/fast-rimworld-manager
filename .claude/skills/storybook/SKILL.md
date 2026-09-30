@@ -5,7 +5,9 @@ description: Best practices for building and documenting component libraries wit
 
 # Storybook Best Practices
 
-You are an expert in building and documenting component libraries with Storybook. Apply these guidelines when creating stories, organizing components, and maintaining design systems.
+You are an expert in building and documenting component libraries with
+Storybook. Apply these guidelines when creating stories, organizing components,
+and maintaining design systems.
 
 ## Project Structure
 
@@ -32,30 +34,30 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Component } from './Component';
 
 const meta: Meta<typeof Component> = {
-  title: 'Category/Component',
-  component: Component,
-  parameters: {
-    layout: 'centered',
-  },
-  tags: ['autodocs'],
-  argTypes: {
-    // Define arg types here
-  },
+	title: 'Category/Component',
+	component: Component,
+	parameters: {
+		layout: 'centered',
+	},
+	tags: ['autodocs'],
+	argTypes: {
+		// Define arg types here
+	},
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {
-    // Default props
-  },
+	args: {
+		// Default props
+	},
 };
 
 export const Variant: Story = {
-  args: {
-    variant: 'secondary',
-  },
+	args: {
+		variant: 'secondary',
+	},
 };
 ```
 
@@ -159,17 +161,17 @@ parameters: {
 ### Interaction Testing
 
 ```typescript
-import { within, userEvent } from '@storybook/testing-library';
+import { userEvent, within } from '@storybook/testing-library';
 import { expect } from '@storybook/jest';
 
 export const Clickable: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const button = canvas.getByRole('button');
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const button = canvas.getByRole('button');
 
-    await userEvent.click(button);
-    await expect(button).toHaveFocus();
-  },
+		await userEvent.click(button);
+		await expect(button).toHaveFocus();
+	},
 };
 ```
 
@@ -201,16 +203,16 @@ export const Clickable: Story = {
 ```typescript
 // .storybook/main.ts
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  addons: [
-    '@storybook/addon-essentials',
-    '@storybook/addon-a11y',
-    '@storybook/addon-interactions',
-  ],
-  framework: {
-    name: '@storybook/react-vite',
-    options: {},
-  },
+	stories: ['../src/**/*.stories.@(js|jsx|ts|tsx)'],
+	addons: [
+		'@storybook/addon-essentials',
+		'@storybook/addon-a11y',
+		'@storybook/addon-interactions',
+	],
+	framework: {
+		name: '@storybook/react-vite',
+		options: {},
+	},
 };
 
 export default config;

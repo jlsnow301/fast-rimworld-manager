@@ -1,26 +1,40 @@
 # Chapter 7 - Type State Pattern
 
-Models state at compile time, preventing bugs by making illegal states unrepresentable. It takes advantage of the Rust generics and type system to create sub-types that can only be reached if a certain condition is achieved, making some operations illegal at compile time. 
+Models state at compile time, preventing bugs by making illegal states
+unrepresentable. It takes advantage of the Rust generics and type system to
+create sub-types that can only be reached if a certain condition is achieved,
+making some operations illegal at compile time.
 
-> Recently it became the standard design pattern of Rust programming. However, it is not exclusive to Rust, as it is achievable and has inspired other languages to do the same [swift](https://swiftology.io/articles/typestate/) and [typescript](https://catchts.com/type-state).
+> Recently it became the standard design pattern of Rust programming. However,
+> it is not exclusive to Rust, as it is achievable and has inspired other
+> languages to do the same [swift](https://swiftology.io/articles/typestate/)
+> and [typescript](https://catchts.com/type-state).
 
 ## 7.1 What is Type State Pattern?
 
-**Type State Pattern** is a design pattern where you encode different **states** of the system as **types**, not as runtime flags or enums. This allows the compiler to enforce state transitions and prevent illegal actions at compile time. It also improves the developer experience, as developers only have access to certain functions based on the state of the type.
+**Type State Pattern** is a design pattern where you encode different **states**
+of the system as **types**, not as runtime flags or enums. This allows the
+compiler to enforce state transitions and prevent illegal actions at compile
+time. It also improves the developer experience, as developers only have access
+to certain functions based on the state of the type.
 
 > Invalid states become compile errors instead of runtime bugs.
 
 ## 7.2 Why use it?
 
-* Avoids runtime checks for state validity. If you reach certain states, you can make certain assumptions of the data you have.
-* Models state transitions as type transitions. This is similar to a state machine, but in compile time.
-* Prevents data misuse, e.g. using uninitialized objects.
-* Improves API safety and correctness.
-* The phantom data field is removed after compilation so no extra memory is allocated.
+- Avoids runtime checks for state validity. If you reach certain states, you can
+  make certain assumptions of the data you have.
+- Models state transitions as type transitions. This is similar to a state
+  machine, but in compile time.
+- Prevents data misuse, e.g. using uninitialized objects.
+- Improves API safety and correctness.
+- The phantom data field is removed after compilation so no extra memory is
+  allocated.
 
 ## 7.3 Simple Example: File State
 
 [Github Example](https://github.com/apollographql/rust-best-practices/tree/main/examples/simple-type-state)
+
 ```rust
 use std::{io, path::{Path, PathBuf}};
 
@@ -150,9 +164,12 @@ impl Builder<NameSet, AgeSet> {
 }
 ```
 
-Although a bit more verbose than a usual builder, this guarantees that all necessary fields are present (note that e-mail is optional field only present in the final builder).
+Although a bit more verbose than a usual builder, this guarantees that all
+necessary fields are present (note that e-mail is optional field only present in
+the final builder).
 
 #### Usage:
+
 ```rust
 // ✅ Valid cases
 let person: Person = Builder::new().name("name".to_string()).age(30).build();
@@ -168,7 +185,8 @@ let person: Person = Builder::new().build();// ❌ Compile error: Name and Age r
 
 ### Network Protocol State Machine
 
-Illegal transitions like sending a message before connecting **simply don't compile**:
+Illegal transitions like sending a message before connecting **simply don't
+compile**:
 
 ```rust
 // Mock example
@@ -204,23 +222,28 @@ impl Client<Connected> {
 ## 7.5 Pros and Cons
 
 ### ✅ Use Type-State Pattern When:
-* Your want **compile-time state safety**.
-* You need to enforce **API constraints**.
-* You are writing a library/crate that is heavy dependent on variants.
-* Your want to replace runtime booleans or enums with **type-safe code paths**.
-* You need compile time correctness.
+
+- Your want **compile-time state safety**.
+- You need to enforce **API constraints**.
+- You are writing a library/crate that is heavy dependent on variants.
+- Your want to replace runtime booleans or enums with **type-safe code paths**.
+- You need compile time correctness.
 
 ### ❌ Avoid it when:
-* Writing trivial states like enums.
-* Don't need type-safety.
-* When it leads to overcomplicated generics.
-* When runtime flexibility is required.
+
+- Writing trivial states like enums.
+- Don't need type-safety.
+- When it leads to overcomplicated generics.
+- When runtime flexibility is required.
 
 ### 🚨 Downsides and Cautions
-* Can lead to more **verbose solutions**.
-* Can lead to **complex type signatures**.
-* May require **unsafe** to return **variant outputs** based on different states.
-* May required a bunch of duplication (e.g. same struct field reused).
-* PhantomData is not intuitive for beginners and can feel a bit hacky.
 
-> Use this pattern when it **saves bugs, increases safety or simplifies logic**, not just for cleverness.
+- Can lead to more **verbose solutions**.
+- Can lead to **complex type signatures**.
+- May require **unsafe** to return **variant outputs** based on different
+  states.
+- May required a bunch of duplication (e.g. same struct field reused).
+- PhantomData is not intuitive for beginners and can feel a bit hacky.
+
+> Use this pattern when it **saves bugs, increases safety or simplifies logic**,
+> not just for cleverness.

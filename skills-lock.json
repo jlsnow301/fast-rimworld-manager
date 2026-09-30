@@ -1,47 +1,47 @@
 {
-  "version": 1,
-  "skills": {
-    "jotai": {
-      "source": "jlsnow301/skills",
-      "sourceType": "github",
-      "skillPath": "skills/jotai/SKILL.md",
-      "computedHash": "b302cbd4c7a75e1ad6d1827427cf986b728059475bce328b63128bf08404ebcb"
-    },
-    "rust-best-practices": {
-      "source": "apollographql/skills",
-      "sourceType": "github",
-      "skillPath": "skills/rust-best-practices/SKILL.md",
-      "computedHash": "5ae68ae0241d65dac8a73f06139457206dde55912aecd4c36cd462fa85570513"
-    },
-    "shadcn": {
-      "source": "shadcn-ui/ui",
-      "sourceType": "github",
-      "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "d04e43ec01e921558b93bb8046c14a42a22556689a2827243df900825a4e1604"
-    },
-    "storybook": {
-      "source": "mindrally/skills",
-      "sourceType": "github",
-      "skillPath": "storybook/SKILL.md",
-      "computedHash": "8157be22c1717dd815297bc14eae65a85e8562e3666f7f3b109a36add72b03a0"
-    },
-    "tauri-v2": {
-      "source": "nodnarbnitram/claude-code-extensions",
-      "sourceType": "github",
-      "skillPath": ".claude/skills/tauri-v2/SKILL.md",
-      "computedHash": "7108944eec3bef17686df9ebae9c9bdbee7809744930c8734c979e3c4573eaab"
-    },
-    "vercel-react-best-practices": {
-      "source": "vercel-labs/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/react-best-practices/SKILL.md",
-      "computedHash": "6b526d013e28073246a36f99b529bc43745d30832ecfa8217b359c34f260ca6b"
-    },
-    "vite": {
-      "source": "antfu/skills",
-      "sourceType": "github",
-      "skillPath": "skills/vite/SKILL.md",
-      "computedHash": "8a05956b65faa8131826da179f2d09afe73931971466d5640d95388b4182cda5"
-    }
-  }
+	"version": 1,
+	"skills": {
+		"jotai": {
+			"source": "jlsnow301/skills",
+			"sourceType": "github",
+			"skillPath": "skills/jotai/SKILL.md",
+			"computedHash": "b302cbd4c7a75e1ad6d1827427cf986b728059475bce328b63128bf08404ebcb"
+		},
+		"rust-best-practices": {
+			"source": "apollographql/skills",
+			"sourceType": "github",
+			"skillPath": "skills/rust-best-practices/SKILL.md",
+			"computedHash": "5ae68ae0241d65dac8a73f06139457206dde55912aecd4c36cd462fa85570513"
+		},
+		"shadcn": {
+			"source": "shadcn-ui/ui",
+			"sourceType": "github",
+			"skillPath": "skills/shadcn/SKILL.md",
+			"computedHash": "d04e43ec01e921558b93bb8046c14a42a22556689a2827243df900825a4e1604"
+		},
+		"storybook": {
+			"source": "mindrally/skills",
+			"sourceType": "github",
+			"skillPath": "storybook/SKILL.md",
+			"computedHash": "8157be22c1717dd815297bc14eae65a85e8562e3666f7f3b109a36add72b03a0"
+		},
+		"tauri-v2": {
+			"source": "nodnarbnitram/claude-code-extensions",
+			"sourceType": "github",
+			"skillPath": ".claude/skills/tauri-v2/SKILL.md",
+			"computedHash": "7108944eec3bef17686df9ebae9c9bdbee7809744930c8734c979e3c4573eaab"
+		},
+		"vercel-react-best-practices": {
+			"source": "vercel-labs/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/react-best-practices/SKILL.md",
+			"computedHash": "6b526d013e28073246a36f99b529bc43745d30832ecfa8217b359c34f260ca6b"
+		},
+		"vite": {
+			"source": "antfu/skills",
+			"sourceType": "github",
+			"skillPath": "skills/vite/SKILL.md",
+			"computedHash": "8a05956b65faa8131826da179f2d09afe73931971466d5640d95388b4182cda5"
+		}
+	}
 }

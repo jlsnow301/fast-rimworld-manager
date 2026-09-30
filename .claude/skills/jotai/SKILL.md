@@ -57,10 +57,10 @@ When user asks for implementation or fix, respond in this structure:
 const priceAtom = atom(100);
 const discountAtom = atom(0);
 const finalPriceAtom = atom(
-  (get) => get(priceAtom) - get(discountAtom),
-  (get, set, discount: number) => {
-    set(discountAtom, discount);
-  },
+	(get) => get(priceAtom) - get(discountAtom),
+	(get, set, discount: number) => {
+		set(discountAtom, discount);
+	},
 );
 ```
 

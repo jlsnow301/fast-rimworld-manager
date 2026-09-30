@@ -7,16 +7,21 @@
 - Deep Links (`tauri-plugin-deep-link`)
 - Custom Protocols
 
-> Covers system tray integration, sidecar processes, deep links, and custom protocols.
-> *Last verified: 2026-04-02. Check official Tauri v2+ docs for updates.*
+> Covers system tray integration, sidecar processes, deep links, and custom
+> protocols. _Last verified: 2026-04-02. Check official Tauri v2+ docs for
+> updates._
 
 **See also:**
-- [plugin-reference.md](plugin-reference.md) — plugin installation and permissions
-- [capabilities-reference.md](capabilities-reference.md) — capability/permission model
+
+- [plugin-reference.md](plugin-reference.md) — plugin installation and
+  permissions
+- [capabilities-reference.md](capabilities-reference.md) — capability/permission
+  model
 
 ## Section 1: System Tray (`TrayIconBuilder`)
 
-> **v2 Change:** `SystemTray` from v1 is replaced by `TrayIconBuilder` in v2. Do NOT use `SystemTray`.
+> **v2 Change:** `SystemTray` from v1 is replaced by `TrayIconBuilder` in v2. Do
+> NOT use `SystemTray`.
 
 ```rust
 // In lib.rs run() function, in setup hook:
@@ -67,9 +72,11 @@ let tray = TrayIconBuilder::new()
 ```
 
 Platform notes:
+
 - **macOS:** tray icon appears in menu bar; supports template images
 - **Windows:** tray icon in system tray; click events differ from macOS
-- **Linux:** tray support varies by desktop environment (requires `libappindicator` or `libayatana-appindicator`)
+- **Linux:** tray support varies by desktop environment (requires
+  `libappindicator` or `libayatana-appindicator`)
 
 ## Section 2: Sidecars (External Binaries)
 
@@ -78,11 +85,11 @@ Show config and usage for bundled executables:
 ```json
 // tauri.conf.json
 {
-  "bundle": {
-    "externalBin": [
-      "binaries/my-sidecar"
-    ]
-  }
+	"bundle": {
+		"externalBin": [
+			"binaries/my-sidecar"
+		]
+	}
 }
 ```
 
@@ -90,14 +97,14 @@ Capability permission required:
 
 ```json
 {
-  "permissions": [
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        { "name": "my-sidecar", "args": true, "sidecar": true }
-      ]
-    }
-  ]
+	"permissions": [
+		{
+			"identifier": "shell:allow-execute",
+			"allow": [
+				{ "name": "my-sidecar", "args": true, "sidecar": true }
+			]
+		}
+	]
 }
 ```
 
@@ -121,6 +128,7 @@ async fn run_sidecar(app: tauri::AppHandle) -> Result<String, String> {
 ```
 
 Binary naming convention (for cross-platform bundling):
+
 - **macOS (Intel):** `my-sidecar-x86_64-apple-darwin`
 - **macOS (ARM):** `my-sidecar-aarch64-apple-darwin`
 - **Windows:** `my-sidecar-x86_64-pc-windows-msvc.exe`
@@ -136,16 +144,16 @@ Config in tauri.conf.json:
 
 ```json
 {
-  "plugins": {
-    "deep-link": {
-      "mobile": [
-        { "scheme": "myapp" }
-      ],
-      "desktop": [
-        { "schemes": ["myapp"] }
-      ]
-    }
-  }
+	"plugins": {
+		"deep-link": {
+			"mobile": [
+				{ "scheme": "myapp" }
+			],
+			"desktop": [
+				{ "schemes": ["myapp"] }
+			]
+		}
+	}
 }
 ```
 
@@ -166,25 +174,30 @@ app.deep_link().on_open_url(|event| {
 ```
 
 Platform notes:
+
 - **macOS:** registers URL scheme in Info.plist automatically
 - **Windows:** registry entry created during install
 - **Linux:** .desktop file update required
-- **iOS/Android:** configure in respective platform files (AndroidManifest.xml or Info.plist)
+- **iOS/Android:** configure in respective platform files (AndroidManifest.xml
+  or Info.plist)
 
 ## Section 4: Custom Protocols
 
-> **Scope note:** Custom protocol (`tauri://` and custom schemes via `invoke_filter` or `asset_protocol`) is a more advanced feature. The primary official pattern is the built-in `asset` protocol for serving local files. Custom protocol handlers require careful security consideration.
+> **Scope note:** Custom protocol (`tauri://` and custom schemes via
+> `invoke_filter` or `asset_protocol`) is a more advanced feature. The primary
+> official pattern is the built-in `asset` protocol for serving local files.
+> Custom protocol handlers require careful security consideration.
 
 Show asset protocol access (most common use case):
 
 ```json
 // tauri.conf.json
 {
-  "app": {
-    "security": {
-      "assetScope": ["$APPDATA/assets/**", "$RESOURCE/**"]
-    }
-  }
+	"app": {
+		"security": {
+			"assetScope": ["$APPDATA/assets/**", "$RESOURCE/**"]
+		}
+	}
 }
 ```
 
@@ -193,4 +206,7 @@ Show asset protocol access (most common use case):
 const imgSrc = convertFileSrc('/path/to/image.png');
 ```
 
-Note: Full custom protocol registration (`tauri::Builder::register_uri_scheme_protocol`) is available but underdocumented in official v2+ docs as of 2026-04-02. Prefer asset protocol for local file serving.
+Note: Full custom protocol registration
+(`tauri::Builder::register_uri_scheme_protocol`) is available but
+underdocumented in official v2+ docs as of 2026-04-02. Prefer asset protocol for
+local file serving.
