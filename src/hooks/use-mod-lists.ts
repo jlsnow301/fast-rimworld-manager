@@ -62,7 +62,8 @@ export function useModLists(setStatus: (message: string) => void) {
 		);
 		setInstalledMods(foundMods);
 		setActiveMods([]);
-		setInactiveMods(getInactivePackageIds(foundMods, []));
+		setInactiveMods(getInactivePackageIds(foundMods, null));
+		setSourceName('');
 		setWorkshopUpdateResult(null);
 
 		if (content) {
@@ -110,7 +111,12 @@ export function useModLists(setStatus: (message: string) => void) {
 		if (store.get(isTestModeAtom)) return;
 		setInstalledMods(foundMods);
 		setWorkshopUpdateResult(null);
-		setInactiveMods(getInactivePackageIds(foundMods, activeMods));
+		setInactiveMods(
+			getInactivePackageIds(
+				foundMods,
+				sourceName ? activeMods : null,
+			),
+		);
 	}
 
 	function applyModList(

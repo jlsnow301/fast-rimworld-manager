@@ -20,8 +20,9 @@ export function normalizedPackageId(packageId: string) {
 
 export function getInactivePackageIds(
 	installedMods: InstalledMod[],
-	activeMods: string[],
+	activeMods: string[] | null,
 ) {
+	if (activeMods === null) return [];
 	const activeIds = new Set(activeMods.map(normalizedPackageId));
 	const seenIds = new Set<string>();
 	const inactiveMods: string[] = [];

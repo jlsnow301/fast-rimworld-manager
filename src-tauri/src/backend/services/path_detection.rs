@@ -85,12 +85,33 @@ fn parse_rimworld_version(contents: &str) -> Option<String> {
 }
 
 pub(crate) fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
-    load_configured_mod_list(&settings_file(&app)?)
+    let default_config_directory = default_config_directory();
+    load_configured_mod_list(&settings_file(&app)?, default_config_directory.as_deref())
 }
 
-fn load_configured_mod_list(settings_file: &Path) -> Result<Option<String>, String> {
+fn default_config_directory() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        config_directory().filter(|path| path.is_dir())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
+}
+
+fn load_configured_mod_list(
+    settings_file: &Path,
+    default_config_directory: Option<&Path>,
+) -> Result<Option<String>, String> {
     let settings = load_settings_file(settings_file)?;
-    read_mods_config(&settings.config_path)
+    if !settings.config_path.trim().is_empty() {
+        return read_mods_config(&settings.config_path);
+    }
+    let Some(default_config_directory) = default_config_directory else {
+        return Ok(None);
+    };
+    read_mods_config(&default_config_directory.to_string_lossy())
 }
 
 fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
@@ -516,10 +537,63 @@ mod tests {
         };
         save_settings_file(&settings_file, &settings).expect("path settings should save");
 
-        let loaded = load_configured_mod_list(&settings_file)
+        let loaded = load_configured_mod_list(&settings_file, None)
             .expect("configured mod list should be readable");
 
         assert_eq!(loaded.as_deref(), Some(xml));
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+    #[test]
+    fn loads_default_config_when_no_config_folder_is_saved() {
+        let root = unique_temp_directory("default-startup-modlist");
+        let settings_file = root.join("app/paths.json");
+        let config_directory = root.join("RimWorld/Config");
+        fs::create_dir_all(&config_directory).expect("config directory should be created");
+        let xml =
+            "<ModsConfigData><activeMods><li>ludeon.rimworld</li></activeMods></ModsConfigData>";
+        fs::write(config_directory.join("ModsConfig.xml"), xml)
+            .expect("ModsConfig.xml should be created");
+        save_settings_file(&settings_file, &PathSettings::default())
+            .expect("empty path settings should save");
+
+        let loaded = load_configured_mod_list(&settings_file, Some(&config_directory))
+            .expect("default mod list should be readable");
+
+        assert_eq!(loaded.as_deref(), Some(xml));
+        fs::remove_dir_all(root).expect("fixture directory should be removed");
+    }
+
+    #[test]
+    fn saved_config_folder_takes_precedence_over_default_config_folder() {
+        let root = unique_temp_directory("saved-config-precedence");
+        let settings_file = root.join("app/paths.json");
+        let saved_config_directory = root.join("saved/Config");
+        let default_config_directory = root.join("default/Config");
+        fs::create_dir_all(&saved_config_directory)
+            .expect("saved config directory should be created");
+        fs::create_dir_all(&default_config_directory)
+            .expect("default config directory should be created");
+        let saved_xml =
+            "<ModsConfigData><activeMods><li>saved.mod</li></activeMods></ModsConfigData>";
+        let default_xml =
+            "<ModsConfigData><activeMods><li>default.mod</li></activeMods></ModsConfigData>";
+        fs::write(saved_config_directory.join("ModsConfig.xml"), saved_xml)
+            .expect("saved ModsConfig.xml should be created");
+        fs::write(default_config_directory.join("ModsConfig.xml"), default_xml)
+            .expect("default ModsConfig.xml should be created");
+        save_settings_file(
+            &settings_file,
+            &PathSettings {
+                config_path: saved_config_directory.to_string_lossy().into_owned(),
+                ..PathSettings::default()
+            },
+        )
+        .expect("path settings should save");
+
+        let loaded = load_configured_mod_list(&settings_file, Some(&default_config_directory))
+            .expect("saved mod list should be readable");
+
+        assert_eq!(loaded.as_deref(), Some(saved_xml));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
 
