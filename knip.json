@@ -1,67 +1,16 @@
 {
 	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"ignoreDependencies": [
+		"@fontsource-variable/roboto",
+		"shadcn",
+		"tailwindcss",
+		"tw-animate-css"
+	],
 	"entry": [
-		"src/main.tsx",
-		"tests/**/*_test.ts"
+		"tests/**/*.{ts,tsx}"
 	],
 	"project": [
-		".storybook/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,css}",
-		"src/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,css}",
-		"tests/**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}",
-		"*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
-	],
-	"include": [
-		"files",
-		"dependencies",
-		"unlisted",
-		"binaries",
-		"catalog",
-		"catalogReferences",
-		"unresolved",
-		"exports",
-		"types",
-		"nsExports",
-		"nsTypes",
-		"enumMembers",
-		"namespaceMembers",
-		"duplicates",
-		"cycles"
-	],
-	"includeEntryExports": true,
-	"ignoreExportsUsedInFile": true,
-	"rules": {
-		"files": "error",
-		"dependencies": "error",
-		"devDependencies": "error",
-		"optionalPeerDependencies": "error",
-		"unlisted": "error",
-		"binaries": "error",
-		"catalog": "error",
-		"catalogReferences": "error",
-		"unresolved": "error",
-		"exports": "error",
-		"types": "error",
-		"nsExports": "error",
-		"nsTypes": "error",
-		"enumMembers": "error",
-		"namespaceMembers": "error",
-		"duplicates": "error",
-		"cycles": "error"
-	},
-	"typescript": {
-		"config": [
-			"tsconfig.json",
-			"tsconfig.node.json"
-		]
-	},
-	"vite": {
-		"config": [
-			"vite.config.ts"
-		]
-	},
-	"storybook": true,
-	"github-actions": true,
-	"tauri": true,
-	"treatConfigHintsAsErrors": true,
-	"treatTagHintsAsErrors": true
+		"src/**/*.{ts,tsx}",
+		"tests/**/*.{ts,tsx}"
+	]
 }

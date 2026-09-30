@@ -23,7 +23,7 @@ export type DetectedPaths = {
 	workshopPath: string | null;
 };
 
-export type ModDependency = {
+type ModDependency = {
 	packageId: string;
 	name: string;
 	alternativePackageIds: string[];
