@@ -18,6 +18,9 @@ import {
 	steamPreviewAtom,
 } from '@/features/mod-preview/atoms';
 
+export type ModListLoadState = 'loading' | 'loaded' | 'failed';
+
+export const modListLoadStateAtom = atom<ModListLoadState>('loading');
 export const statusAtom = atom(
 	'Waiting for configured mods. Set the RimWorld paths in Settings.',
 );

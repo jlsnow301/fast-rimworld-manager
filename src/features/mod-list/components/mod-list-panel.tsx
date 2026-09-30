@@ -16,6 +16,7 @@ import {
 	EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { MOD_DRAG_MIME, parseModDragPayload } from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
@@ -27,12 +28,15 @@ import type {
 	VisibleMod,
 } from '@/utils/types';
 
+const LOADING_SKELETON_ROWS = [0, 1, 2, 3];
+
 export type ModListPanelProps = {
 	count: number;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	outdatedWorkshopModsByPackageId: ReadonlyMap<string, OutdatedWorkshopMod>;
 	activeDiagnosticsByPackageId: ReadonlyMap<string, ModHighlightState>;
+	isLoading: boolean;
 	mods: VisibleMod[];
 	onSelectMod: (packageId: string) => void;
 	onDropMod: (
@@ -53,6 +57,7 @@ export function ModListPanel(props: ModListPanelProps) {
 		modDetailsByPackageId,
 		activeDiagnosticsByPackageId,
 		outdatedWorkshopModsByPackageId,
+		isLoading,
 		mods,
 		onSelectMod,
 		onDropMod,
@@ -92,7 +97,24 @@ export function ModListPanel(props: ModListPanelProps) {
 					}}
 					onDrop={handleDrop}
 				>
-					{mods.length === 0
+					{isLoading
+						? (
+							<div
+								aria-hidden='true'
+								className='flex flex-col gap-4 p-3'
+							>
+								{LOADING_SKELETON_ROWS.map((row) => (
+									<div
+										className='flex flex-col gap-2'
+										key={row}
+									>
+										<Skeleton className='h-4 w-3/4' />
+										<Skeleton className='h-4 w-1/2' />
+									</div>
+								))}
+							</div>
+						)
+						: mods.length === 0
 						? (
 							<Empty className='flex-1 p-6'>
 								<EmptyHeader>

@@ -5,6 +5,7 @@ import {
 	hasModListAtom,
 	isModListDirtyAtom,
 	isTestModeAtom,
+	modListLoadStateAtom,
 	sourceNameAtom,
 	toggleTestModeAtom,
 } from '@/features/mod-list/atoms';
@@ -18,6 +19,7 @@ export function AppHeader() {
 		saveModList,
 	} = useAppContext();
 	const hasModList = useAtomValue(hasModListAtom);
+	const modListLoadState = useAtomValue(modListLoadStateAtom);
 	const isModListDirty = useAtomValue(isModListDirtyAtom);
 	const isTestMode = useAtomValue(isTestModeAtom);
 	const settingsOpen = useAtomValue(settingsOpenAtom);
@@ -35,8 +37,16 @@ export function AppHeader() {
 				</span>
 			</div>
 			<div className='flex max-w-full flex-wrap items-center justify-end gap-2'>
-				<Badge className='max-w-48 truncate' variant='outline'>
-					{sourceName || 'No mod list loaded'}
+				<Badge
+					aria-live='polite'
+					className='max-w-48 truncate'
+					variant='outline'
+				>
+					{sourceName || (modListLoadState === 'loading'
+						? 'Loading mod list…'
+						: modListLoadState === 'failed'
+						? 'Mod list failed to load'
+						: 'No mod list loaded')}
 				</Badge>
 				{isTestMode && <Badge variant='secondary'>TEST MODE</Badge>}
 				{isModListDirty && (
@@ -64,7 +74,8 @@ export function AppHeader() {
 					variant={isTestMode ? 'secondary' : 'outline'}
 					size='sm'
 					aria-pressed={isTestMode}
-					onClick={() => toggleTestMode()}
+					onClick={() =>
+						toggleTestMode()}
 				>
 					{isTestMode ? 'Exit test mode' : 'Load sample list'}
 				</Button>
