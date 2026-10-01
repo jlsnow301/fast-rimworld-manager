@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { userEvent } from 'storybook/test';
 import { createStore, Provider } from 'jotai';
 import { AppProvider } from '@/context/app-context';
 import { ModListFeature } from '@/features/mod-list/mod-list-feature';
@@ -561,18 +562,19 @@ export const LoadedActiveAndInactiveLists: Story = {
 		const updateIcon = outdatedWorkshopRow?.querySelector<SVGElement>(
 			'svg.lucide-download',
 		);
+		const updateTooltipTrigger = updateIcon?.parentElement;
 		if (
 			!outdatedWorkshopRow ||
 			!updateIcon ||
-			!updateIcon.parentElement?.getAttribute('title')?.includes(
-				'Steam update available',
-			) ||
+			!updateTooltipTrigger ||
+			updateTooltipTrigger.getAttribute('data-slot') !==
+				'tooltip-trigger' ||
 			outdatedWorkshopRow.textContent?.trim() !==
 				'Vanilla Expanded Framework' ||
 			outdatedWorkshopRow.querySelector('[data-slot="badge"]')
 		) {
 			throw new Error(
-				'Workshop updates should be a trailing icon, not row text.',
+				'Workshop update status must use a tooltip trigger outside the row text.',
 			);
 		}
 		const diagnosticModRow = context.canvasElement.querySelector<
@@ -589,6 +591,8 @@ export const LoadedActiveAndInactiveLists: Story = {
 		const warningIcon = diagnosticModRow?.querySelector<SVGElement>(
 			'svg.lucide-triangle-alert',
 		);
+		const errorTooltipTrigger = errorIcon?.parentElement;
+		const warningTooltipTrigger = warningIcon?.parentElement;
 		const diagnosticIconGroup = errorIcon?.parentElement?.parentElement;
 		const diagnosticRowRect = diagnosticModRow?.getBoundingClientRect();
 		const diagnosticTitleRect = diagnosticTitle?.getBoundingClientRect();
@@ -608,14 +612,12 @@ export const LoadedActiveAndInactiveLists: Story = {
 			diagnosticIconGroup.querySelectorAll('svg').length !== 2 ||
 			errorIcon.getAttribute('aria-hidden') !== 'true' ||
 			warningIcon.getAttribute('aria-hidden') !== 'true' ||
-			errorIcon.parentElement?.getAttribute('title')?.includes(
-					'Required story framework',
-				) !==
-				true ||
-			warningIcon.parentElement?.getAttribute('title')?.includes(
-					'Game version mismatch',
-				) !==
-				true ||
+			!errorTooltipTrigger ||
+			errorTooltipTrigger.getAttribute('data-slot') !==
+				'tooltip-trigger' ||
+			!warningTooltipTrigger ||
+			warningTooltipTrigger.getAttribute('data-slot') !==
+				'tooltip-trigger' ||
 			!diagnosticLabel.includes('Errors:') ||
 			!diagnosticLabel.includes('Warnings:') ||
 			!diagnosticLabel.includes('Required story framework') ||
@@ -633,6 +635,41 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Long active mod titles must truncate before the right-side error and warning icons while preserving issue details.',
 			);
 		}
+		const tooltipDocument = context.canvasElement.ownerDocument;
+		async function waitForTooltipContent(
+			expectedText: string,
+			errorMessage: string,
+		) {
+			for (let frame = 0; frame < 30; frame += 1) {
+				const tooltipContent = tooltipDocument.querySelector<
+					HTMLElement
+				>(
+					'[data-slot="tooltip-content"][data-open]',
+				);
+				if (tooltipContent?.textContent?.includes(expectedText)) return;
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => resolve())
+				);
+			}
+			throw new Error(errorMessage);
+		}
+		await userEvent.hover(updateTooltipTrigger);
+		await waitForTooltipContent(
+			'Steam update available',
+			'Workshop update details must open in a shadcn tooltip.',
+		);
+		await userEvent.unhover(updateTooltipTrigger);
+		await userEvent.hover(errorTooltipTrigger);
+		await waitForTooltipContent(
+			'Required story framework',
+			'Error details must open in a shadcn tooltip.',
+		);
+		await userEvent.unhover(errorTooltipTrigger);
+		await userEvent.hover(warningTooltipTrigger);
+		await waitForTooltipContent(
+			'Game version mismatch',
+			'Warning details must open in a shadcn tooltip.',
+		);
 		const ownerDocument = context.canvasElement.ownerDocument;
 		const inactiveSearchField = ownerDocument.querySelector<
 			HTMLInputElement

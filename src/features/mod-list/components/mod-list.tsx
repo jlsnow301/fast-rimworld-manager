@@ -25,6 +25,12 @@ import {
 } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { MOD_DRAG_MIME, parseModDragPayload } from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
 import type {
@@ -200,7 +206,8 @@ export function ModList(props: ModListProps) {
 									}.`
 									: undefined;
 								const accessibleIssues = [
-									errorDetails && `Errors: ${errorDetails}`,
+									errorDetails &&
+									`Errors: ${errorDetails}`,
 									warningDetails &&
 									`Warnings: ${warningDetails}`,
 									updateDetails,
@@ -224,9 +231,11 @@ export function ModList(props: ModListProps) {
 												canDrag
 													? 'cursor-grab active:cursor-grabbing'
 													: 'cursor-default',
-												diagnostics?.errors.length &&
+												diagnostics?.errors
+													.length &&
 													'border-l-2 border-destructive',
-												!diagnostics?.errors.length &&
+												!diagnostics?.errors
+													.length &&
 													diagnostics?.warnings
 														.length &&
 													'border-l-2 border-muted-foreground',
@@ -250,7 +259,8 @@ export function ModList(props: ModListProps) {
 											<span
 												className={cn(
 													'flex w-full min-w-0 flex-1 items-center gap-2',
-													!isMatch && 'opacity-50',
+													!isMatch &&
+														'opacity-50',
 												)}
 											>
 												{OfficialContentIcon && (
@@ -267,44 +277,64 @@ export function ModList(props: ModListProps) {
 												{(errorDetails ||
 													warningDetails ||
 													updateDetails) && (
-													<span className='ml-auto flex shrink-0 items-center gap-1'>
-														{errorDetails && (
-															<span
-																className='shrink-0'
-																title={errorDetails}
-															>
-																<CircleAlert
-																	aria-hidden='true'
-																	className='shrink-0 text-destructive'
-																	focusable='false'
-																/>
-															</span>
-														)}
-														{warningDetails && (
-															<span
-																className='shrink-0'
-																title={warningDetails}
-															>
-																<TriangleAlert
-																	aria-hidden='true'
-																	className='shrink-0 text-muted-foreground'
-																	focusable='false'
-																/>
-															</span>
-														)}
-														{updateDetails && (
-															<span
-																className='shrink-0'
-																title={updateDetails}
-															>
-																<Download
-																	aria-hidden='true'
-																	className='shrink-0 text-muted-foreground'
-																	focusable='false'
-																/>
-															</span>
-														)}
-													</span>
+													<TooltipProvider>
+														<span className='ml-auto flex shrink-0 items-center gap-1'>
+															{errorDetails && (
+																<Tooltip>
+																	<TooltipTrigger
+																		render={
+																			<span className='shrink-0' />
+																		}
+																	>
+																		<CircleAlert
+																			aria-hidden='true'
+																			className='shrink-0 text-destructive'
+																			focusable='false'
+																		/>
+																	</TooltipTrigger>
+																	<TooltipContent>
+																		{errorDetails}
+																	</TooltipContent>
+																</Tooltip>
+															)}
+															{warningDetails && (
+																<Tooltip>
+																	<TooltipTrigger
+																		render={
+																			<span className='shrink-0' />
+																		}
+																	>
+																		<TriangleAlert
+																			aria-hidden='true'
+																			className='shrink-0 text-muted-foreground'
+																			focusable='false'
+																		/>
+																	</TooltipTrigger>
+																	<TooltipContent>
+																		{warningDetails}
+																	</TooltipContent>
+																</Tooltip>
+															)}
+															{updateDetails && (
+																<Tooltip>
+																	<TooltipTrigger
+																		render={
+																			<span className='shrink-0' />
+																		}
+																	>
+																		<Download
+																			aria-hidden='true'
+																			className='shrink-0 text-muted-foreground'
+																			focusable='false'
+																		/>
+																	</TooltipTrigger>
+																	<TooltipContent>
+																		{updateDetails}
+																	</TooltipContent>
+																</Tooltip>
+															)}
+														</span>
+													</TooltipProvider>
 												)}
 											</span>
 										</Button>
