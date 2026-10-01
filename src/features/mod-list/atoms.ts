@@ -39,8 +39,8 @@ export const gameVersionAtom = atom((get) =>
 	)
 );
 export const sourceNameAtom = atom('');
-export const activeSearchAtom = atom('');
-export const inactiveSearchAtom = atom('');
+export const modSearchAtom = atom('');
+export const dimNonMatchingModsAtom = atom(false);
 export const savedSnapshotAtom = atom<ModListSnapshot>(
 	createModListSnapshot('1.4', [], []),
 );
@@ -72,8 +72,8 @@ type TestModeBackup = {
 	configuredGameVersion: string | null;
 	sourceName: string;
 	savedSnapshot: ModListSnapshot;
-	activeSearch: string;
-	inactiveSearch: string;
+	modSearch: string;
+	dimNonMatchingMods: boolean;
 	workshopUpdateResult: WorkshopUpdateCheckResult | null;
 };
 
@@ -91,8 +91,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		set(knownExpansionsAtom, backup.knownExpansions);
 		set(sourceNameAtom, backup.sourceName);
 		set(savedSnapshotAtom, backup.savedSnapshot);
-		set(activeSearchAtom, backup.activeSearch);
-		set(inactiveSearchAtom, backup.inactiveSearch);
+		set(modSearchAtom, backup.modSearch);
+		set(dimNonMatchingModsAtom, backup.dimNonMatchingMods);
 		set(workshopUpdateResultAtom, backup.workshopUpdateResult);
 		set(testModeBackupAtom, null);
 		set(isTestModeAtom, false);
@@ -113,8 +113,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		configuredGameVersion: get(configuredGameVersionAtom),
 		sourceName: get(sourceNameAtom),
 		savedSnapshot: get(savedSnapshotAtom),
-		activeSearch: get(activeSearchAtom),
-		inactiveSearch: get(inactiveSearchAtom),
+		modSearch: get(modSearchAtom),
+		dimNonMatchingMods: get(dimNonMatchingModsAtom),
 		workshopUpdateResult: get(workshopUpdateResultAtom),
 	});
 	set(installedModsAtom, TEST_MOD_LIST.installedMods);
@@ -139,8 +139,8 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 			TEST_MOD_LIST.modList.knownExpansions,
 		),
 	);
-	set(activeSearchAtom, '');
-	set(inactiveSearchAtom, '');
+	set(modSearchAtom, '');
+	set(dimNonMatchingModsAtom, false);
 	set(workshopUpdateResultAtom, TEST_MOD_LIST.updateCheckResult);
 	set(checkingWorkshopUpdatesAtom, false);
 	set(isTestModeAtom, true);
@@ -176,7 +176,8 @@ export const visibleActiveModsAtom = atom((get) =>
 	filterVisibleMods(
 		get(activeModsAtom),
 		get(modDetailsByPackageIdAtom),
-		get(activeSearchAtom),
+		get(modSearchAtom),
+		get(dimNonMatchingModsAtom),
 	)
 );
 
@@ -184,7 +185,8 @@ export const visibleInactiveModsAtom = atom((get) =>
 	filterVisibleMods(
 		get(inactiveModsAtom),
 		get(modDetailsByPackageIdAtom),
-		get(inactiveSearchAtom),
+		get(modSearchAtom),
+		get(dimNonMatchingModsAtom),
 	)
 );
 

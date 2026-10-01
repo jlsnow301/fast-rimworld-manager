@@ -264,6 +264,7 @@ const initialInactiveMods = [
 	'oskarpotocki.vanillafactionsexpanded.core',
 	'unlimitedhugs.allowtool',
 	'mehni.pickupandhaul',
+	'missing.story.mod',
 	...overflowStoryMods.slice(8).map((mod) => mod.packageId),
 ];
 const knownExpansions = [
@@ -516,6 +517,116 @@ export const LoadedActiveAndInactiveLists: Story = {
 			throw new Error(
 				'Ordinary mod rows must not show official content icons.',
 			);
+		}
+		const ownerDocument = context.canvasElement.ownerDocument;
+		const searchFields = ownerDocument.querySelectorAll<HTMLInputElement>(
+			'input[aria-label="Search installed mods"]',
+		);
+		if (searchFields.length !== 1) {
+			throw new Error('One shared mod search field must be rendered.');
+		}
+		const searchField = searchFields[0];
+		function setSearch(value: string) {
+			const valueSetter = Object.getOwnPropertyDescriptor(
+				Object.getPrototypeOf(searchField),
+				'value',
+			)?.set;
+			if (!valueSetter) {
+				throw new Error('The shared search field must be writable.');
+			}
+			valueSetter.call(searchField, value);
+			searchField.dispatchEvent(new Event('input', { bubbles: true }));
+		}
+		async function nextFrame() {
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve())
+			);
+		}
+		function findModListPanel(title: string): HTMLElement {
+			const panel = Array.from(
+				ownerDocument.querySelectorAll<HTMLElement>(
+					'[data-slot="card"]',
+				),
+			).find((candidate) =>
+				candidate.querySelector('[data-slot="card-title"]')?.textContent
+					?.trim() === title
+			);
+			if (!panel) throw new Error(`${title} panel must be rendered.`);
+			return panel;
+		}
+		const inactivePanel = findModListPanel('Inactive mods');
+		const activePanel = findModListPanel('Active mods');
+		setSearch('unlimited');
+		await nextFrame();
+		if (
+			!inactivePanel.querySelector(
+				'button[aria-label="Show details for Allow Tool"]',
+			) ||
+			!activePanel.querySelector(
+				'button[aria-label="Show details for HugsLib"]',
+			) ||
+			activePanel.querySelector(
+				'button[aria-label="Show details for RimWorld"]',
+			) ||
+			inactivePanel.querySelector(
+				'button[aria-label="Show details for Vanilla Expanded Framework"]',
+			)
+		) {
+			throw new Error(
+				'The shared search must filter active and inactive mods together.',
+			);
+		}
+		const dimCheckbox = ownerDocument.querySelector<HTMLElement>(
+			'[role="checkbox"]',
+		);
+		if (!dimCheckbox) {
+			throw new Error(
+				'The dim non-matching mods option must be available.',
+			);
+		}
+		dimCheckbox.click();
+		await nextFrame();
+		const matchedTitle = inactivePanel
+			.querySelector('button[aria-label="Show details for Allow Tool"]')
+			?.querySelector('.break-words');
+		const dimmedTitle = inactivePanel
+			.querySelector(
+				'button[aria-label="Show details for Vanilla Expanded Framework"]',
+			)
+			?.querySelector('.break-words');
+		const matchedContent = matchedTitle?.parentElement?.parentElement;
+		const dimmedContent = dimmedTitle?.parentElement?.parentElement;
+		if (
+			!matchedContent ||
+			matchedContent.classList.contains('opacity-50') ||
+			!dimmedContent?.classList.contains('opacity-50')
+		) {
+			throw new Error(
+				'Dim mode must dim only the non-matching mod titles.',
+			);
+		}
+		setSearch('missing.story.mod');
+		await nextFrame();
+		if (
+			inactivePanel.querySelector(
+				'button[aria-label="Show details for missing.story.mod"]',
+			) ||
+			activePanel.querySelector(
+				'button[aria-label="Show details for missing.story.mod"]',
+			)
+		) {
+			throw new Error(
+				'Search must exclude missing IDs even when dim mode is enabled.',
+			);
+		}
+		setSearch('');
+		await nextFrame();
+		if (
+			!inactivePanel.querySelector(
+				'button[aria-label="Show details for missing.story.mod"]',
+			)
+		) {
+			throw new Error('Clearing search must restore missing IDs.');
 		}
 	},
 };

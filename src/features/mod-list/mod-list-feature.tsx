@@ -4,22 +4,24 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
-	activeSearchAtom,
 	checkingWorkshopUpdatesAtom,
+	dimNonMatchingModsAtom,
 	gameVersionAtom,
 	hasModListAtom,
 	hasWorkshopModsAtom,
 	inactiveModsAtom,
-	inactiveSearchAtom,
 	isTestModeAtom,
 	modDetailsByPackageIdAtom,
 	modListLoadStateAtom,
+	modSearchAtom,
 	outdatedWorkshopModsByPackageIdAtom,
 	statusAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateStatusAtom,
 } from '@/features/mod-list/atoms';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/context/app-context';
@@ -32,13 +34,13 @@ export function ModListFeature() {
 	const { moveMod, sortMods, selectMod, checkForModUpdates } =
 		useAppContext();
 	const activeMods = useAtomValue(activeModsAtom);
-	const activeSearch = useAtomValue(activeSearchAtom);
+	const dimNonMatchingMods = useAtomValue(dimNonMatchingModsAtom);
+	const setDimNonMatchingMods = useSetAtom(dimNonMatchingModsAtom);
 	const inactiveMods = useAtomValue(inactiveModsAtom);
-	const inactiveSearch = useAtomValue(inactiveSearchAtom);
+	const modSearch = useAtomValue(modSearchAtom);
+	const setModSearch = useSetAtom(modSearchAtom);
 	const modDetailsByPackageId = useAtomValue(modDetailsByPackageIdAtom);
 	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
-	const setActiveSearch = useSetAtom(activeSearchAtom);
-	const setInactiveSearch = useSetAtom(inactiveSearchAtom);
 	const status = useAtomValue(statusAtom);
 	const modListLoadState = useAtomValue(modListLoadStateAtom);
 	const visibleActiveMods = useAtomValue(visibleActiveModsAtom);
@@ -203,6 +205,24 @@ export function ModListFeature() {
 									</>
 								)}
 						</p>
+						<div className='mb-3 flex flex-wrap items-center gap-3'>
+							<Input
+								aria-label='Search installed mods'
+								className='min-w-64 max-w-2xl flex-1'
+								onChange={(event) =>
+									setModSearch(event.currentTarget.value)}
+								placeholder='Search names or package IDs'
+								value={modSearch}
+							/>
+							<label className='flex shrink-0 items-center gap-2 text-sm'>
+								<Checkbox
+									checked={dimNonMatchingMods}
+									onCheckedChange={(checked) =>
+										setDimNonMatchingMods(checked === true)}
+								/>
+								<span>Dim non-matching mods</span>
+							</label>
+						</div>
 						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
 							<div className='min-h-0 overflow-y-auto'>
 								<ModPreviewFeature />
@@ -218,8 +238,6 @@ export function ModListFeature() {
 								modDetailsByPackageId={modDetailsByPackageId}
 								onDropMod={moveMod}
 								onSelectMod={selectMod}
-								onSearch={setInactiveSearch}
-								search={inactiveSearch}
 								title='Inactive mods'
 								type='inactive'
 							/>
@@ -236,8 +254,6 @@ export function ModListFeature() {
 								modDetailsByPackageId={modDetailsByPackageId}
 								onDropMod={moveMod}
 								onSelectMod={selectMod}
-								onSearch={setActiveSearch}
-								search={activeSearch}
 								title='Active mods'
 								type='active'
 							/>

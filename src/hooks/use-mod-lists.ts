@@ -16,17 +16,17 @@ import type {
 import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
-	activeSearchAtom,
 	configuredGameVersionAtom,
+	dimNonMatchingModsAtom,
 	gameVersionAtom,
 	hasModListAtom,
 	inactiveModsAtom,
-	inactiveSearchAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
 	isTestModeAtom,
 	knownExpansionsAtom,
 	modDetailsByPackageIdAtom,
+	modSearchAtom,
 	savedSnapshotAtom,
 	sourceNameAtom,
 	visibleActiveModsAtom,
@@ -42,8 +42,10 @@ export function useModLists(setStatus: (message: string) => void) {
 	const [knownExpansions, setKnownExpansions] = useAtom(knownExpansionsAtom);
 	const gameVersion = useAtomValue(gameVersionAtom);
 	const [sourceName, setSourceName] = useAtom(sourceNameAtom);
-	const [activeSearch, setActiveSearch] = useAtom(activeSearchAtom);
-	const [inactiveSearch, setInactiveSearch] = useAtom(inactiveSearchAtom);
+	const [modSearch, setModSearch] = useAtom(modSearchAtom);
+	const [dimNonMatchingMods, setDimNonMatchingMods] = useAtom(
+		dimNonMatchingModsAtom,
+	);
 	const [, setSavedSnapshot] = useAtom(savedSnapshotAtom);
 	const [, setWorkshopUpdateResult] = useAtom(workshopUpdateResultAtom);
 	const [, setConfiguredGameVersion] = useAtom(configuredGameVersionAtom);
@@ -211,20 +213,20 @@ export function useModLists(setStatus: (message: string) => void) {
 	const visibleInactiveMods = useAtomValue(visibleInactiveModsAtom);
 	return {
 		activeMods,
-		activeSearch,
+		dimNonMatchingMods,
 		gameVersion,
 		knownExpansions,
 		hasModList,
 		inactiveMods,
-		inactiveSearch,
+		modSearch,
 		initialize,
 		importModList,
 		modDetailsByPackageId,
 		activeModDiagnostics,
 		moveMod,
 		refreshInstalledMods,
-		setActiveSearch,
-		setInactiveSearch,
+		setDimNonMatchingMods,
+		setModSearch,
 		sourceName,
 		visibleActiveMods,
 		visibleInactiveMods,

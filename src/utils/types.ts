@@ -110,6 +110,7 @@ export type ModListFile = {
 export type VisibleMod = {
 	packageId: string;
 	index: number;
+	isMatch: boolean;
 };
 
 export type PathField = {

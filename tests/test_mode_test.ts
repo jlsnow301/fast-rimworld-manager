@@ -2,15 +2,15 @@ import { createStore } from 'jotai';
 import {
 	activeModDiagnosticsAtom,
 	activeModsAtom,
-	activeSearchAtom,
 	configuredGameVersionAtom,
+	dimNonMatchingModsAtom,
 	gameVersionAtom,
 	inactiveModsAtom,
-	inactiveSearchAtom,
 	installedGameVersionAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
 	isTestModeAtom,
+	modSearchAtom,
 	savedSnapshotAtom,
 	sourceNameAtom,
 	toggleTestModeAtom,
@@ -107,10 +107,15 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		}],
 	};
 	store.set(workshopUpdateResultAtom, originalWorkshopUpdateResult);
-	store.set(activeSearchAtom, 'actual');
-	store.set(inactiveSearchAtom, 'other');
+	store.set(modSearchAtom, 'actual');
+	store.set(dimNonMatchingModsAtom, true);
 
 	store.set(toggleTestModeAtom);
+	if (store.get(modSearchAtom) !== '' || store.get(dimNonMatchingModsAtom)) {
+		throw new Error(
+			'Test mode should start with default search preferences.',
+		);
+	}
 	store.set(activeModsAtom, ['sample.framework']);
 	store.set(toggleTestModeAtom);
 
@@ -135,10 +140,10 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 		);
 	}
 	if (
-		store.get(activeSearchAtom) !== 'actual' ||
-		store.get(inactiveSearchAtom) !== 'other'
+		store.get(modSearchAtom) !== 'actual' ||
+		store.get(dimNonMatchingModsAtom) !== true
 	) {
-		throw new Error('The original search queries should be restored.');
+		throw new Error('The original search preferences should be restored.');
 	}
 	if (store.get(workshopUpdateResultAtom) !== originalWorkshopUpdateResult) {
 		throw new Error(

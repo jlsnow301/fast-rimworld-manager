@@ -24,7 +24,6 @@ import {
 	EmptyHeader,
 	EmptyTitle,
 } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { MOD_DRAG_MIME, parseModDragPayload } from '@/utils/mod_drag';
@@ -62,8 +61,6 @@ export type ModListPanelProps = {
 		source: ModListType,
 		target: ModListType,
 	) => void;
-	onSearch: (query: string) => void;
-	search: string;
 	title: string;
 	type: ModListType;
 };
@@ -79,8 +76,6 @@ export function ModListPanel(props: ModListPanelProps) {
 		mods,
 		onSelectMod,
 		onDropMod,
-		onSearch,
-		search,
 		title,
 		type,
 	} = props;
@@ -100,14 +95,7 @@ export function ModListPanel(props: ModListPanelProps) {
 					<Badge variant='outline'>{count}</Badge>
 				</CardAction>
 			</CardHeader>
-			<CardContent className='flex min-h-0 flex-1 flex-col gap-3'>
-				<Input
-					aria-label={`Search ${title.toLowerCase()}`}
-					className='shrink-0'
-					onChange={(event) => onSearch(event.currentTarget.value)}
-					placeholder='Search names or package IDs'
-					value={search}
-				/>
+			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<div
 					className='flex min-h-0 flex-1 flex-col overflow-y-auto border'
 					onDragOver={(event) => {
@@ -146,158 +134,177 @@ export function ModListPanel(props: ModListPanelProps) {
 								</EmptyHeader>
 							</Empty>
 						)
-						: mods.map(({ packageId, index }, modIndex) => {
-							const normalizedId = normalizedPackageId(packageId);
-							const mod = modDetailsByPackageId.get(normalizedId);
-							const OfficialContentIcon =
-								OFFICIAL_CONTENT_ICONS[normalizedId];
-							const diagnostics = type === 'active'
-								? activeDiagnosticsByPackageId.get(normalizedId)
-								: undefined;
-							const errorDetails = diagnostics?.errors
-								.map((issue) =>
-									`${issue.title}: ${
-										issue.details.join(', ')
-									}`
-								)
-								.join('. ');
-							const warningDetails = diagnostics?.warnings
-								.map((issue) =>
-									`${issue.title}: ${
-										issue.details.join(', ')
-									}`
-								)
-								.join('. ');
-							const outdatedWorkshopMod =
-								outdatedWorkshopModsByPackageId.get(
+						: mods.map(
+							({ packageId, index, isMatch }, modIndex) => {
+								const normalizedId = normalizedPackageId(
+									packageId,
+								);
+								const mod = modDetailsByPackageId.get(
 									normalizedId,
 								);
-							const updateDetails = outdatedWorkshopMod
-								? `Steam update available. Latest Workshop update: ${
-									new Date(
-										outdatedWorkshopMod.steamTimeUpdated *
-											1000,
+								const OfficialContentIcon =
+									OFFICIAL_CONTENT_ICONS[normalizedId];
+								const diagnostics = type === 'active'
+									? activeDiagnosticsByPackageId.get(
+										normalizedId,
 									)
-										.toLocaleString()
-								}.`
-								: undefined;
-							const accessibleIssues = [
-								errorDetails && `Errors: ${errorDetails}`,
-								warningDetails && `Warnings: ${warningDetails}`,
-								updateDetails,
-							].filter(Boolean).join('. ');
+									: undefined;
+								const errorDetails = diagnostics?.errors
+									.map((issue) =>
+										`${issue.title}: ${
+											issue.details.join(', ')
+										}`
+									)
+									.join('. ');
+								const warningDetails = diagnostics?.warnings
+									.map((issue) =>
+										`${issue.title}: ${
+											issue.details.join(', ')
+										}`
+									)
+									.join('. ');
+								const outdatedWorkshopMod =
+									outdatedWorkshopModsByPackageId.get(
+										normalizedId,
+									);
+								const updateDetails = outdatedWorkshopMod
+									? `Steam update available. Latest Workshop update: ${
+										new Date(
+											outdatedWorkshopMod
+												.steamTimeUpdated *
+												1000,
+										)
+											.toLocaleString()
+									}.`
+									: undefined;
+								const accessibleIssues = [
+									errorDetails && `Errors: ${errorDetails}`,
+									warningDetails &&
+									`Warnings: ${warningDetails}`,
+									updateDetails,
+								].filter(Boolean).join('. ');
 
-							const canDrag = type !== 'active' ||
-								normalizedPackageId(packageId) !==
-									'ludeon.rimworld';
-							return (
-								<Fragment key={`${packageId}-${index}`}>
-									<Button
-										aria-label={`Show details for ${
-											mod?.name ?? packageId
-										}${
-											accessibleIssues
-												? `. ${accessibleIssues}`
-												: ''
-										}`}
-										className={cn(
-											'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal',
-											canDrag
-												? 'cursor-grab active:cursor-grabbing'
-												: 'cursor-default',
-											diagnostics?.errors.length &&
-												'border-l-2 border-destructive',
-											!diagnostics?.errors.length &&
-												diagnostics?.warnings.length &&
-												'border-l-2 border-muted-foreground',
-										)}
-										draggable={canDrag}
-										onClick={() => onSelectMod(packageId)}
-										onDragStart={(event) => {
-											event.dataTransfer.effectAllowed =
-												'move';
-											event.dataTransfer.setData(
-												MOD_DRAG_MIME,
-												JSON.stringify({
-													index,
-													source: type,
-												}),
-											);
-										}}
-										variant='ghost'
-									>
-										<span className='flex min-w-0 flex-col items-start gap-1'>
-											<span className='flex min-w-0 items-start gap-2'>
-												{OfficialContentIcon && (
-													<OfficialContentIcon
-														aria-hidden='true'
-														data-icon='inline-start'
-														className='mt-0.5 shrink-0 text-muted-foreground'
-														focusable='false'
-													/>
+								const canDrag = type !== 'active' ||
+									normalizedPackageId(packageId) !==
+										'ludeon.rimworld';
+								return (
+									<Fragment key={`${packageId}-${index}`}>
+										<Button
+											aria-label={`Show details for ${
+												mod?.name ?? packageId
+											}${
+												accessibleIssues
+													? `. ${accessibleIssues}`
+													: ''
+											}`}
+											className={cn(
+												'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal',
+												canDrag
+													? 'cursor-grab active:cursor-grabbing'
+													: 'cursor-default',
+												diagnostics?.errors.length &&
+													'border-l-2 border-destructive',
+												!diagnostics?.errors.length &&
+													diagnostics?.warnings
+														.length &&
+													'border-l-2 border-muted-foreground',
+											)}
+											draggable={canDrag}
+											onClick={() =>
+												onSelectMod(packageId)}
+											onDragStart={(event) => {
+												event.dataTransfer
+													.effectAllowed = 'move';
+												event.dataTransfer.setData(
+													MOD_DRAG_MIME,
+													JSON.stringify({
+														index,
+														source: type,
+													}),
+												);
+											}}
+											variant='ghost'
+										>
+											<span
+												className={cn(
+													'flex min-w-0 flex-col items-start gap-1',
+													!isMatch && 'opacity-50',
 												)}
-												<span className='break-words'>
-													{mod?.name ?? packageId}
+											>
+												<span className='flex min-w-0 items-start gap-2'>
+													{OfficialContentIcon && (
+														<OfficialContentIcon
+															aria-hidden='true'
+															data-icon='inline-start'
+															className='mt-0.5 shrink-0 text-muted-foreground'
+															focusable='false'
+														/>
+													)}
+													<span className='break-words'>
+														{mod?.name ?? packageId}
+													</span>
 												</span>
+												{mod && (
+													<span className='flex flex-wrap gap-2'>
+														<Badge variant='secondary'>
+															{mod.packageId}
+														</Badge>
+														<Badge variant='outline'>
+															{mod.source}
+														</Badge>
+													</span>
+												)}
+												{diagnostics?.errors.map((
+													issue,
+												) => (
+													<Badge
+														key={issue.code}
+														title={issue.details
+															.join(
+																', ',
+															)}
+														variant='destructive'
+													>
+														{issue.title}
+													</Badge>
+												))}
+												{diagnostics?.warnings.map((
+													issue,
+												) => (
+													<Badge
+														key={issue.code}
+														title={issue.details
+															.join(
+																', ',
+															)}
+														variant='outline'
+													>
+														{issue.title}
+													</Badge>
+												))}
+												{outdatedWorkshopMod && (
+													<Badge
+														title={`Installed update: ${
+															new Date(
+																outdatedWorkshopMod
+																	.installedTimeUpdated *
+																	1000,
+															).toLocaleString()
+														}`}
+														variant='secondary'
+													>
+														Update available
+													</Badge>
+												)}
 											</span>
-											{mod && (
-												<span className='flex flex-wrap gap-2'>
-													<Badge variant='secondary'>
-														{mod.packageId}
-													</Badge>
-													<Badge variant='outline'>
-														{mod.source}
-													</Badge>
-												</span>
-											)}
-											{diagnostics?.errors.map((
-												issue,
-											) => (
-												<Badge
-													key={issue.code}
-													title={issue.details.join(
-														', ',
-													)}
-													variant='destructive'
-												>
-													{issue.title}
-												</Badge>
-											))}
-											{diagnostics?.warnings.map((
-												issue,
-											) => (
-												<Badge
-													key={issue.code}
-													title={issue.details.join(
-														', ',
-													)}
-													variant='outline'
-												>
-													{issue.title}
-												</Badge>
-											))}
-											{outdatedWorkshopMod && (
-												<Badge
-													title={`Installed update: ${
-														new Date(
-															outdatedWorkshopMod
-																.installedTimeUpdated *
-																1000,
-														).toLocaleString()
-													}`}
-													variant='secondary'
-												>
-													Update available
-												</Badge>
-											)}
-										</span>
-									</Button>
-									{modIndex < mods.length - 1 && (
-										<Separator />
-									)}
-								</Fragment>
-							);
-						})}
+										</Button>
+										{modIndex < mods.length - 1 && (
+											<Separator />
+										)}
+									</Fragment>
+								);
+							},
+						)}
 				</div>
 			</CardContent>
 		</Card>
