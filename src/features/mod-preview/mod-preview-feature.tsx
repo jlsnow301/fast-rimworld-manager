@@ -78,7 +78,14 @@ export function ModPreviewFeature() {
 		<Card className='min-w-0'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
-				<CardAction>
+				<CardAction className='flex gap-2'>
+					<Button
+						onClick={() => setDetailsOpen(true)}
+						size='sm'
+						variant='outline'
+					>
+						Info
+					</Button>
 					<Button
 						onClick={closeModPreview}
 						size='sm'
@@ -126,13 +133,6 @@ export function ModPreviewFeature() {
 							</Button>
 						</>
 					)}
-					<Button
-						onClick={() => setDetailsOpen(true)}
-						size='sm'
-						variant='outline'
-					>
-						Info
-					</Button>
 				</div>
 				{linkError && (
 					<p role='status' className='text-sm text-muted-foreground'>
