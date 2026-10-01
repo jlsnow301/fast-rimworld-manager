@@ -22,6 +22,7 @@ import {
 	selectedModAtom,
 } from '@/features/mod-preview/atoms';
 import {
+	databaseFileStatusesAtom,
 	databaseMessageAtom,
 	pathSettingsAtom,
 	settingsMessageAtom,
@@ -145,8 +146,15 @@ function createAppStoryState(): AppStoryState {
 	);
 	store.set(
 		databaseMessageAtom,
-		'Database downloads are unavailable in this Storybook preview.',
+		'Database file status is shown; downloads are unavailable in this preview.',
 	);
+	store.set(databaseFileStatusesAtom, [
+		{
+			database: 'communityRules',
+			lastModified: new Date(2026, 8, 29, 12).getTime(),
+		},
+		{ database: 'steamWorkshop', lastModified: null },
+	]);
 	store.set(steamApiKeyConfiguredAtom, false);
 	store.set(
 		steamApiMessageAtom,

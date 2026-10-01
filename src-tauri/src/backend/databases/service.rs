@@ -2,9 +2,9 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 
-use super::model::{DatabaseDownloadResult, DatabaseKind};
+use super::model::{DatabaseDownloadResult, DatabaseFileStatus, DatabaseKind};
 use serde_json::Value;
 use tauri::Manager;
 
@@ -46,15 +46,37 @@ impl DatabaseKind {
     }
 }
 
+fn database_directory(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_config_dir()
+        .map(|directory| directory.join("databases"))
+        .map_err(|error| format!("Could not resolve the database directory: {error}"))
+}
+
+pub(crate) fn list_database_statuses(
+    app: tauri::AppHandle,
+) -> Result<Vec<DatabaseFileStatus>, String> {
+    let directory = database_directory(&app)?;
+    database_statuses_in(&directory)
+}
+
+fn database_statuses_in(directory: &Path) -> Result<Vec<DatabaseFileStatus>, String> {
+    [DatabaseKind::CommunityRules, DatabaseKind::SteamWorkshop]
+        .into_iter()
+        .map(|database| {
+            Ok(DatabaseFileStatus {
+                database,
+                last_modified: database_file_modified_at(&directory.join(database.file_name()))?,
+            })
+        })
+        .collect()
+}
+
 pub(crate) async fn download_database(
     app: tauri::AppHandle,
     database: DatabaseKind,
 ) -> Result<DatabaseDownloadResult, String> {
-    let directory = app
-        .path()
-        .app_config_dir()
-        .map_err(|error| format!("Could not resolve the database directory: {error}"))?
-        .join("databases");
+    let directory = database_directory(&app)?;
     download_database_from_url(database, database.endpoint(), &directory).await
 }
 
@@ -113,11 +135,18 @@ async fn download_database_from_url(
     }
 
     validate_database_contents(database, &contents)?;
-    save_database_atomically(directory, database.file_name(), &contents)?;
+    let saved_file = save_database_atomically(directory, database.file_name(), &contents)?;
+    let last_modified = database_file_modified_at(&saved_file)?.ok_or_else(|| {
+        format!(
+            "The {} database file is missing after download.",
+            database.display_name()
+        )
+    })?;
 
     Ok(DatabaseDownloadResult {
         database,
         bytes_downloaded: contents.len() as u64,
+        last_modified,
     })
 }
 
@@ -171,6 +200,39 @@ fn save_database_atomically(
         let _ = fs::remove_file(temp_file);
     }
     write_result
+}
+
+fn database_file_modified_at(path: &Path) -> Result<Option<u64>, String> {
+    let metadata = match fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => {
+            return Err(format!(
+                "Could not inspect database file '{}': {error}",
+                path.display()
+            ));
+        }
+    };
+    let modified = metadata.modified().map_err(|error| {
+        format!(
+            "Could not read database file modification time for '{}': {error}",
+            path.display()
+        )
+    })?;
+    let duration = modified.duration_since(UNIX_EPOCH).map_err(|_| {
+        format!(
+            "Database file modification time predates the Unix epoch: '{}'.",
+            path.display()
+        )
+    })?;
+    let last_modified = u64::try_from(duration.as_millis()).map_err(|_| {
+        format!(
+            "Database file modification time is out of range: '{}'.",
+            path.display()
+        )
+    })?;
+
+    Ok(Some(last_modified))
 }
 
 #[cfg(test)]
@@ -238,6 +300,12 @@ mod tests {
 
             assert_eq!(result.database, database);
             assert_eq!(result.bytes_downloaded, body.len() as u64);
+            assert!(result.last_modified > 0);
+            assert_eq!(
+                Some(result.last_modified),
+                database_file_modified_at(&directory.join(file_name))
+                    .expect("download timestamp should be readable")
+            );
             assert_eq!(
                 fs::read(directory.join(file_name)).unwrap(),
                 body.as_bytes()
@@ -286,6 +354,24 @@ mod tests {
         );
     }
     #[test]
+    fn reports_downloaded_and_missing_database_statuses() {
+        let directory = unique_temp_directory("database-status");
+        fs::create_dir_all(&directory).expect("status directory should be created");
+        fs::write(directory.join("communityRules.json"), b"{}")
+            .expect("downloaded database should be written");
+
+        let statuses =
+            database_statuses_in(&directory).expect("database file statuses should be available");
+
+        assert_eq!(statuses.len(), 2);
+        assert_eq!(statuses[0].database, DatabaseKind::CommunityRules);
+        assert!(statuses[0].last_modified.is_some());
+        assert_eq!(statuses[1].database, DatabaseKind::SteamWorkshop);
+        assert_eq!(statuses[1].last_modified, None);
+        fs::remove_dir_all(directory).expect("status directory should be removed");
+    }
+
+    #[test]
     fn uses_frontend_database_names_and_response_fields() {
         let database: DatabaseKind = serde_json::from_str("\"communityRules\"")
             .expect("frontend database name should deserialize");
@@ -294,12 +380,25 @@ mod tests {
         let result = DatabaseDownloadResult {
             database,
             bytes_downloaded: 42,
+            last_modified: 1_700_000_000_000,
         };
         assert_eq!(
             serde_json::to_value(result).expect("download response should serialize"),
             serde_json::json!({
                 "database": "communityRules",
-                "bytesDownloaded": 42
+                "bytesDownloaded": 42,
+                "lastModified": 1_700_000_000_000_u64
+            })
+        );
+        let status = DatabaseFileStatus {
+            database,
+            last_modified: Some(1_700_000_000_000),
+        };
+        assert_eq!(
+            serde_json::to_value(status).expect("status response should serialize"),
+            serde_json::json!({
+                "database": "communityRules",
+                "lastModified": 1_700_000_000_000_u64
             })
         );
     }

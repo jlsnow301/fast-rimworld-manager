@@ -11,6 +11,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useAtomValue } from 'jotai';
 import {
+	databaseFileStatusesAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
 	pathSettingsAtom,
@@ -20,7 +21,11 @@ import {
 } from '@/features/settings/atoms';
 import { useAppContext } from '@/context/app-context';
 import { PATH_FIELDS } from '@/utils/mods';
-import type { DatabaseKind, PathSettings } from '@/utils/types';
+import type {
+	DatabaseFileStatus,
+	DatabaseKind,
+	PathSettings,
+} from '@/utils/types';
 
 type DatabaseOption = {
 	id: DatabaseKind;
@@ -53,6 +58,7 @@ export function SettingsFeature() {
 		removeSteamApiKey,
 	} = useAppContext();
 	const databaseMessage = useAtomValue(databaseMessageAtom);
+	const databaseFileStatuses = useAtomValue(databaseFileStatusesAtom);
 	const downloadingDatabase = useAtomValue(downloadingDatabaseAtom);
 	const pathSettings = useAtomValue(pathSettingsAtom);
 	const settingsMessage = useAtomValue(settingsMessageAtom);
@@ -148,6 +154,17 @@ export function SettingsFeature() {
 									{database.description}
 								</p>
 							</div>
+							<p
+								aria-label={`Database status for ${database.label}`}
+								aria-live='polite'
+								className='text-sm text-muted-foreground'
+								role='status'
+							>
+								{databaseFileStatusText(
+									database,
+									databaseFileStatuses,
+								)}
+							</p>
 							<Button
 								aria-label={`Download or update ${database.label} database`}
 								disabled={downloadingDatabase !== null}
@@ -247,6 +264,19 @@ export function SettingsFeature() {
 			</Card>
 		</section>
 	);
+}
+
+function databaseFileStatusText(
+	database: DatabaseOption,
+	statuses: DatabaseFileStatus[] | null,
+) {
+	if (statuses === null) return 'Checking database status…';
+	const status = statuses.find((item) => item.database === database.id);
+	if (!status) return 'Database status unavailable.';
+	if (status.lastModified === null) return 'Not downloaded.';
+	return `Last updated ${
+		new Date(status.lastModified).toLocaleDateString()
+	}.`;
 }
 
 type PathFieldProps = {

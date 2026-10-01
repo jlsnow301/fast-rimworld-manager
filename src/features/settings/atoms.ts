@@ -1,6 +1,10 @@
 import { atom } from 'jotai';
 import { EMPTY_PATH_SETTINGS } from '@/utils/mods';
-import type { DatabaseKind, PathSettings } from '@/utils/types';
+import type {
+	DatabaseFileStatus,
+	DatabaseKind,
+	PathSettings,
+} from '@/utils/types';
 
 export const settingsOpenAtom = atom(false);
 export const pathSettingsAtom = atom<PathSettings>(EMPTY_PATH_SETTINGS);
@@ -13,3 +17,4 @@ export const steamApiMessageAtom = atom(
 	'Steam Web API key status has not been checked.',
 );
 export const downloadingDatabaseAtom = atom<DatabaseKind | null>(null);
+export const databaseFileStatusesAtom = atom<DatabaseFileStatus[] | null>(null);

@@ -1,5 +1,5 @@
 use super::{
-    model::{DatabaseDownloadResult, DatabaseKind},
+    model::{DatabaseDownloadResult, DatabaseFileStatus, DatabaseKind},
     service,
 };
 
@@ -9,4 +9,9 @@ pub async fn download_database(
     database: DatabaseKind,
 ) -> Result<DatabaseDownloadResult, String> {
     service::download_database(app, database).await
+}
+
+#[tauri::command]
+pub fn list_database_statuses(app: tauri::AppHandle) -> Result<Vec<DatabaseFileStatus>, String> {
+    service::list_database_statuses(app)
 }

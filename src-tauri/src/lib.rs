@@ -7,6 +7,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             backend::databases::commands::download_database,
+            backend::databases::commands::list_database_statuses,
             backend::paths::commands::detect_rimworld_paths,
             backend::paths::commands::detect_rimworld_version,
             backend::paths::commands::load_path_settings,

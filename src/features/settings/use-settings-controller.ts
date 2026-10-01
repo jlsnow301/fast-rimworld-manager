@@ -3,6 +3,7 @@ import { useAtom, useStore } from 'jotai';
 import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
 import type {
 	DatabaseDownloadResult,
+	DatabaseFileStatus,
 	DatabaseKind,
 	DetectedPaths,
 	InstalledMod,
@@ -13,6 +14,7 @@ import {
 	isTestModeAtom,
 } from '@/features/mod-list/atoms';
 import {
+	databaseFileStatusesAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
 	pathSettingsAtom,
@@ -34,6 +36,7 @@ export function useSettingsController(props: SettingsControllerOptions) {
 	const [, setDatabaseMessage] = useAtom(databaseMessageAtom);
 	const [, setDownloadingDatabase] = useAtom(downloadingDatabaseAtom);
 	const [, setInstalledGameVersion] = useAtom(installedGameVersionAtom);
+	const [, setDatabaseFileStatuses] = useAtom(databaseFileStatusesAtom);
 	const store = useStore();
 
 	function updatePath(key: keyof PathSettings, value: string) {
@@ -134,6 +137,19 @@ export function useSettingsController(props: SettingsControllerOptions) {
 			);
 		}
 	}
+	async function refreshDatabaseStatuses() {
+		try {
+			const statuses = await invokeDesktop<DatabaseFileStatus[]>(
+				'list_database_statuses',
+			);
+			setDatabaseFileStatuses(statuses);
+		} catch (error) {
+			setDatabaseFileStatuses([]);
+			setDatabaseMessage(
+				error instanceof Error ? error.message : String(error),
+			);
+		}
+	}
 	async function downloadDatabase(database: DatabaseKind) {
 		setDownloadingDatabase(database);
 		setDatabaseMessage(
@@ -148,6 +164,15 @@ export function useSettingsController(props: SettingsControllerOptions) {
 				'download_database',
 				{ database },
 			);
+			setDatabaseFileStatuses((statuses) => [
+				...(statuses ?? []).filter((status) =>
+					status.database !== result.database
+				),
+				{
+					database: result.database,
+					lastModified: result.lastModified,
+				},
+			]);
 			const displayName = result.database === 'communityRules'
 				? 'Community Rules'
 				: 'Steam Workshop';
@@ -183,5 +208,6 @@ export function useSettingsController(props: SettingsControllerOptions) {
 		autoDetectPaths,
 		savePathSettings,
 		downloadDatabase,
+		refreshDatabaseStatuses,
 	};
 }

@@ -51,6 +51,7 @@ export function useAppController() {
 	useEffect(() => {
 		let cancelled = false;
 		void steamApiKeyController.refreshSteamApiKeyStatus();
+		void settingsController.refreshDatabaseStatuses();
 
 		async function loadConfiguredMods() {
 			let settings: PathSettings;

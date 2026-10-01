@@ -5,6 +5,7 @@ import { createStore, Provider } from 'jotai';
 import { AppProvider } from '@/context/app-context';
 import { SettingsFeature } from '@/features/settings/settings-feature';
 import {
+	databaseFileStatusesAtom,
 	databaseMessageAtom,
 	downloadingDatabaseAtom,
 	pathSettingsAtom,
@@ -88,6 +89,13 @@ function createSettingsStoryController(
 		},
 		downloadDatabase(database) {
 			store.set(downloadingDatabaseAtom, database);
+			const lastModified = new Date(2026, 8, 30, 12).getTime();
+			store.set(databaseFileStatusesAtom, (statuses) => [
+				...(statuses ?? []).filter((status) =>
+					status.database !== database
+				),
+				{ database, lastModified },
+			]);
 			const databaseName = database === 'communityRules'
 				? 'Community Rules'
 				: 'Steam Workshop';
@@ -145,7 +153,22 @@ function SettingsStory(props: SettingsStoryProps) {
 		);
 		storyStore.set(
 			databaseMessageAtom,
-			'Community Rules updated yesterday. Steam Workshop metadata is ready.',
+			'Database file status is shown for both repositories.',
+		);
+		storyStore.set(
+			databaseFileStatusesAtom,
+			hasSavedPaths
+				? [
+					{
+						database: 'communityRules',
+						lastModified: new Date(2026, 8, 29, 12).getTime(),
+					},
+					{ database: 'steamWorkshop', lastModified: null },
+				]
+				: [
+					{ database: 'communityRules', lastModified: null },
+					{ database: 'steamWorkshop', lastModified: null },
+				],
 		);
 		storyStore.set(steamApiKeyConfiguredAtom, configured);
 		storyStore.set(
@@ -173,6 +196,41 @@ export const ConfiguredInstallation: Story = {
 
 export const FirstRunSetup: Story = {
 	render: () => <SettingsStory configured={false} hasSavedPaths={false} />,
+};
+
+export const DatabaseFileStatuses: Story = {
+	render: () => <SettingsStory configured hasSavedPaths />,
+	play: async ({ canvasElement }) => {
+		const communityStatus = canvasElement.querySelector<HTMLElement>(
+			'[aria-label="Database status for Community Rules"]',
+		);
+		const workshopStatus = canvasElement.querySelector<HTMLElement>(
+			'[aria-label="Database status for Steam Workshop"]',
+		);
+		if (
+			!communityStatus?.textContent?.startsWith('Last updated ') ||
+			workshopStatus?.textContent?.trim() !== 'Not downloaded.'
+		) {
+			throw new Error(
+				'Stored and missing databases must show their respective statuses.',
+			);
+		}
+
+		const downloadButton = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label="Download or update Steam Workshop database"]',
+		);
+		if (!downloadButton) {
+			throw new Error(
+				'The Steam Workshop download action must be available.',
+			);
+		}
+		await userEvent.click(downloadButton);
+		if (!workshopStatus.textContent?.startsWith('Last updated ')) {
+			throw new Error(
+				'Downloading a database must update its displayed file date.',
+			);
+		}
+	},
 };
 
 export const ClearInputs: Story = {

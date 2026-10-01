@@ -14,6 +14,12 @@ export type DatabaseKind = 'communityRules' | 'steamWorkshop';
 export type DatabaseDownloadResult = {
 	database: DatabaseKind;
 	bytesDownloaded: number;
+	lastModified: number;
+};
+
+export type DatabaseFileStatus = {
+	database: DatabaseKind;
+	lastModified: number | null;
 };
 
 export type DetectedPaths = {
