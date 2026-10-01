@@ -73,7 +73,9 @@ Deno.test('test mode loads sample mods and diagnostics without dirtying the list
 		store.get(workshopUpdateResultAtom)?.outdatedMods[0]?.packageId !==
 			'sample.vehiclemod'
 	) {
-		throw new Error('Test mode should include sample update-dialog data.');
+		throw new Error(
+			'Test mode should include sample Workshop update data.',
+		);
 	}
 	if (store.get(isModListDirtyAtom)) {
 		throw new Error('The sample list should start from a clean snapshot.');

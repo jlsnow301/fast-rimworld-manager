@@ -1,5 +1,17 @@
 import type { OutdatedWorkshopMod } from '@/utils/types';
 
+export function filterWorkshopUpdatesBySearch(
+	mods: readonly OutdatedWorkshopMod[],
+	search: string,
+): OutdatedWorkshopMod[] {
+	const normalizedSearch = search.trim().toLowerCase();
+	if (!normalizedSearch) return [...mods];
+	return mods.filter((mod) =>
+		mod.name.toLowerCase().includes(normalizedSearch) ||
+		mod.packageId.toLowerCase().includes(normalizedSearch)
+	);
+}
+
 export function allWorkshopUpdateIds(
 	mods: readonly OutdatedWorkshopMod[],
 ): string[] {

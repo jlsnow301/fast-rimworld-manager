@@ -1,5 +1,6 @@
 import {
 	allWorkshopUpdateIds,
+	filterWorkshopUpdatesBySearch,
 	getSelectedWorkshopMods,
 	toggleWorkshopUpdateSelection,
 } from '@/utils/workshop_update_selection.ts';
@@ -64,6 +65,52 @@ Deno.test('an empty Workshop selection produces no dispatch payload', () => {
 	if (steamWorkshopDownloadUrls(selectedMods).length !== 0) {
 		throw new Error(
 			'An empty selection must not create Steam update requests.',
+		);
+	}
+});
+
+Deno.test('Workshop update search matches names and package IDs case-insensitively', () => {
+	const mods = [
+		{ ...outdatedMod('123'), name: 'Vanilla Expanded Framework' },
+		{ ...outdatedMod('456'), name: 'Harmony' },
+	];
+	const byName = filterWorkshopUpdatesBySearch(mods, '  VANILLA expanded ');
+	const byPackageId = filterWorkshopUpdatesBySearch(mods, 'SAMPLE.MOD456');
+	const unfiltered = filterWorkshopUpdatesBySearch(mods, '   ');
+	if (
+		JSON.stringify(byName.map((mod) => mod.publishedFileId)) !==
+			JSON.stringify(['123']) ||
+		JSON.stringify(byPackageId.map((mod) => mod.publishedFileId)) !==
+			JSON.stringify(['456']) ||
+		JSON.stringify(unfiltered.map((mod) => mod.publishedFileId)) !==
+			JSON.stringify(['123', '456'])
+	) {
+		throw new Error(
+			'Workshop search should match names and package IDs case-insensitively.',
+		);
+	}
+});
+
+Deno.test('selection changes on filtered results preserve hidden selections', () => {
+	const mods = [
+		{ ...outdatedMod('123'), name: 'Vanilla Expanded Framework' },
+		{ ...outdatedMod('456'), name: 'Harmony' },
+		{ ...outdatedMod('789'), name: 'Allow Tool' },
+	];
+	const visible = filterWorkshopUpdatesBySearch(mods, 'harmony');
+	const selected = toggleWorkshopUpdateSelection(
+		allWorkshopUpdateIds(mods),
+		visible[0].publishedFileId,
+		false,
+	);
+	const visibleAgain = filterWorkshopUpdatesBySearch(mods, '');
+	const selectedAgain = getSelectedWorkshopMods(visibleAgain, selected);
+	if (
+		JSON.stringify(selectedAgain.map((mod) => mod.publishedFileId)) !==
+			JSON.stringify(['123', '789'])
+	) {
+		throw new Error(
+			'Filtered selection changes must preserve hidden selected mods.',
 		);
 	}
 });

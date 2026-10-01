@@ -65,6 +65,9 @@ type ModListStoryState = {
 	store: StoryStore;
 	controller: ModListStoryController;
 };
+type ActiveInactiveStoryProps = {
+	failWorkshopUpdateDispatch?: boolean;
+};
 
 const storyMods: InstalledMod[] = [
 	{
@@ -169,7 +172,7 @@ const storyMods: InstalledMod[] = [
 		supportedVersions: ['1.5'],
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077`,
-		source: 'Workshop',
+		source: 'workshop',
 		dependencies: [],
 	},
 	{
@@ -184,7 +187,7 @@ const storyMods: InstalledMod[] = [
 		supportedVersions: ['1.5'],
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\818773962`,
-		source: 'Workshop',
+		source: 'workshop',
 		dependencies: [],
 	},
 	{
@@ -199,7 +202,7 @@ const storyMods: InstalledMod[] = [
 		supportedVersions: ['1.5'],
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2023507013`,
-		source: 'Workshop',
+		source: 'workshop',
 		dependencies: [],
 	},
 	{
@@ -214,7 +217,7 @@ const storyMods: InstalledMod[] = [
 		supportedVersions: ['1.5'],
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\761421485`,
-		source: 'Workshop',
+		source: 'workshop',
 		dependencies: [],
 	},
 	{
@@ -229,7 +232,7 @@ const storyMods: InstalledMod[] = [
 		supportedVersions: ['1.5'],
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\1279012058`,
-		source: 'Workshop',
+		source: 'workshop',
 		dependencies: [],
 	},
 ];
@@ -270,20 +273,38 @@ const knownExpansions = [
 	'ludeon.rimworld.anomaly',
 	'ludeon.rimworld.odyssey',
 ];
-const outdatedWorkshopMod: OutdatedWorkshopMod = {
-	name: 'Vanilla Expanded Framework',
-	packageId: 'oskarpotocki.vanillafactionsexpanded.core',
-	publishedFileId: '2023507013',
-	installedTimeUpdated: 1717200000,
-	steamTimeUpdated: 1722470400,
-};
+const outdatedWorkshopMods: OutdatedWorkshopMod[] = [
+	{
+		name: 'Vanilla Expanded Framework',
+		packageId: 'oskarpotocki.vanillafactionsexpanded.core',
+		publishedFileId: '2023507013',
+		installedTimeUpdated: 1717200000,
+		steamTimeUpdated: 1722470400,
+	},
+	{
+		name: 'Harmony',
+		packageId: 'brrainz.harmony',
+		publishedFileId: '2009463077',
+		installedTimeUpdated: 1717200000,
+		steamTimeUpdated: 1722470400,
+	},
+	{
+		name: 'Allow Tool',
+		packageId: 'unlimitedhugs.allowtool',
+		publishedFileId: '761421485',
+		installedTimeUpdated: 1717200000,
+		steamTimeUpdated: 1722470400,
+	},
+];
 const workshopUpdateResult: WorkshopUpdateCheckResult = {
-	checkedCount: 5,
-	skippedCount: 0,
-	outdatedMods: [outdatedWorkshopMod],
+	checkedCount: 7,
+	skippedCount: 2,
+	outdatedMods: outdatedWorkshopMods,
 };
 
-function createModListStoryState(): ModListStoryState {
+function createModListStoryState(
+	failWorkshopUpdateDispatch = false,
+): ModListStoryState {
 	const store = createStore();
 	store.set(installedModsAtom, loadedStoryMods);
 	store.set(activeModsAtom, initialActiveMods);
@@ -365,6 +386,12 @@ function createModListStoryState(): ModListStoryState {
 			return workshopUpdateResult;
 		},
 		updateSelectedOutdatedWorkshopMods(mods) {
+			if (failWorkshopUpdateDispatch) {
+				return Promise.resolve({
+					openedCount: 0,
+					failedCount: mods.length,
+				});
+			}
 			store.set(
 				statusAtom,
 				`Storybook preview queued ${mods.length} Workshop update request${
@@ -388,8 +415,11 @@ function createModListStoryState(): ModListStoryState {
 	return { store, controller };
 }
 
-function ActiveInactiveStory() {
-	const [storyState] = useState(createModListStoryState);
+function ActiveInactiveStory(props: ActiveInactiveStoryProps) {
+	const { failWorkshopUpdateDispatch = false } = props;
+	const [storyState] = useState(() =>
+		createModListStoryState(failWorkshopUpdateDispatch)
+	);
 
 	return (
 		<div className='flex h-dvh min-h-0 flex-col overflow-hidden'>
@@ -485,6 +515,173 @@ export const LoadedActiveAndInactiveLists: Story = {
 		) {
 			throw new Error(
 				'Ordinary mod rows must not show official content icons.',
+			);
+		}
+	},
+};
+
+export const WorkshopUpdatesSelectionFlow: Story = {
+	globals: { viewport: { value: 'application', isRotated: false } },
+	render: () => <ActiveInactiveStory />,
+	play: async ({ canvasElement }) => {
+		const nextFrame = () =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve())
+			);
+		const checkButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) => button.textContent?.trim() === 'Check for updates');
+		if (!checkButton) {
+			throw new Error('The update check action must appear.');
+		}
+		checkButton.click();
+		await nextFrame();
+		if (
+			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
+				heading.textContent?.trim() === 'Workshop updates'
+			)
+		) {
+			throw new Error(
+				'Found updates must automatically open the updates page.',
+			);
+		}
+		if (
+			!canvasElement.textContent?.includes('3 selected of 3') ||
+			!canvasElement.textContent?.includes(
+				'2 Workshop mods could not be checked',
+			)
+		) {
+			throw new Error(
+				'All found updates and skipped-check information must be shown.',
+			);
+		}
+		const search = canvasElement.querySelector<HTMLInputElement>(
+			'[aria-label="Search Workshop updates"]',
+		);
+		if (!search) throw new Error('The update search must be available.');
+		function setSearchValue(searchInput: HTMLInputElement, value: string) {
+			const valueSetter = Object.getOwnPropertyDescriptor(
+				Object.getPrototypeOf(searchInput),
+				'value',
+			)?.set;
+			valueSetter?.call(searchInput, value);
+			searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+		}
+
+		setSearchValue(search, 'Brrainz.Harmony');
+		await nextFrame();
+		const updateList = canvasElement.querySelector(
+			'[data-testid="workshop-update-list"]',
+		);
+		if (
+			!updateList?.textContent?.includes('Harmony') ||
+			updateList.textContent.includes('Vanilla Expanded Framework') ||
+			updateList.textContent.includes('Allow Tool')
+		) {
+			throw new Error(
+				'Package ID search must filter the visible updates.',
+			);
+		}
+		const harmonyCheckbox = updateList.querySelector<HTMLElement>(
+			'#workshop-update-2009463077',
+		);
+		if (!harmonyCheckbox) {
+			throw new Error('The filtered update must remain selectable.');
+		}
+		harmonyCheckbox.click();
+		setSearchValue(search, '');
+		await nextFrame();
+		const selectedSummary = Array.from(
+			canvasElement.querySelectorAll('span,div'),
+		).find((element) => element.textContent?.trim() === '2 selected of 3');
+		if (!selectedSummary) {
+			throw new Error(
+				'Unchecking a filtered update must preserve hidden selections.',
+			);
+		}
+		const backButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) => button.textContent?.includes('Back to mod list'));
+		if (!backButton) {
+			throw new Error('The updates page must provide a return action.');
+		}
+		backButton.click();
+		await nextFrame();
+		if (
+			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
+				heading.textContent?.trim() === 'Mod list'
+			)
+		) {
+			throw new Error('Back must return to the mod-list content.');
+		}
+		const checkForUpdatesButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) => button.textContent?.trim() === 'Check for updates');
+		if (!checkForUpdatesButton) {
+			throw new Error('The update check action must remain available.');
+		}
+		checkForUpdatesButton.click();
+		await nextFrame();
+		const updateSelectedButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) =>
+			button.textContent?.trim() === 'Update 3 selected mods'
+		);
+		if (!updateSelectedButton) {
+			throw new Error('All discovered updates must be selected again.');
+		}
+		updateSelectedButton.click();
+		await nextFrame();
+		if (
+			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
+				heading.textContent?.trim() === 'Mod list'
+			) ||
+			canvasElement.querySelector('[data-testid="workshop-update-list"]')
+		) {
+			throw new Error(
+				'A successful update dispatch must return to the mod list.',
+			);
+		}
+	},
+};
+
+export const WorkshopUpdatesDispatchFailure: Story = {
+	globals: { viewport: { value: 'application', isRotated: false } },
+	render: () => <ActiveInactiveStory failWorkshopUpdateDispatch />,
+	play: async ({ canvasElement }) => {
+		const nextFrame = () =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve())
+			);
+		const checkButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) => button.textContent?.trim() === 'Check for updates');
+		if (!checkButton) {
+			throw new Error('The update check action must appear.');
+		}
+		checkButton.click();
+		await nextFrame();
+		const updateButton = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).find((button) =>
+			button.textContent?.trim() === 'Update 3 selected mods'
+		);
+		if (!updateButton) {
+			throw new Error('All outdated mods must be selected.');
+		}
+		updateButton.click();
+		await nextFrame();
+		const page = canvasElement.querySelector(
+			'[data-testid="workshop-update-list"]',
+		);
+		if (
+			!page ||
+			!canvasElement.textContent?.includes(
+				'Could not send all selected Workshop update requests to Steam.',
+			)
+		) {
+			throw new Error(
+				'A failed dispatch must stay on the updates page and show an error.',
 			);
 		}
 	},
