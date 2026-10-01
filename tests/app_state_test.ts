@@ -1,14 +1,16 @@
 import { createStore } from 'jotai';
 import {
+	activeDimNonMatchingModsAtom,
 	activeModsAtom,
+	activeModSearchAtom,
 	configuredGameVersionAtom,
-	dimNonMatchingModsAtom,
 	gameVersionAtom,
+	inactiveDimNonMatchingModsAtom,
 	inactiveModsAtom,
+	inactiveModSearchAtom,
 	installedGameVersionAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
-	modSearchAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 } from '@/features/mod-list/atoms.ts';
@@ -31,7 +33,7 @@ function installedMod(packageId: string, name: string): InstalledMod {
 	};
 }
 
-Deno.test('Jotai applies shared search and dim state to both mod lists', () => {
+Deno.test('Jotai isolates active and inactive search and dim state', () => {
 	const store = createStore();
 	store.set(installedModsAtom, [
 		installedMod('Core', 'Core'),
@@ -51,7 +53,8 @@ Deno.test('Jotai applies shared search and dim state to both mod lists', () => {
 		'Author.InactiveOther',
 		'Missing.Inactive',
 	]);
-	store.set(modSearchAtom, 'search target');
+	store.set(activeModSearchAtom, 'search target');
+	store.set(inactiveModSearchAtom, '');
 
 	const active = store.get(visibleActiveModsAtom);
 	const inactive = store.get(visibleInactiveModsAtom);
@@ -60,44 +63,65 @@ Deno.test('Jotai applies shared search and dim state to both mod lists', () => {
 	];
 	const expectedInactive = [
 		{ packageId: 'Author.Inactive', index: 0, isMatch: true },
+		{ packageId: 'Author.InactiveOther', index: 1, isMatch: true },
+		{ packageId: 'Missing.Inactive', index: 2, isMatch: true },
 	];
 	if (
 		JSON.stringify(active) !== JSON.stringify(expectedActive) ||
 		JSON.stringify(inactive) !== JSON.stringify(expectedInactive)
 	) {
 		throw new Error(
-			`Shared search produced ${JSON.stringify({ active, inactive })}`,
-		);
-	}
-
-	store.set(dimNonMatchingModsAtom, true);
-	const dimmedActive = store.get(visibleActiveModsAtom);
-	const dimmedInactive = store.get(visibleInactiveModsAtom);
-	const expectedDimmedActive = [
-		{ packageId: 'Core', index: 0, isMatch: false },
-		{ packageId: 'Author.Active', index: 1, isMatch: true },
-		{ packageId: 'Author.ActiveOther', index: 2, isMatch: false },
-	];
-	const expectedDimmedInactive = [
-		{ packageId: 'Author.Inactive', index: 0, isMatch: true },
-		{ packageId: 'Author.InactiveOther', index: 1, isMatch: false },
-	];
-	if (
-		JSON.stringify(dimmedActive) !== JSON.stringify(expectedDimmedActive) ||
-		JSON.stringify(dimmedInactive) !==
-			JSON.stringify(expectedDimmedInactive)
-	) {
-		throw new Error(
-			`Dim mode produced ${
-				JSON.stringify({
-					dimmedActive,
-					dimmedInactive,
-				})
+			`Active search affected the inactive list: ${
+				JSON.stringify({ active, inactive })
 			}`,
 		);
 	}
 
-	store.set(modSearchAtom, '');
+	store.set(inactiveModSearchAtom, 'search target inactive');
+	const independentlySearchedInactive = store.get(visibleInactiveModsAtom);
+	if (
+		JSON.stringify(store.get(visibleActiveModsAtom)) !==
+			JSON.stringify(expectedActive) ||
+		JSON.stringify(independentlySearchedInactive) !==
+			JSON.stringify([
+				{ packageId: 'Author.Inactive', index: 0, isMatch: true },
+			])
+	) {
+		throw new Error('Each list must retain an independent search query.');
+	}
+
+	store.set(activeDimNonMatchingModsAtom, true);
+	const dimmedActive = store.get(visibleActiveModsAtom);
+	if (
+		JSON.stringify(dimmedActive) !== JSON.stringify([
+				{ packageId: 'Core', index: 0, isMatch: false },
+				{ packageId: 'Author.Active', index: 1, isMatch: true },
+				{ packageId: 'Author.ActiveOther', index: 2, isMatch: false },
+			]) ||
+		JSON.stringify(store.get(visibleInactiveModsAtom)) !==
+			JSON.stringify([
+				{ packageId: 'Author.Inactive', index: 0, isMatch: true },
+			])
+	) {
+		throw new Error('Active dim mode must not affect inactive search.');
+	}
+
+	store.set(inactiveDimNonMatchingModsAtom, true);
+	const dimmedInactive = store.get(visibleInactiveModsAtom);
+	if (
+		JSON.stringify(dimmedInactive) !== JSON.stringify([
+			{ packageId: 'Author.Inactive', index: 0, isMatch: true },
+			{ packageId: 'Author.InactiveOther', index: 1, isMatch: false },
+		])
+	) {
+		throw new Error(
+			`Dim mode must retain only known unmatched mods: ${
+				JSON.stringify(dimmedInactive)
+			}`,
+		);
+	}
+
+	store.set(inactiveModSearchAtom, '');
 	const restoredInactive = store.get(visibleInactiveModsAtom);
 	if (
 		restoredInactive[2]?.packageId !== 'Missing.Inactive' ||

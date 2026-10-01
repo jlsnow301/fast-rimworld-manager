@@ -634,23 +634,25 @@ export const LoadedActiveAndInactiveLists: Story = {
 			);
 		}
 		const ownerDocument = context.canvasElement.ownerDocument;
-		const searchFields = ownerDocument.querySelectorAll<HTMLInputElement>(
-			'input[aria-label="Search installed mods"]',
+		const inactiveSearchField = ownerDocument.querySelector<
+			HTMLInputElement
+		>('input[aria-label="Search inactive mods"]');
+		const activeSearchField = ownerDocument.querySelector<HTMLInputElement>(
+			'input[aria-label="Search active mods"]',
 		);
-		if (searchFields.length !== 1) {
-			throw new Error('One shared mod search field must be rendered.');
+		if (!inactiveSearchField || !activeSearchField) {
+			throw new Error('Each mod list must have its own search field.');
 		}
-		const searchField = searchFields[0];
-		function setSearch(value: string) {
+		function setSearch(field: HTMLInputElement, value: string) {
 			const valueSetter = Object.getOwnPropertyDescriptor(
-				Object.getPrototypeOf(searchField),
+				Object.getPrototypeOf(field),
 				'value',
 			)?.set;
 			if (!valueSetter) {
-				throw new Error('The shared search field must be writable.');
+				throw new Error('The search field must be writable.');
 			}
-			valueSetter.call(searchField, value);
-			searchField.dispatchEvent(new Event('input', { bubbles: true }));
+			valueSetter.call(field, value);
+			field.dispatchEvent(new Event('input', { bubbles: true }));
 		}
 		async function nextFrame() {
 			await new Promise<void>((resolve) =>
@@ -671,35 +673,50 @@ export const LoadedActiveAndInactiveLists: Story = {
 		}
 		const inactivePanel = findModListPanel('Inactive mods');
 		const activePanel = findModListPanel('Active mods');
-		setSearch('unlimited');
+		setSearch(inactiveSearchField, 'allow');
 		await nextFrame();
 		if (
 			!inactivePanel.querySelector(
 				'button[aria-label^="Show details for Allow Tool"]',
 			) ||
+			inactivePanel.querySelector(
+				'button[aria-label^="Show details for Vanilla Expanded Framework"]',
+			) ||
+			!activePanel.querySelector(
+				'button[aria-label^="Show details for HugsLib"]',
+			) ||
+			!activePanel.querySelector(
+				'button[aria-label="Show details for RimWorld"]',
+			)
+		) {
+			throw new Error(
+				'Inactive search must leave active mods unchanged.',
+			);
+		}
+		setSearch(activeSearchField, 'unlimited');
+		await nextFrame();
+		if (
 			!activePanel.querySelector(
 				'button[aria-label^="Show details for HugsLib"]',
 			) ||
 			activePanel.querySelector(
 				'button[aria-label="Show details for RimWorld"]',
 			) ||
-			inactivePanel.querySelector(
-				'button[aria-label^="Show details for Vanilla Expanded Framework"]',
+			!inactivePanel.querySelector(
+				'button[aria-label^="Show details for Allow Tool"]',
 			)
 		) {
 			throw new Error(
-				'The shared search must filter active and inactive mods together.',
+				'Active search must leave inactive mods unchanged.',
 			);
 		}
-		const dimCheckbox = ownerDocument.querySelector<HTMLElement>(
-			'[role="checkbox"]',
+		const inactiveDimCheckbox = ownerDocument.querySelector<HTMLElement>(
+			'[role="checkbox"][aria-label="Dim non-matching inactive mods"]',
 		);
-		if (!dimCheckbox) {
-			throw new Error(
-				'The dim non-matching mods option must be available.',
-			);
+		if (!inactiveDimCheckbox) {
+			throw new Error('Inactive dim mode must be available.');
 		}
-		dimCheckbox.click();
+		inactiveDimCheckbox.click();
 		await nextFrame();
 		const matchedTitle = inactivePanel
 			.querySelector('button[aria-label^="Show details for Allow Tool"]')
@@ -709,18 +726,17 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'button[aria-label^="Show details for Vanilla Expanded Framework"]',
 			)
 			?.querySelector('.truncate');
-		const matchedContent = matchedTitle?.parentElement;
-		const dimmedContent = dimmedTitle?.parentElement;
 		if (
-			!matchedContent ||
-			matchedContent.classList.contains('opacity-50') ||
-			!dimmedContent?.classList.contains('opacity-50')
+			!matchedTitle?.parentElement ||
+			matchedTitle.parentElement.classList.contains('opacity-50') ||
+			!dimmedTitle?.parentElement?.classList.contains('opacity-50') ||
+			activePanel.querySelector(
+				'button[aria-label="Show details for RimWorld"]',
+			)
 		) {
-			throw new Error(
-				'Dim mode must dim only the non-matching mod titles.',
-			);
+			throw new Error('Dim options must affect only their own mod list.');
 		}
-		setSearch('missing.story.mod');
+		setSearch(inactiveSearchField, 'missing.story.mod');
 		await nextFrame();
 		if (
 			inactivePanel.querySelector(
@@ -734,7 +750,7 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Search must exclude missing IDs even when dim mode is enabled.',
 			);
 		}
-		setSearch('');
+		setSearch(inactiveSearchField, '');
 		await nextFrame();
 		if (
 			!inactivePanel.querySelector(

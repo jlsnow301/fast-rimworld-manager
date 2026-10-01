@@ -13,14 +13,10 @@ import {
 	TriangleAlert,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
 	Empty,
 	EmptyDescription,
@@ -50,35 +46,43 @@ const OFFICIAL_CONTENT_ICONS: Record<string, LucideIcon> = {
 	'ludeon.rimworld.odyssey': Rocket,
 };
 
-export type ModListPanelProps = {
+export type ModListProps = {
 	count: number;
+	dimNonMatchingMods: boolean;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	outdatedWorkshopModsByPackageId: ReadonlyMap<string, OutdatedWorkshopMod>;
 	activeDiagnosticsByPackageId: ReadonlyMap<string, ModHighlightState>;
 	isLoading: boolean;
 	mods: VisibleMod[];
+	onDimNonMatchingModsChange: (dim: boolean) => void;
+	onSearchChange: (search: string) => void;
 	onSelectMod: (packageId: string) => void;
 	onDropMod: (
 		sourceIndex: number,
 		source: ModListType,
 		target: ModListType,
 	) => void;
+	searchValue: string;
 	title: string;
 	type: ModListType;
 };
 
-export function ModListPanel(props: ModListPanelProps) {
+export function ModList(props: ModListProps) {
 	const {
 		count,
+		dimNonMatchingMods,
 		emptyMessage,
 		modDetailsByPackageId,
 		activeDiagnosticsByPackageId,
 		outdatedWorkshopModsByPackageId,
 		isLoading,
 		mods,
+		onDimNonMatchingModsChange,
+		onSearchChange,
 		onSelectMod,
 		onDropMod,
+		searchValue,
 		title,
 		type,
 	} = props;
@@ -89,14 +93,29 @@ export function ModListPanel(props: ModListPanelProps) {
 		);
 		if (payload) onDropMod(payload.index, payload.source, type);
 	}
-
 	return (
 		<Card className='flex min-h-0 min-w-0 flex-col' size='sm'>
-			<CardHeader className='flex flex-row items-center justify-between'>
-				<CardTitle>{title}</CardTitle>
-				<CardAction>
+			<CardHeader className='gap-3'>
+				<div className='flex items-center justify-between gap-2'>
+					<CardTitle>{title}</CardTitle>
 					<Badge variant='outline'>{count}</Badge>
-				</CardAction>
+				</div>
+				<Input
+					aria-label={`Search ${title.toLowerCase()}`}
+					onChange={(event) =>
+						onSearchChange(event.currentTarget.value)}
+					placeholder='Search names or package IDs'
+					value={searchValue}
+				/>
+				<label className='flex items-center gap-2 text-sm'>
+					<Checkbox
+						aria-label={`Dim non-matching ${title.toLowerCase()}`}
+						checked={dimNonMatchingMods}
+						onCheckedChange={(checked) =>
+							onDimNonMatchingModsChange(checked === true)}
+					/>
+					<span>Dim non-matching mods</span>
+				</label>
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<div

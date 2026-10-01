@@ -2,43 +2,55 @@ import { Check, LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
+	activeDimNonMatchingModsAtom,
 	activeModDiagnosticsAtom,
 	activeModsAtom,
+	activeModSearchAtom,
 	checkingWorkshopUpdatesAtom,
-	dimNonMatchingModsAtom,
 	gameVersionAtom,
 	hasModListAtom,
 	hasWorkshopModsAtom,
+	inactiveDimNonMatchingModsAtom,
 	inactiveModsAtom,
+	inactiveModSearchAtom,
 	isTestModeAtom,
 	modDetailsByPackageIdAtom,
 	modListLoadStateAtom,
-	modSearchAtom,
 	outdatedWorkshopModsByPackageIdAtom,
 	statusAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
 	workshopUpdateStatusAtom,
 } from '@/features/mod-list/atoms';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/context/app-context';
 import { allWorkshopUpdateIds } from '@/utils/workshop_update_selection';
 import { ModPreviewFeature } from '@/features/mod-preview/mod-preview-feature';
-import { ModListPanel } from '@/features/mod-list/components/mod-list-panel';
+import { ModList } from '@/features/mod-list/components/mod-list';
 import { WorkshopUpdatesPage } from '@/features/mod-list/components/workshop-updates-page';
 
 export function ModListFeature() {
 	const { moveMod, sortMods, selectMod, checkForModUpdates } =
 		useAppContext();
 	const activeMods = useAtomValue(activeModsAtom);
-	const dimNonMatchingMods = useAtomValue(dimNonMatchingModsAtom);
-	const setDimNonMatchingMods = useSetAtom(dimNonMatchingModsAtom);
+	const activeDimNonMatchingMods = useAtomValue(
+		activeDimNonMatchingModsAtom,
+	);
+	const setActiveDimNonMatchingMods = useSetAtom(
+		activeDimNonMatchingModsAtom,
+	);
+	const activeModSearch = useAtomValue(activeModSearchAtom);
+	const setActiveModSearch = useSetAtom(activeModSearchAtom);
 	const inactiveMods = useAtomValue(inactiveModsAtom);
-	const modSearch = useAtomValue(modSearchAtom);
-	const setModSearch = useSetAtom(modSearchAtom);
+	const inactiveDimNonMatchingMods = useAtomValue(
+		inactiveDimNonMatchingModsAtom,
+	);
+	const setInactiveDimNonMatchingMods = useSetAtom(
+		inactiveDimNonMatchingModsAtom,
+	);
+	const inactiveModSearch = useAtomValue(inactiveModSearchAtom);
+	const setInactiveModSearch = useSetAtom(inactiveModSearchAtom);
 	const modDetailsByPackageId = useAtomValue(modDetailsByPackageIdAtom);
 	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
 	const status = useAtomValue(statusAtom);
@@ -205,30 +217,13 @@ export function ModListFeature() {
 									</>
 								)}
 						</p>
-						<div className='mb-3 flex flex-wrap items-center gap-3'>
-							<Input
-								aria-label='Search installed mods'
-								className='min-w-64 max-w-2xl flex-1'
-								onChange={(event) =>
-									setModSearch(event.currentTarget.value)}
-								placeholder='Search names or package IDs'
-								value={modSearch}
-							/>
-							<label className='flex shrink-0 items-center gap-2 text-sm'>
-								<Checkbox
-									checked={dimNonMatchingMods}
-									onCheckedChange={(checked) =>
-										setDimNonMatchingMods(checked === true)}
-								/>
-								<span>Dim non-matching mods</span>
-							</label>
-						</div>
 						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
 							<div className='min-h-0 overflow-y-auto'>
 								<ModPreviewFeature />
 							</div>
-							<ModListPanel
+							<ModList
 								count={inactiveMods.length}
+								dimNonMatchingMods={inactiveDimNonMatchingMods}
 								isLoading={modListLoadState === 'loading'}
 								emptyMessage='No inactive mods found. Configure paths in Settings.'
 								mods={visibleInactiveMods}
@@ -236,13 +231,17 @@ export function ModListFeature() {
 									.byPackageId}
 								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 								modDetailsByPackageId={modDetailsByPackageId}
+								onDimNonMatchingModsChange={setInactiveDimNonMatchingMods}
+								onSearchChange={setInactiveModSearch}
 								onDropMod={moveMod}
 								onSelectMod={selectMod}
+								searchValue={inactiveModSearch}
 								title='Inactive mods'
 								type='inactive'
 							/>
-							<ModListPanel
+							<ModList
 								count={activeMods.length}
+								dimNonMatchingMods={activeDimNonMatchingMods}
 								isLoading={modListLoadState === 'loading'}
 								emptyMessage={hasModList
 									? 'No active mods.'
@@ -252,8 +251,11 @@ export function ModListFeature() {
 									.byPackageId}
 								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 								modDetailsByPackageId={modDetailsByPackageId}
+								onDimNonMatchingModsChange={setActiveDimNonMatchingMods}
+								onSearchChange={setActiveModSearch}
 								onDropMod={moveMod}
 								onSelectMod={selectMod}
+								searchValue={activeModSearch}
 								title='Active mods'
 								type='active'
 							/>
