@@ -47,9 +47,9 @@ export function useModLists(setStatus: (message: string) => void) {
 		content: string | null,
 		configError: unknown,
 		modsError: unknown,
-		configPathConfigured: boolean,
 	): boolean {
 		if (store.get(isTestModeAtom)) return true;
+		setStatus('');
 		setConfiguredGameVersion(null);
 		setSavedSnapshot(
 			createModListSnapshot(store.get(gameVersionAtom), [], []),
@@ -77,9 +77,6 @@ export function useModLists(setStatus: (message: string) => void) {
 					),
 				);
 				setSourceName('ModsConfig.xml');
-				setStatus(
-					`Loaded ${parsed.activeMods.length} active mods and found ${foundMods.length} installed mods.`,
-				);
 			} catch (error) {
 				setStatus(
 					error instanceof Error ? error.message : String(error),
@@ -101,15 +98,6 @@ export function useModLists(setStatus: (message: string) => void) {
 		if (modsError !== null) {
 			setStatus(String(modsError));
 			return false;
-		}
-		if (configPathConfigured) {
-			setStatus(
-				`No ModsConfig.xml found. Found ${foundMods.length} installed mods.`,
-			);
-			return true;
-		}
-		if (foundMods.length > 0) {
-			setStatus(`Found ${foundMods.length} installed mods.`);
 		}
 		return true;
 	}
@@ -155,10 +143,8 @@ export function useModLists(setStatus: (message: string) => void) {
 				{ path },
 			);
 			if (store.get(isTestModeAtom)) return;
-			const parsed = applyModList(imported.contents, imported.fileName);
-			setStatus(
-				`Loaded ${parsed.activeMods.length} active mods from ${imported.fileName}.`,
-			);
+			applyModList(imported.contents, imported.fileName);
+			setStatus('Mods imported.');
 		} catch (error) {
 			setStatus(
 				error instanceof Error

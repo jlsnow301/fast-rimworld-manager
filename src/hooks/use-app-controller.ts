@@ -107,7 +107,6 @@ export function useAppController() {
 				content,
 				configResult.status === 'rejected' ? configResult.reason : null,
 				modsResult.status === 'rejected' ? modsResult.reason : null,
-				Boolean(settings.configPath),
 			);
 			setModListLoadState(loaded ? 'loaded' : 'failed');
 		}
@@ -127,18 +126,18 @@ export function useAppController() {
 			setStatus('Saving is disabled in test mode.');
 			return;
 		}
-		setStatus('Saving ModsConfig.xml…');
+		setStatus('Saving changes…');
 		const snapshot = {
 			version: modLists.gameVersion,
 			activeMods: [...modLists.activeMods],
 			knownExpansions: [...modLists.knownExpansions],
 		};
 		try {
-			const path = await invokeDesktop<string>('save_mod_list', {
+			await invokeDesktop<string>('save_mod_list', {
 				args: snapshot,
 			});
 			modLists.markModListSaved(snapshot);
-			setStatus(`Saved ModsConfig.xml to ${path}.`);
+			setStatus('Changes saved.');
 		} catch (error) {
 			setStatus(error instanceof Error ? error.message : String(error));
 		}

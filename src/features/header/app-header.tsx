@@ -1,4 +1,4 @@
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,7 +7,6 @@ import {
 	isTestModeAtom,
 	modListLoadStateAtom,
 	sourceNameAtom,
-	toggleTestModeAtom,
 } from '@/features/mod-list/atoms';
 import { settingsOpenAtom } from '@/features/settings/atoms';
 import { useAppContext } from '@/context/app-context';
@@ -24,30 +23,30 @@ export function AppHeader() {
 	const isTestMode = useAtomValue(isTestModeAtom);
 	const settingsOpen = useAtomValue(settingsOpenAtom);
 	const sourceName = useAtomValue(sourceNameAtom);
-	const toggleTestMode = useSetAtom(toggleTestModeAtom);
+	const visibleSourceName = sourceName === 'ModsConfig.xml' ? '' : sourceName;
 
 	return (
 		<header className='flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3'>
-			<div className='grid gap-0.5'>
+			<div>
 				<h1 className='text-lg font-semibold tracking-wide'>
 					Fast RimWorld Manager
 				</h1>
-				<span className='text-sm text-muted-foreground'>
-					Manage RimWorld mods
-				</span>
 			</div>
 			<div className='flex max-w-full flex-wrap items-center justify-end gap-2'>
-				<Badge
-					aria-live='polite'
-					className='max-w-48 truncate'
-					variant='outline'
-				>
-					{sourceName || (modListLoadState === 'loading'
-						? 'Loading mod list…'
-						: modListLoadState === 'failed'
-						? 'Mod list failed to load'
-						: 'No mod list loaded')}
-				</Badge>
+				{(visibleSourceName || modListLoadState === 'loading' ||
+					modListLoadState === 'failed' || !hasModList) && (
+					<Badge
+						aria-live='polite'
+						className='max-w-48 truncate'
+						variant='outline'
+					>
+						{visibleSourceName || (modListLoadState === 'loading'
+							? 'Loading mod list…'
+							: modListLoadState === 'failed'
+							? 'Mod list failed to load'
+							: 'No mod list loaded')}
+					</Badge>
+				)}
 				{isTestMode && <Badge variant='secondary'>TEST MODE</Badge>}
 				{isModListDirty && (
 					<Badge variant='secondary' aria-live='polite'>
@@ -69,15 +68,6 @@ export function AppHeader() {
 					onClick={saveModList}
 				>
 					Save to RimWorld
-				</Button>
-				<Button
-					variant={isTestMode ? 'secondary' : 'outline'}
-					size='sm'
-					aria-pressed={isTestMode}
-					onClick={() =>
-						toggleTestMode()}
-				>
-					{isTestMode ? 'Exit test mode' : 'Load sample list'}
 				</Button>
 				<Button
 					variant='outline'

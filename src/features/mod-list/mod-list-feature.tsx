@@ -143,9 +143,6 @@ export function ModListFeature() {
 								</Badge>
 							)}
 						</div>
-						<p className='mb-3 text-sm text-muted-foreground'>
-							Drag mods between the lists to change activation.
-						</p>
 						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
 							<div className='min-h-0 overflow-y-auto'>
 								<ModPreviewFeature />
@@ -174,7 +171,7 @@ export function ModListFeature() {
 								isLoading={modListLoadState === 'loading'}
 								emptyMessage={hasModList
 									? 'No active mods.'
-									: 'Import a ModsConfig.xml or configure your RimWorld paths.'}
+									: 'Import a mod list or configure your RimWorld paths.'}
 								mods={visibleActiveMods}
 								activeDiagnosticsByPackageId={activeModDiagnostics
 									.byPackageId}

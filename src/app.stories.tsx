@@ -366,13 +366,21 @@ export const CompleteAppMockup: Story = {
 		).map((title) => title.textContent?.trim() ?? '');
 		const hasModPreview = cardTitles.includes('Mod preview') ||
 			cardTitles.includes('Sample Vehicle Mod');
+		const pageText = canvasElement.textContent ?? '';
 		if (
 			!hasModPreview ||
 			!cardTitles.includes('Inactive mods') ||
-			!cardTitles.includes('Active mods')
+			!cardTitles.includes('Active mods') ||
+			pageText.includes('Manage RimWorld mods') ||
+			pageText.includes(
+				'Drag mods between the lists to change activation.',
+			) ||
+			pageText.includes('ModsConfig.xml') ||
+			pageText.includes('Load sample list') ||
+			/\d+ active · \d+ inactive/.test(pageText)
 		) {
 			throw new Error(
-				'The app story must render the preview and both mod-list panels.',
+				'The app story must show both lists without redundant page text.',
 			);
 		}
 		const diagnosticRow = canvasElement.querySelector(
@@ -410,7 +418,6 @@ export const CompleteAppMockup: Story = {
 				'The app story must show search, dim controls, and diagnostic and Workshop status icons.',
 			);
 		}
-
 		const workshopButton = findButton(canvasElement, 'Check for updates') ??
 			findButton(canvasElement, 'Preview Workshop updates');
 		if (!workshopButton) {
@@ -419,7 +426,14 @@ export const CompleteAppMockup: Story = {
 			);
 		}
 		workshopButton.click();
-		await waitForRender();
+		for (
+			let frame = 0;
+			frame < 60 &&
+			!canvasElement.textContent?.includes('Workshop updates');
+			frame += 1
+		) {
+			await waitForRender();
+		}
 		if (!canvasElement.textContent?.includes('Workshop updates')) {
 			throw new Error(
 				'The Workshop update action must open its real page.',
@@ -435,29 +449,6 @@ export const CompleteAppMockup: Story = {
 			);
 		}
 		workshopBackButton.click();
-		await waitForRender();
-
-		const sampleModeButton = findButton(canvasElement, 'Load sample list');
-		if (!sampleModeButton) {
-			throw new Error(
-				'The app story must expose the sample-mode toggle.',
-			);
-		}
-		sampleModeButton.click();
-		await waitForRender();
-		if (!canvasElement.textContent?.includes('TEST MODE')) {
-			throw new Error(
-				'The sample-mode toggle must update the app state.',
-			);
-		}
-		const exitSampleModeButton = findButton(
-			canvasElement,
-			'Exit test mode',
-		);
-		if (!exitSampleModeButton) {
-			throw new Error('The sample-mode toggle must be reversible.');
-		}
-		exitSampleModeButton.click();
 		await waitForRender();
 
 		const settingsButton = findButton(canvasElement, 'Settings');

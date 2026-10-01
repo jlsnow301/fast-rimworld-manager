@@ -339,11 +339,8 @@ function createModListStoryState(
 	store.set(knownExpansionsAtom, knownExpansions);
 	store.set(installedGameVersionAtom, '1.5.4104');
 	store.set(modListLoadStateAtom, 'loaded');
-	store.set(sourceNameAtom, 'ModsConfig.xml');
-	store.set(
-		statusAtom,
-		`Loaded ${loadedStoryMods.length} installed mods from ModsConfig.xml.`,
-	);
+	store.set(sourceNameAtom, 'Sample mod list');
+	store.set(statusAtom, 'Sample mods loaded.');
 	store.set(
 		savedSnapshotAtom,
 		createModListSnapshot('1.5.4104', initialActiveMods, knownExpansions),
@@ -498,6 +495,10 @@ export const LoadedActiveAndInactiveLists: Story = {
 			) ||
 			pageText.includes('Active mod list checks:') ||
 			pageText.includes('mods with errors') ||
+			pageText.includes('ModsConfig.xml') ||
+			pageText.includes(
+				'Drag mods between the lists to change activation.',
+			) ||
 			/\d+ active · \d+ inactive/.test(pageText)
 		) {
 			throw new Error(
