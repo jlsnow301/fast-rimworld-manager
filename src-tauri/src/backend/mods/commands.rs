@@ -1,9 +1,8 @@
-use crate::backend::models::mods::InstalledMod;
-use crate::backend::services::{installed_mods, sorting};
+use super::{inventory, model::InstalledMod, sorting};
 
 #[tauri::command]
 pub fn list_installed_mods(app: tauri::AppHandle) -> Result<Vec<InstalledMod>, String> {
-    installed_mods::list_installed_mods(app)
+    inventory::list_installed_mods(app)
 }
 
 #[tauri::command]

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::backend::models::mod_lists::ImportedModListFile;
+use super::model::ImportedModListFile;
 
 pub(crate) fn load_mod_list_file(path: String) -> Result<ImportedModListFile, String> {
     load_mod_list_file_from_path(Path::new(&path))

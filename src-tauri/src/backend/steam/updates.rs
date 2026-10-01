@@ -5,10 +5,9 @@ use std::time::Duration;
 
 use serde::Deserialize;
 
-use crate::backend::models::mods::InstalledMod;
-use crate::backend::models::paths::PathSettings;
-use crate::backend::models::steam::{OutdatedWorkshopMod, WorkshopUpdateCheckResult};
-use crate::backend::services::installed_mods::collect_installed_mods;
+use super::model::{OutdatedWorkshopMod, WorkshopUpdateCheckResult};
+use crate::backend::mods::{inventory::collect_installed_mods, model::InstalledMod};
+use crate::backend::paths::model::PathSettings;
 
 const PUBLISHED_FILE_DETAILS_URL: &str =
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
@@ -80,150 +79,7 @@ fn read_local_workshop_update_times(workshop_path: &str) -> Result<HashMap<Strin
             acf_path.display()
         )
     })?;
-    parse_local_workshop_update_times(&contents)
-}
-
-fn parse_local_workshop_update_times(contents: &str) -> Result<HashMap<String, u64>, String> {
-    let contents = contents.trim_start_matches('\u{feff}');
-    let tokens = tokenize_key_values(contents)?;
-    let mut cursor = 0;
-    let root = parse_key_values_object(&tokens, &mut cursor, false)?;
-    if cursor != tokens.len() {
-        return Err("Steam Workshop metadata contains unexpected trailing data.".to_string());
-    }
-    let app_workshop = object_value(&root, "AppWorkshop")
-        .ok_or_else(|| "Steam Workshop metadata is missing AppWorkshop.".to_string())?;
-    let mut timestamps = HashMap::new();
-    for table_name in ["WorkshopItemDetails", "WorkshopItemsInstalled"] {
-        let Some(items) = object_value(app_workshop, table_name) else {
-            continue;
-        };
-        for (published_file_id, item) in items {
-            if timestamps.contains_key(published_file_id) {
-                continue;
-            }
-            let Some(time_updated) = item
-                .as_object()
-                .and_then(|fields| fields.get("timeupdated"))
-                .and_then(KeyValuesValue::as_text)
-                .and_then(|value| value.parse::<u64>().ok())
-                .filter(|timestamp| *timestamp > 0)
-            else {
-                continue;
-            };
-            timestamps.insert(published_file_id.clone(), time_updated);
-        }
-    }
-    Ok(timestamps)
-}
-
-fn object_value<'a>(
-    values: &'a HashMap<String, KeyValuesValue>,
-    key: &str,
-) -> Option<&'a HashMap<String, KeyValuesValue>> {
-    values.get(key)?.as_object()
-}
-
-fn tokenize_key_values(contents: &str) -> Result<Vec<KeyValuesToken>, String> {
-    let mut characters = contents.chars().peekable();
-    let mut tokens = Vec::new();
-    while let Some(character) = characters.next() {
-        match character {
-            character if character.is_whitespace() => {}
-            '{' => tokens.push(KeyValuesToken::Open),
-            '}' => tokens.push(KeyValuesToken::Close),
-            '/' if characters.peek() == Some(&'/') => {
-                characters.next();
-                for character in characters.by_ref() {
-                    if character == '\n' {
-                        break;
-                    }
-                }
-            }
-            '"' => {
-                let mut value = String::new();
-                let mut closed = false;
-                while let Some(character) = characters.next() {
-                    match character {
-                        '"' => {
-                            closed = true;
-                            break;
-                        }
-                        '\\' => {
-                            let escaped = characters.next().ok_or_else(|| {
-                                "Steam Workshop metadata has an incomplete escape.".to_string()
-                            })?;
-                            value.push(escaped);
-                        }
-                        character => value.push(character),
-                    }
-                }
-                if !closed {
-                    return Err("Steam Workshop metadata has an unterminated string.".to_string());
-                }
-                tokens.push(KeyValuesToken::Text(value));
-            }
-            character => {
-                let mut value = String::from(character);
-                while characters
-                    .peek()
-                    .is_some_and(|next| !next.is_whitespace() && *next != '{' && *next != '}')
-                {
-                    if let Some(character) = characters.next() {
-                        value.push(character);
-                    }
-                }
-                tokens.push(KeyValuesToken::Text(value));
-            }
-        }
-    }
-    Ok(tokens)
-}
-
-fn parse_key_values_object(
-    tokens: &[KeyValuesToken],
-    cursor: &mut usize,
-    nested: bool,
-) -> Result<HashMap<String, KeyValuesValue>, String> {
-    let mut object = HashMap::new();
-    while let Some(token) = tokens.get(*cursor) {
-        match token {
-            KeyValuesToken::Close if nested => {
-                *cursor += 1;
-                return Ok(object);
-            }
-            KeyValuesToken::Close => {
-                return Err("Steam Workshop metadata has an unmatched closing brace.".to_string());
-            }
-            KeyValuesToken::Open => {
-                return Err("Steam Workshop metadata has an unmatched opening brace.".to_string());
-            }
-            KeyValuesToken::Text(key) => {
-                let key = key.clone();
-                *cursor += 1;
-                match tokens.get(*cursor) {
-                    Some(KeyValuesToken::Text(value)) => {
-                        object.insert(key, KeyValuesValue::Text(value.clone()));
-                        *cursor += 1;
-                    }
-                    Some(KeyValuesToken::Open) => {
-                        *cursor += 1;
-                        let child = parse_key_values_object(tokens, cursor, true)?;
-                        object.insert(key, KeyValuesValue::Object(child));
-                    }
-                    _ => {
-                        return Err(
-                            "Steam Workshop metadata has a key without a value.".to_string()
-                        );
-                    }
-                }
-            }
-        }
-    }
-    if nested {
-        return Err("Steam Workshop metadata has an unclosed object.".to_string());
-    }
-    Ok(object)
+    super::key_values::parse_local_workshop_update_times(&contents)
 }
 
 async fn fetch_published_file_updates(
@@ -311,35 +167,6 @@ fn compare_update_times(
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-enum KeyValuesToken {
-    Text(String),
-    Open,
-    Close,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-enum KeyValuesValue {
-    Text(String),
-    Object(HashMap<String, KeyValuesValue>),
-}
-
-impl KeyValuesValue {
-    fn as_text(&self) -> Option<&str> {
-        match self {
-            Self::Text(value) => Some(value),
-            Self::Object(_) => None,
-        }
-    }
-
-    fn as_object(&self) -> Option<&HashMap<String, KeyValuesValue>> {
-        match self {
-            Self::Text(_) => None,
-            Self::Object(value) => Some(value),
-        }
-    }
-}
-
 #[derive(Deserialize)]
 struct PublishedFileDetailsResponse {
     response: PublishedFileDetailsResponseBody,
@@ -380,29 +207,6 @@ mod tests {
             path: format!("C:/Workshop/{published_file_id}"),
             source: "workshop".to_string(),
         }
-    }
-
-    #[test]
-    fn parses_installed_times_from_workshop_acf_metadata() {
-        let contents = r#"
-            "AppWorkshop" {
-                "WorkshopItemsInstalled" {
-                    "111" { "timeupdated" "1700000001" }
-                }
-                "WorkshopItemDetails" {
-                    "111" { "timeupdated" "1700000002" }
-                    "222" { "timeupdated" "0" }
-                    "333" { "manifest" "123" }
-                }
-            }
-        "#;
-
-        let timestamps =
-            parse_local_workshop_update_times(contents).expect("valid ACF metadata should parse");
-
-        assert_eq!(timestamps.get("111"), Some(&1700000002));
-        assert!(!timestamps.contains_key("222"));
-        assert!(!timestamps.contains_key("333"));
     }
 
     #[test]

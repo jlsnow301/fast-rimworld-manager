@@ -2,10 +2,8 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use tauri::AppHandle;
 
-use crate::backend::models::mods::InstalledMod;
-use crate::backend::services::{
-    installed_mods::collect_installed_mods, path_detection::load_path_settings_for_app,
-};
+use super::{inventory::collect_installed_mods, model::InstalledMod};
+use crate::backend::paths::settings::load_path_settings_for_app;
 
 const KNOWN_TIER_ZERO_MODS: &[&str] = &[
     "zetrith.prepatcher",

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
-use crate::backend::models::databases::{DatabaseDownloadResult, DatabaseKind};
+use super::model::{DatabaseDownloadResult, DatabaseKind};
 use serde_json::Value;
 use tauri::Manager;
 

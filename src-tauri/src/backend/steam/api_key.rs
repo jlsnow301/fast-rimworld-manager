@@ -16,7 +16,7 @@ pub(crate) fn save_steam_api_key(api_key: String) -> Result<(), String> {
 
     #[cfg(windows)]
     {
-        credential_entry()?.set_password(&api_key).map_err(|_| {
+        credential_entry()?.set_password(api_key).map_err(|_| {
             "Could not save the Steam API key to Windows Credential Manager.".to_string()
         })
     }
@@ -121,6 +121,25 @@ async fn request_supported_api_list(endpoint: &str, api_key: &str) -> Result<(),
     Ok(())
 }
 
+fn has_authenticated_method(response: &Value) -> bool {
+    response
+        .get("apilist")
+        .and_then(|api_list| api_list.get("interfaces"))
+        .and_then(Value::as_array)
+        .is_some_and(|interfaces| {
+            interfaces.iter().any(|interface| {
+                interface.get("name").and_then(Value::as_str) == Some("IPlayerService")
+                    && interface
+                        .get("methods")
+                        .and_then(Value::as_array)
+                        .is_some_and(|methods| {
+                            methods.iter().any(|method| {
+                                method.get("name").and_then(Value::as_str) == Some("GetBadges")
+                            })
+                        })
+            })
+        })
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,11 +218,21 @@ mod tests {
             .expect("server address should be available");
         let server = tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.expect("request should connect");
-            let mut request = [0; 1024];
-            stream
-                .read(&mut request)
-                .await
-                .expect("request should be read");
+            let mut request = Vec::new();
+            loop {
+                let mut chunk = [0; 1024];
+                let read = stream
+                    .read(&mut chunk)
+                    .await
+                    .expect("request should be read");
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&chunk[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
             let body = "{}";
             let response = format!(
                 "HTTP/1.1 403 Forbidden\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
@@ -227,24 +256,4 @@ mod tests {
         assert!(!error.contains(key));
         server.await.expect("server should complete");
     }
-}
-
-fn has_authenticated_method(response: &Value) -> bool {
-    response
-        .get("apilist")
-        .and_then(|api_list| api_list.get("interfaces"))
-        .and_then(Value::as_array)
-        .is_some_and(|interfaces| {
-            interfaces.iter().any(|interface| {
-                interface.get("name").and_then(Value::as_str) == Some("IPlayerService")
-                    && interface
-                        .get("methods")
-                        .and_then(Value::as_array)
-                        .is_some_and(|methods| {
-                            methods.iter().any(|method| {
-                                method.get("name").and_then(Value::as_str) == Some("GetBadges")
-                            })
-                        })
-            })
-        })
 }

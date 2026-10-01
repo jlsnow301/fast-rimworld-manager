@@ -3,57 +3,9 @@ use std::path::{Path, PathBuf};
 #[cfg(target_os = "windows")]
 use std::process::Command;
 
-use tauri::{AppHandle, Manager};
-
-use crate::backend::models::{
-    mod_lists::SaveModListArgs,
-    paths::{DetectedPaths, PathSettings},
-};
-
-pub(crate) fn load_path_settings(app: AppHandle) -> Result<PathSettings, String> {
-    load_path_settings_for_app(&app)
-}
-
-pub(crate) fn load_path_settings_for_app(app: &AppHandle) -> Result<PathSettings, String> {
-    load_settings_file(&settings_file(app)?)
-}
-
-pub(crate) fn save_path_settings(app: AppHandle, settings: PathSettings) -> Result<(), String> {
-    save_settings_file(&settings_file(&app)?, &settings)
-}
-
-fn load_settings_file(path: &Path) -> Result<PathSettings, String> {
-    match fs::read_to_string(path) {
-        Ok(contents) => serde_json::from_str(&contents)
-            .map_err(|error| format!("Could not read saved paths: {error}")),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(PathSettings::default()),
-        Err(error) => Err(format!("Could not read saved paths: {error}")),
-    }
-}
-
-fn save_settings_file(path: &Path, settings: &PathSettings) -> Result<(), String> {
-    let settings_directory = path
-        .parent()
-        .ok_or_else(|| "Could not resolve the settings directory".to_string())?;
-    fs::create_dir_all(settings_directory)
-        .map_err(|error| format!("Could not create the settings directory: {error}"))?;
-    let contents = serde_json::to_vec_pretty(settings)
-        .map_err(|error| format!("Could not encode saved paths: {error}"))?;
-    fs::write(path, contents).map_err(|error| format!("Could not save paths: {error}"))
-}
-
-fn settings_file(app: &AppHandle) -> Result<PathBuf, String> {
-    app.path()
-        .app_config_dir()
-        .map(|directory| directory.join("paths.json"))
-        .map_err(|error| format!("Could not resolve the settings directory: {error}"))
-}
+use crate::backend::paths::model::DetectedPaths;
 
 pub(crate) fn detect_rimworld_version(game_path: &str) -> Result<Option<String>, String> {
-    if game_path.trim().is_empty() {
-        return Ok(None);
-    }
-
     let version_path = Path::new(game_path).join("Version.txt");
     match fs::read_to_string(&version_path) {
         Ok(contents) => Ok(parse_rimworld_version(&contents)),
@@ -82,73 +34,6 @@ fn parse_rimworld_version(contents: &str) -> Option<String> {
         return None;
     }
     Some(version.to_string())
-}
-
-pub(crate) fn load_startup_mod_list(app: AppHandle) -> Result<Option<String>, String> {
-    load_configured_mod_list(&settings_file(&app)?)
-}
-
-fn load_configured_mod_list(settings_file: &Path) -> Result<Option<String>, String> {
-    let settings = load_settings_file(settings_file)?;
-    read_mods_config(&settings.config_path)
-}
-
-fn read_mods_config(config_path: &str) -> Result<Option<String>, String> {
-    if config_path.trim().is_empty() {
-        return Ok(None);
-    }
-
-    let mods_config = PathBuf::from(config_path).join("ModsConfig.xml");
-    match fs::read_to_string(&mods_config) {
-        Ok(contents) => Ok(Some(contents)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(format!(
-            "Could not read ModsConfig.xml at {}: {error}",
-            mods_config.display()
-        )),
-    }
-}
-
-pub(crate) fn save_mod_list(app: AppHandle, args: SaveModListArgs) -> Result<String, String> {
-    let settings = load_path_settings_for_app(&app)?;
-    save_configured_mod_list(&settings.config_path, &args)
-}
-
-fn save_configured_mod_list(config_path: &str, args: &SaveModListArgs) -> Result<String, String> {
-    if config_path.trim().is_empty() {
-        return Err("Set the RimWorld config folder in Settings before saving.".to_string());
-    }
-    let config_directory = Path::new(config_path);
-    if !config_directory.is_dir() {
-        return Err(format!(
-            "RimWorld config folder does not exist: {}",
-            config_directory.display()
-        ));
-    }
-    let mods_config_path = config_directory.join("ModsConfig.xml");
-    fs::write(&mods_config_path, serialize_mods_config(args))
-        .map_err(|error| format!("Could not save {}: {error}", mods_config_path.display()))?;
-    Ok(mods_config_path.to_string_lossy().into_owned())
-}
-
-fn serialize_mods_config(args: &SaveModListArgs) -> String {
-    let mut xml =
-        String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<ModsConfigData>\n  <version>");
-    xml.push_str(&quick_xml::escape::escape(&args.version));
-    xml.push_str("</version>\n  <activeMods>");
-    for package_id in &args.active_mods {
-        xml.push_str("\n    <li>");
-        xml.push_str(&quick_xml::escape::escape(package_id));
-        xml.push_str("</li>");
-    }
-    xml.push_str("\n  </activeMods>\n  <knownExpansions>");
-    for expansion in &args.known_expansions {
-        xml.push_str("\n    <li>");
-        xml.push_str(&quick_xml::escape::escape(expansion));
-        xml.push_str("</li>");
-    }
-    xml.push_str("\n  </knownExpansions>\n</ModsConfigData>");
-    xml
 }
 
 fn normalize_windows_path(path: &str) -> String {
@@ -474,6 +359,7 @@ mod tests {
         assert_eq!(found, Some((game, library)));
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
+
     #[test]
     fn normalizes_mixed_separators_in_steam_library_vdf() {
         let paths = parse_library_paths(
@@ -500,116 +386,6 @@ mod tests {
         assert_eq!(found, None);
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }
-    #[test]
-    fn loads_mods_config_from_the_persisted_config_folder() {
-        let root = unique_temp_directory("startup-modlist");
-        let settings_file = root.join("app/paths.json");
-        let config_directory = root.join("RimWorld/Config");
-        fs::create_dir_all(&config_directory).expect("config directory should be created");
-        let xml =
-            "<ModsConfigData><activeMods><li>Ludeon.RimWorld</li></activeMods></ModsConfigData>";
-        fs::write(config_directory.join("ModsConfig.xml"), xml)
-            .expect("ModsConfig.xml should be created");
-        let settings = PathSettings {
-            config_path: config_directory.to_string_lossy().into_owned(),
-            ..PathSettings::default()
-        };
-        save_settings_file(&settings_file, &settings).expect("path settings should save");
-
-        let loaded = load_configured_mod_list(&settings_file)
-            .expect("configured mod list should be readable");
-
-        assert_eq!(loaded.as_deref(), Some(xml));
-        fs::remove_dir_all(root).expect("fixture directory should be removed");
-    }
-    #[test]
-    fn returns_no_modlist_when_config_file_is_missing() {
-        let config_directory = unique_temp_directory("missing-config");
-        fs::create_dir_all(&config_directory).expect("config directory should be created");
-
-        assert_eq!(
-            read_mods_config(config_directory.to_str().expect("path should be UTF-8")),
-            Ok(None)
-        );
-        fs::remove_dir_all(config_directory).expect("fixture directory should be removed");
-    }
-
-    #[test]
-    fn returns_no_modlist_when_config_path_is_empty() {
-        assert_eq!(read_mods_config(""), Ok(None));
-    }
-    #[test]
-    fn persists_path_settings_between_loads() {
-        let root = unique_temp_directory("path-settings");
-        let settings_file = root.join("app/paths.json");
-        let settings = PathSettings {
-            game_path: "C:/Games/RimWorld".to_string(),
-            config_path: "C:/Users/player/AppData/LocalLow/RimWorld/Config".to_string(),
-            local_mods_path: "C:/Games/RimWorld/Mods".to_string(),
-            workshop_path: "D:/Steam/steamapps/workshop/content/294100".to_string(),
-        };
-
-        save_settings_file(&settings_file, &settings).expect("settings should save");
-
-        assert_eq!(load_settings_file(&settings_file), Ok(settings));
-        fs::remove_dir_all(root).expect("fixture directory should be removed");
-    }
-
-    #[test]
-    fn saves_active_order_version_and_expansions_to_config_folder() {
-        let root = unique_temp_directory("save-mod-list");
-        fs::create_dir_all(&root).expect("config folder should be created");
-        let args = SaveModListArgs {
-            version: "1.6&test".to_string(),
-            active_mods: vec!["Ludeon.RimWorld".to_string(), "Author.Mod&Name".to_string()],
-            known_expansions: vec!["Ludeon.RimWorld".to_string()],
-        };
-
-        let saved_path =
-            save_configured_mod_list(root.to_str().expect("path should be UTF-8"), &args)
-                .expect("mod list should save");
-        let saved_contents = fs::read_to_string(&saved_path).expect("saved config should read");
-
-        assert_eq!(
-            saved_contents,
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<ModsConfigData>\n  <version>1.6&amp;test</version>\n  <activeMods>\n    <li>Ludeon.RimWorld</li>\n    <li>Author.Mod&amp;Name</li>\n  </activeMods>\n  <knownExpansions>\n    <li>Ludeon.RimWorld</li>\n  </knownExpansions>\n</ModsConfigData>"
-        );
-        fs::remove_dir_all(root).expect("fixture directory should be removed");
-    }
-
-    #[test]
-    fn rejects_save_without_a_config_folder() {
-        let error = save_configured_mod_list(
-            "",
-            &SaveModListArgs {
-                version: "1.6".to_string(),
-                active_mods: Vec::new(),
-                known_expansions: Vec::new(),
-            },
-        )
-        .expect_err("empty config folder should not save");
-
-        assert_eq!(
-            error,
-            "Set the RimWorld config folder in Settings before saving."
-        );
-    }
-
-    #[test]
-    fn reports_missing_config_folder_without_writing_elsewhere() {
-        let config_directory = unique_temp_directory("missing-save-folder");
-        let error = save_configured_mod_list(
-            config_directory.to_str().expect("path should be UTF-8"),
-            &SaveModListArgs {
-                version: "1.6".to_string(),
-                active_mods: Vec::new(),
-                known_expansions: Vec::new(),
-            },
-        )
-        .expect_err("missing config folder should fail");
-
-        assert!(error.contains("RimWorld config folder does not exist"));
-    }
 
     #[test]
     fn accepts_game_version_marker_with_numeric_version() {
@@ -623,26 +399,9 @@ mod tests {
     }
 
     #[test]
-    fn serializes_settings_with_frontend_field_names() {
-        let serialized = serde_json::to_value(PathSettings {
-            game_path: "game".to_string(),
-            config_path: "config".to_string(),
-            local_mods_path: "local".to_string(),
-            workshop_path: "workshop".to_string(),
-        })
-        .expect("path settings should serialize");
-
-        assert_eq!(serialized["gamePath"], "game");
-        assert_eq!(serialized["configPath"], "config");
-        assert_eq!(serialized["localModsPath"], "local");
-        assert_eq!(serialized["workshopPath"], "workshop");
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
     fn reads_steam_install_path_from_registry_output() {
         let path = parse_registry_install_path(
-			"HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam\n    InstallPath    REG_SZ    D:/Games\\Steam\n",
+            "HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam\n    InstallPath    REG_SZ    D:/Games\\Steam\n",
         );
 
         assert_eq!(path, Some(PathBuf::from(r"D:\Games\Steam")));
