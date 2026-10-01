@@ -235,10 +235,34 @@ const storyMods: InstalledMod[] = [
 		source: 'workshop',
 		dependencies: [],
 	},
+	{
+		name:
+			'Extremely Long Dependency and Version Diagnostic Sample Mod for Testing Title Truncation',
+		author: 'Storybook',
+		packageId: 'storybook.diagnostic.sample',
+		description:
+			'A long active mod name with dependency and game-version diagnostics.',
+		publishedFileId: null,
+		loadAfter: [],
+		loadBefore: [],
+		incompatibleWith: [],
+		supportedVersions: ['1.4'],
+		path: String
+			.raw`C:\Storybook\Mods\DiagnosticSample`,
+		source: 'local',
+		dependencies: [{
+			packageId: 'missing.story.framework',
+			name: 'Required story framework',
+			alternativePackageIds: [],
+		}],
+	},
 ];
 
 const overflowStoryMods = storyMods.slice(2)
-	.filter((mod) => mod.source !== 'DLC')
+	.filter((mod) =>
+		mod.source !== 'DLC' &&
+		mod.packageId !== 'storybook.diagnostic.sample'
+	)
 	.flatMap((mod) =>
 		Array.from({ length: 4 }, (_, index) => ({
 			...mod,
@@ -259,6 +283,7 @@ const initialActiveMods = [
 	'brrainz.harmony',
 	'unlimitedhugs.hugslib',
 	...overflowStoryMods.slice(0, 8).map((mod) => mod.packageId),
+	'storybook.diagnostic.sample',
 ];
 const initialInactiveMods = [
 	'oskarpotocki.vanillafactionsexpanded.core',
@@ -498,7 +523,7 @@ export const LoadedActiveAndInactiveLists: Story = {
 			const row = context.canvasElement.ownerDocument.querySelector(
 				`button[aria-label="Show details for ${name}"]`,
 			);
-			const title = row?.querySelector('.break-words');
+			const title = row?.querySelector('.truncate');
 			const icon = row?.querySelector('svg[aria-hidden="true"]');
 			if (!row || !title || !icon || icon.nextElementSibling !== title) {
 				throw new Error(
@@ -512,10 +537,66 @@ export const LoadedActiveAndInactiveLists: Story = {
 			);
 		if (
 			!ordinaryModRow ||
-			ordinaryModRow.querySelector('svg[aria-hidden="true"]')
+			ordinaryModRow.querySelector(
+				'svg.lucide-circle-alert, svg.lucide-triangle-alert',
+			)
 		) {
 			throw new Error(
-				'Ordinary mod rows must not show official content icons.',
+				'Healthy mod rows must not show diagnostic icons.',
+			);
+		}
+		const diagnosticModRow = context.canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label^="Show details for Extremely Long Dependency and Version Diagnostic Sample Mod"]',
+		);
+		const diagnosticTitle = diagnosticModRow?.querySelector<HTMLElement>(
+			'.truncate',
+		);
+		const errorIcon = diagnosticModRow?.querySelector<SVGElement>(
+			'svg.lucide-circle-alert',
+		);
+		const warningIcon = diagnosticModRow?.querySelector<SVGElement>(
+			'svg.lucide-triangle-alert',
+		);
+		const diagnosticIconGroup = errorIcon?.parentElement?.parentElement;
+		const diagnosticRowRect = diagnosticModRow?.getBoundingClientRect();
+		const diagnosticTitleRect = diagnosticTitle?.getBoundingClientRect();
+		const diagnosticIconGroupRect = diagnosticIconGroup
+			?.getBoundingClientRect();
+		const diagnosticLabel = diagnosticModRow?.getAttribute('aria-label') ??
+			'';
+		if (
+			!diagnosticModRow ||
+			!diagnosticTitle ||
+			!errorIcon ||
+			!warningIcon ||
+			!diagnosticIconGroup ||
+			!diagnosticRowRect ||
+			!diagnosticTitleRect ||
+			!diagnosticIconGroupRect ||
+			diagnosticIconGroup.querySelectorAll('svg').length !== 2 ||
+			errorIcon.getAttribute('aria-hidden') !== 'true' ||
+			warningIcon.getAttribute('aria-hidden') !== 'true' ||
+			errorIcon.parentElement?.getAttribute('title')?.includes(
+					'Required story framework',
+				) !==
+				true ||
+			warningIcon.parentElement?.getAttribute('title')?.includes(
+					'Game version mismatch',
+				) !==
+				true ||
+			!diagnosticLabel.includes('Errors:') ||
+			!diagnosticLabel.includes('Warnings:') ||
+			!diagnosticLabel.includes('Required story framework') ||
+			!diagnosticLabel.includes('Game 1.5; supported 1.4') ||
+			getComputedStyle(diagnosticTitle).textOverflow !== 'ellipsis' ||
+			diagnosticTitle.scrollWidth <= diagnosticTitle.clientWidth ||
+			diagnosticTitleRect.right > diagnosticIconGroupRect.left ||
+			diagnosticRowRect.right - diagnosticIconGroupRect.right > 16
+		) {
+			throw new Error(
+				'Long active mod titles must truncate before the right-side error and warning icons while preserving issue details.',
 			);
 		}
 		const ownerDocument = context.canvasElement.ownerDocument;
@@ -588,12 +669,12 @@ export const LoadedActiveAndInactiveLists: Story = {
 		await nextFrame();
 		const matchedTitle = inactivePanel
 			.querySelector('button[aria-label="Show details for Allow Tool"]')
-			?.querySelector('.break-words');
+			?.querySelector('.truncate');
 		const dimmedTitle = inactivePanel
 			.querySelector(
 				'button[aria-label="Show details for Vanilla Expanded Framework"]',
 			)
-			?.querySelector('.break-words');
+			?.querySelector('.truncate');
 		const matchedContent = matchedTitle?.parentElement?.parentElement;
 		const dimmedContent = dimmedTitle?.parentElement?.parentElement;
 		if (

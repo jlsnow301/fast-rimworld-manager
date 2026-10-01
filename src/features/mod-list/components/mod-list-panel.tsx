@@ -2,12 +2,14 @@ import { type DragEvent as ReactDragEvent, Fragment } from 'react';
 import { cn } from 'cn';
 import {
 	BookOpen,
+	CircleAlert,
 	Crown,
 	Dna,
 	Gamepad2,
 	Ghost,
 	type LucideIcon,
 	Rocket,
+	TriangleAlert,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -227,11 +229,11 @@ export function ModListPanel(props: ModListPanelProps) {
 										>
 											<span
 												className={cn(
-													'flex min-w-0 flex-col items-start gap-1',
+													'flex min-w-0 flex-1 flex-col items-start gap-1',
 													!isMatch && 'opacity-50',
 												)}
 											>
-												<span className='flex min-w-0 items-start gap-2'>
+												<span className='flex w-full min-w-0 items-center gap-2'>
 													{OfficialContentIcon && (
 														<OfficialContentIcon
 															aria-hidden='true'
@@ -240,9 +242,38 @@ export function ModListPanel(props: ModListPanelProps) {
 															focusable='false'
 														/>
 													)}
-													<span className='break-words'>
+													<span className='min-w-0 flex-1 truncate'>
 														{mod?.name ?? packageId}
 													</span>
+													{(errorDetails ||
+														warningDetails) && (
+														<span className='ml-auto flex shrink-0 items-center gap-1'>
+															{errorDetails && (
+																<span
+																	className='shrink-0'
+																	title={errorDetails}
+																>
+																	<CircleAlert
+																		aria-hidden='true'
+																		className='shrink-0 text-destructive'
+																		focusable='false'
+																	/>
+																</span>
+															)}
+															{warningDetails && (
+																<span
+																	className='shrink-0'
+																	title={warningDetails}
+																>
+																	<TriangleAlert
+																		aria-hidden='true'
+																		className='shrink-0 text-muted-foreground'
+																		focusable='false'
+																	/>
+																</span>
+															)}
+														</span>
+													)}
 												</span>
 												{mod && (
 													<span className='flex flex-wrap gap-2'>
