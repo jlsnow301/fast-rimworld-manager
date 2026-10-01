@@ -92,19 +92,10 @@ export function ModListFeature() {
 				: (
 					<>
 						<div className='mb-4 flex flex-wrap items-end justify-between gap-3'>
-							<div>
-								<h2 className='text-lg font-semibold tracking-wide uppercase'>
-									Mod list
-								</h2>
-								<p className='text-sm text-muted-foreground'>
-									Game version {gameVersion}
-								</p>
-							</div>
+							<p className='text-sm text-muted-foreground'>
+								Game version {gameVersion}
+							</p>
 							<div className='flex items-center gap-3'>
-								<Badge variant='secondary'>
-									{activeMods.length} active ·{' '}
-									{inactiveMods.length} inactive
-								</Badge>
 								<Button
 									aria-busy={checkingWorkshopUpdates}
 									disabled={checkingWorkshopUpdates ||
@@ -154,68 +145,6 @@ export function ModListFeature() {
 						</div>
 						<p className='mb-3 text-sm text-muted-foreground'>
 							Drag mods between the lists to change activation.
-						</p>
-						<p
-							aria-live='polite'
-							className='mb-3 flex flex-wrap items-center gap-2 text-sm'
-							role={modListLoadState === 'failed' ||
-									(activeModDiagnostics.errorCount > 0 &&
-										modListLoadState === 'loaded')
-								? 'alert'
-								: 'status'}
-						>
-							{modListLoadState === 'loading'
-								? <span>Loading mod list…</span>
-								: modListLoadState === 'failed'
-								? (
-									<Badge variant='destructive'>
-										Mod list failed to load
-									</Badge>
-								)
-								: (
-									<>
-										<span>Active mod list checks:</span>
-										{!hasModList
-											? (
-												<Badge variant='secondary'>
-													No active list loaded
-												</Badge>
-											)
-											: activeModDiagnostics.errorCount >
-													0
-											? (
-												<Badge variant='destructive'>
-													{activeModDiagnostics
-														.errorCount}{' '}
-													mods with errors
-												</Badge>
-											)
-											: (
-												<Badge variant='secondary'>
-													No errors
-												</Badge>
-											)}
-										{activeModDiagnostics.warningCount >
-												0 && (
-											<Badge variant='outline'>
-												{activeModDiagnostics
-													.warningCount}{' '}
-												mods with warnings
-											</Badge>
-										)}
-										{hasModList &&
-											(activeModDiagnostics.errorCount >
-													0 ||
-												activeModDiagnostics
-														.warningCount > 0) &&
-											(
-												<span className='text-muted-foreground'>
-													Select a highlighted mod for
-													details.
-												</span>
-											)}
-									</>
-								)}
 						</p>
 						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
 							<div className='min-h-0 overflow-y-auto'>

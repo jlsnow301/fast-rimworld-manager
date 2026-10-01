@@ -491,6 +491,19 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Mod preview and list card titles must appear in preview, inactive, active order.',
 			);
 		}
+		const pageText = context.canvasElement.textContent ?? '';
+		if (
+			Array.from(context.canvasElement.querySelectorAll('h2')).some(
+				(heading) => heading.textContent?.trim() === 'Mod list',
+			) ||
+			pageText.includes('Active mod list checks:') ||
+			pageText.includes('mods with errors') ||
+			/\d+ active · \d+ inactive/.test(pageText)
+		) {
+			throw new Error(
+				'Redundant mod-list headings and summaries must be omitted.',
+			);
+		}
 		const modListCards = Array.from(
 			context.canvasElement.ownerDocument.querySelectorAll(
 				'[data-slot="card"]',
@@ -505,11 +518,16 @@ export const LoadedActiveAndInactiveLists: Story = {
 		}
 		for (const card of modListCards) {
 			const list = card.querySelector<HTMLElement>('.overflow-y-auto');
+			const count = card.querySelector('[data-slot="badge"]')?.textContent
+				?.trim();
 			if (
+				!count || !/^\d+$/.test(count) ||
 				!list || list.clientHeight === 0 ||
 				list.scrollHeight <= list.clientHeight
 			) {
-				throw new Error('Both mod lists must scroll independently.');
+				throw new Error(
+					'Each list must show its count and scroll independently.',
+				);
 			}
 		}
 		const officialContentNames = [
@@ -747,14 +765,40 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Active search must leave inactive mods unchanged.',
 			);
 		}
-		const inactiveDimCheckbox = ownerDocument.querySelector<HTMLElement>(
-			'[role="checkbox"][aria-label="Dim non-matching inactive mods"]',
+		const inactiveDimButton = ownerDocument.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle dimming unmatched inactive mods"]',
 		);
-		if (!inactiveDimCheckbox) {
-			throw new Error('Inactive dim mode must be available.');
+		const activeDimButton = ownerDocument.querySelector<HTMLButtonElement>(
+			'button[aria-label="Toggle dimming unmatched active mods"]',
+		);
+		if (
+			!inactiveDimButton ||
+			!activeDimButton ||
+			inactiveDimButton.getAttribute('aria-pressed') !== 'false' ||
+			activeDimButton.getAttribute('aria-pressed') !== 'false' ||
+			!inactiveDimButton.querySelector('svg.lucide-eye-off') ||
+			!activeDimButton.querySelector('svg.lucide-eye-off')
+		) {
+			throw new Error('Each list must have an independent dim toggle.');
 		}
-		inactiveDimCheckbox.click();
+		await userEvent.hover(inactiveDimButton);
+		await waitForTooltipContent(
+			'Dim unmatched mods',
+			'The dim toggle must explain its action in a tooltip.',
+		);
+		await userEvent.unhover(inactiveDimButton);
+		inactiveDimButton.click();
 		await nextFrame();
+		if (
+			inactiveDimButton.getAttribute('aria-pressed') !== 'true' ||
+			activeDimButton.getAttribute('aria-pressed') !== 'false' ||
+			!inactiveDimButton.querySelector('svg.lucide-eye') ||
+			!activeDimButton.querySelector('svg.lucide-eye-off')
+		) {
+			throw new Error('The dim toggle must change only its own list.');
+		}
 		const matchedTitle = inactivePanel
 			.querySelector('button[aria-label^="Show details for Allow Tool"]')
 			?.querySelector('.truncate');
@@ -807,6 +851,32 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			new Promise<void>((resolve) =>
 				requestAnimationFrame(() => resolve())
 			);
+		async function waitForHeading(expected: string) {
+			for (let frame = 0; frame < 60; frame += 1) {
+				if (
+					Array.from(canvasElement.querySelectorAll('h2')).some(
+						(heading) => heading.textContent?.trim() === expected,
+					)
+				) return;
+				await nextFrame();
+			}
+			throw new Error(`${expected} heading did not appear.`);
+		}
+		async function waitForModListCards() {
+			for (let frame = 0; frame < 60; frame += 1) {
+				const titles = Array.from(
+					canvasElement.querySelectorAll('[data-slot="card-title"]'),
+				).map((title) => title.textContent?.trim());
+				if (
+					titles.includes('Active mods') &&
+					titles.includes('Inactive mods')
+				) {
+					return;
+				}
+				await nextFrame();
+			}
+			throw new Error('Both mod lists did not return.');
+		}
 		const checkButton = Array.from(
 			canvasElement.querySelectorAll('button'),
 		).find((button) => button.textContent?.trim() === 'Check for updates');
@@ -814,16 +884,7 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			throw new Error('The update check action must appear.');
 		}
 		checkButton.click();
-		await nextFrame();
-		if (
-			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
-				heading.textContent?.trim() === 'Workshop updates'
-			)
-		) {
-			throw new Error(
-				'Found updates must automatically open the updates page.',
-			);
-		}
+		await waitForHeading('Workshop updates');
 		if (
 			!canvasElement.textContent?.includes('3 selected of 3') ||
 			!canvasElement.textContent?.includes(
@@ -885,14 +946,7 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			throw new Error('The updates page must provide a return action.');
 		}
 		backButton.click();
-		await nextFrame();
-		if (
-			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
-				heading.textContent?.trim() === 'Mod list'
-			)
-		) {
-			throw new Error('Back must return to the mod-list content.');
-		}
+		await waitForModListCards();
 		const checkForUpdatesButton = Array.from(
 			canvasElement.querySelectorAll('button'),
 		).find((button) => button.textContent?.trim() === 'Check for updates');
@@ -900,7 +954,7 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			throw new Error('The update check action must remain available.');
 		}
 		checkForUpdatesButton.click();
-		await nextFrame();
+		await waitForHeading('Workshop updates');
 		const updateSelectedButton = Array.from(
 			canvasElement.querySelectorAll('button'),
 		).find((button) =>
@@ -910,11 +964,8 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			throw new Error('All discovered updates must be selected again.');
 		}
 		updateSelectedButton.click();
-		await nextFrame();
+		await waitForModListCards();
 		if (
-			!Array.from(canvasElement.querySelectorAll('h2')).some((heading) =>
-				heading.textContent?.trim() === 'Mod list'
-			) ||
 			canvasElement.querySelector('[data-testid="workshop-update-list"]')
 		) {
 			throw new Error(

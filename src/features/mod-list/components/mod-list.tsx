@@ -6,6 +6,8 @@ import {
 	Crown,
 	Dna,
 	Download,
+	Eye,
+	EyeOff,
 	Gamepad2,
 	Ghost,
 	type LucideIcon,
@@ -13,7 +15,6 @@ import {
 	TriangleAlert,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,22 +107,54 @@ export function ModList(props: ModListProps) {
 					<CardTitle>{title}</CardTitle>
 					<Badge variant='outline'>{count}</Badge>
 				</div>
-				<Input
-					aria-label={`Search ${title.toLowerCase()}`}
-					onChange={(event) =>
-						onSearchChange(event.currentTarget.value)}
-					placeholder='Search names or package IDs'
-					value={searchValue}
-				/>
-				<label className='flex items-center gap-2 text-sm'>
-					<Checkbox
-						aria-label={`Dim non-matching ${title.toLowerCase()}`}
-						checked={dimNonMatchingMods}
-						onCheckedChange={(checked) =>
-							onDimNonMatchingModsChange(checked === true)}
+				<div className='flex min-w-0 items-center gap-2'>
+					<Input
+						aria-label={`Search ${title.toLowerCase()}`}
+						className='min-w-0 flex-1'
+						onChange={(event) =>
+							onSearchChange(event.currentTarget.value)}
+						placeholder='Search names or package IDs'
+						value={searchValue}
 					/>
-					<span>Dim non-matching mods</span>
-				</label>
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<Button
+										aria-label={`Toggle dimming unmatched ${type} mods`}
+										aria-pressed={dimNonMatchingMods}
+										onClick={() =>
+											onDimNonMatchingModsChange(
+												!dimNonMatchingMods,
+											)}
+										size='icon-sm'
+										type='button'
+										variant='ghost'
+									/>
+								}
+							>
+								{dimNonMatchingMods
+									? (
+										<Eye
+											aria-hidden='true'
+											data-icon='inline-start'
+										/>
+									)
+									: (
+										<EyeOff
+											aria-hidden='true'
+											data-icon='inline-start'
+										/>
+									)}
+							</TooltipTrigger>
+							<TooltipContent>
+								{dimNonMatchingMods
+									? 'Show unmatched mods at full brightness'
+									: 'Dim unmatched mods'}
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				</div>
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<div

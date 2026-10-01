@@ -379,11 +379,29 @@ export const CompleteAppMockup: Story = {
 			'button[aria-label^="Show details for Sample Vehicle Mod"]',
 		);
 		const diagnosticLabel = diagnosticRow?.getAttribute('aria-label') ?? '';
+		const activeSearchField = canvasElement.querySelector(
+			'input[aria-label="Search active mods"]',
+		);
+		const inactiveSearchField = canvasElement.querySelector(
+			'input[aria-label="Search inactive mods"]',
+		);
+		const activeDimButton = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label="Toggle dimming unmatched active mods"]',
+		);
+		const inactiveDimButton = canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle dimming unmatched inactive mods"]',
+		);
 		if (
-			!canvasElement.querySelector(
-				'[aria-label="Search installed mods"]',
-			) ||
-			!canvasElement.textContent?.includes('Dim non-matching mods') ||
+			!activeSearchField ||
+			!inactiveSearchField ||
+			!activeDimButton ||
+			!inactiveDimButton ||
+			activeDimButton.getAttribute('aria-pressed') !== 'false' ||
+			inactiveDimButton.getAttribute('aria-pressed') !== 'false' ||
+			!activeDimButton.querySelector('svg.lucide-eye-off') ||
+			!inactiveDimButton.querySelector('svg.lucide-eye-off') ||
 			!diagnosticRow?.querySelector('svg') ||
 			!/(Errors|Warnings):/.test(diagnosticLabel) ||
 			!diagnosticLabel.includes('Steam update available.')
@@ -459,11 +477,20 @@ export const CompleteAppMockup: Story = {
 		}
 		findButton(canvasElement, 'Back')?.click();
 		await waitForRender();
+		const restoredActiveSearchField = canvasElement.querySelector(
+			'input[aria-label="Search active mods"]',
+		);
+		const restoredInactiveSearchField = canvasElement.querySelector(
+			'input[aria-label="Search inactive mods"]',
+		);
+		const restoredCardTitles = Array.from(
+			canvasElement.querySelectorAll('[data-slot="card-title"]'),
+		).map((title) => title.textContent?.trim());
 		if (
-			!canvasElement.querySelector(
-				'[aria-label="Search installed mods"]',
-			) ||
-			!canvasElement.textContent?.includes('Active mods')
+			!restoredActiveSearchField ||
+			!restoredInactiveSearchField ||
+			!restoredCardTitles.includes('Active mods') ||
+			!restoredCardTitles.includes('Inactive mods')
 		) {
 			throw new Error('Back must restore the main mod-list view.');
 		}
