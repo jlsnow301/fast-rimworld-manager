@@ -28,7 +28,6 @@ import {
 	settingsMessageAtom,
 	settingsOpenAtom,
 	steamApiKeyConfiguredAtom,
-	steamApiMessageAtom,
 } from '@/features/settings/atoms';
 import type { AppController } from '@/hooks/use-app-controller';
 import { createModListSnapshot } from '@/utils/dirty_state';
@@ -156,10 +155,6 @@ function createAppStoryState(): AppStoryState {
 		{ database: 'steamWorkshop', lastModified: null },
 	]);
 	store.set(steamApiKeyConfiguredAtom, false);
-	store.set(
-		steamApiMessageAtom,
-		'Steam Web API actions are unavailable in this Storybook preview.',
-	);
 
 	const controller: StoryController = {
 		importModList() {
@@ -298,34 +293,16 @@ function createAppStoryState(): AppStoryState {
 			});
 		},
 		refreshSteamApiKeyStatus() {
-			store.set(
-				steamApiMessageAtom,
-				'Storybook preview: no credential-store check was run.',
-			);
 			return Promise.resolve();
 		},
-		saveSteamApiKey(apiKey) {
-			store.set(
-				steamApiMessageAtom,
-				apiKey.trim()
-					? 'Storybook preview: API key was not saved.'
-					: 'Enter an API key to preview this action.',
-			);
+		saveSteamApiKey() {
 			return Promise.resolve(false);
 		},
 		testSteamApiConnection() {
-			store.set(
-				steamApiMessageAtom,
-				'Storybook preview: no Steam connection was attempted.',
-			);
 			return Promise.resolve();
 		},
 		removeSteamApiKey() {
 			store.set(steamApiKeyConfiguredAtom, false);
-			store.set(
-				steamApiMessageAtom,
-				'Storybook preview: no credential-store action was run.',
-			);
 			return Promise.resolve();
 		},
 	};

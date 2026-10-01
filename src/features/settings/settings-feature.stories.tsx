@@ -11,7 +11,6 @@ import {
 	pathSettingsAtom,
 	settingsMessageAtom,
 	steamApiKeyConfiguredAtom,
-	steamApiMessageAtom,
 } from '@/features/settings/atoms';
 import type { AppController } from '@/hooks/use-app-controller';
 import { EMPTY_PATH_SETTINGS } from '@/utils/mods';
@@ -119,19 +118,13 @@ function createSettingsStoryController(
 		saveSteamApiKey(apiKey) {
 			if (apiKey.trim().length === 0) return Promise.resolve(false);
 			store.set(steamApiKeyConfiguredAtom, true);
-			store.set(steamApiMessageAtom, 'Steam Web API key saved securely.');
 			return Promise.resolve(true);
 		},
 		testSteamApiConnection() {
-			store.set(
-				steamApiMessageAtom,
-				'Steam Web API connection verified.',
-			);
 			return Promise.resolve();
 		},
 		removeSteamApiKey() {
 			store.set(steamApiKeyConfiguredAtom, false);
-			store.set(steamApiMessageAtom, 'Steam Web API key removed.');
 			return Promise.resolve();
 		},
 	};
@@ -171,12 +164,6 @@ function SettingsStory(props: SettingsStoryProps) {
 				],
 		);
 		storyStore.set(steamApiKeyConfiguredAtom, configured);
-		storyStore.set(
-			steamApiMessageAtom,
-			configured
-				? 'Steam Web API key status checked.'
-				: 'No Steam Web API key is stored.',
-		);
 		return storyStore;
 	});
 	const controller = createSettingsStoryController(store);

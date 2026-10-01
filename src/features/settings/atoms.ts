@@ -13,8 +13,5 @@ export const databaseMessageAtom = atom(
 	'Databases are saved in the app data folder.',
 );
 export const steamApiKeyConfiguredAtom = atom(false);
-export const steamApiMessageAtom = atom(
-	'Steam Web API key status has not been checked.',
-);
 export const downloadingDatabaseAtom = atom<DatabaseKind | null>(null);
 export const databaseFileStatusesAtom = atom<DatabaseFileStatus[] | null>(null);

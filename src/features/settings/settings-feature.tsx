@@ -17,7 +17,6 @@ import {
 	pathSettingsAtom,
 	settingsMessageAtom,
 	steamApiKeyConfiguredAtom,
-	steamApiMessageAtom,
 } from '@/features/settings/atoms';
 import { useAppContext } from '@/context/app-context';
 import { PATH_FIELDS } from '@/utils/mods';
@@ -63,7 +62,6 @@ export function SettingsFeature() {
 	const pathSettings = useAtomValue(pathSettingsAtom);
 	const settingsMessage = useAtomValue(settingsMessageAtom);
 	const steamApiKeyConfigured = useAtomValue(steamApiKeyConfiguredAtom);
-	const steamApiMessage = useAtomValue(steamApiMessageAtom);
 	const [steamApiKeyInput, setSteamApiKeyInput] = useState('');
 	const [steamApiBusy, setSteamApiBusy] = useState(false);
 
@@ -256,9 +254,6 @@ export function SettingsFeature() {
 						{steamApiKeyConfigured
 							? 'A Steam Web API key is stored securely.'
 							: 'No Steam Web API key is stored.'}
-					</p>
-					<p aria-live='polite' className='text-sm'>
-						{steamApiMessage}
 					</p>
 				</CardContent>
 			</Card>
