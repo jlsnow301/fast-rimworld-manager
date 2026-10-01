@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { userEvent } from 'storybook/test';
 import { createStore, Provider } from 'jotai';
 import { AppProvider } from '@/context/app-context';
 import { SettingsFeature } from '@/features/settings/settings-feature';
@@ -172,4 +173,85 @@ export const ConfiguredInstallation: Story = {
 
 export const FirstRunSetup: Story = {
 	render: () => <SettingsStory configured={false} hasSavedPaths={false} />,
+};
+
+export const ClearInputs: Story = {
+	render: () => <SettingsStory configured hasSavedPaths />,
+	play: async (context) => {
+		const pathInputs = Array.from(
+			context.canvasElement.querySelectorAll<HTMLInputElement>(
+				'input[id^="path-"]',
+			),
+		);
+		if (pathInputs.length !== 4) {
+			throw new Error(
+				'Each configured path must have a clearable input.',
+			);
+		}
+		const expectedPathValues = pathInputs.map((input) => input.value);
+		for (const [index, input] of pathInputs.entries()) {
+			const field = input.closest<HTMLElement>('[data-slot="field"]');
+			const clearButton = field?.querySelector<HTMLButtonElement>(
+				'button[aria-label^="Clear "]',
+			);
+			if (
+				!field || !clearButton || clearButton.disabled || !input.value
+			) {
+				throw new Error(
+					'Configured paths must expose enabled Clear actions.',
+				);
+			}
+			await userEvent.click(clearButton);
+			expectedPathValues[index] = '';
+			const updatedClearButton = field.querySelector<HTMLButtonElement>(
+				'button[aria-label^="Clear "]',
+			);
+			if (
+				pathInputs.some((pathInput, pathIndex) =>
+					pathInput.value !== expectedPathValues[pathIndex]
+				) ||
+				!updatedClearButton?.disabled
+			) {
+				throw new Error(
+					'Clearing one path must affect only that input.',
+				);
+			}
+		}
+
+		const apiKeyInput = context.canvasElement.querySelector<
+			HTMLInputElement
+		>('#steam-api-key');
+		const apiKeyClearButton = context.canvasElement.querySelector<
+			HTMLButtonElement
+		>('button[aria-label="Clear Steam Web API key"]');
+		const saveApiKeyButton = Array.from(
+			context.canvasElement.querySelectorAll<HTMLButtonElement>('button'),
+		).find((button) => button.textContent?.trim() === 'Save API key');
+		const removeApiKeyButton = Array.from(
+			context.canvasElement.querySelectorAll<HTMLButtonElement>('button'),
+		).find((button) => button.textContent?.trim() === 'Remove key');
+		if (
+			!apiKeyInput ||
+			!apiKeyClearButton ||
+			!saveApiKeyButton ||
+			!removeApiKeyButton ||
+			!apiKeyClearButton.disabled
+		) {
+			throw new Error(
+				'An empty API key field must start with Clear disabled.',
+			);
+		}
+		await userEvent.type(apiKeyInput, 'draft-key');
+		await userEvent.click(apiKeyClearButton);
+		if (
+			apiKeyInput.value !== '' ||
+			!apiKeyClearButton.disabled ||
+			!saveApiKeyButton.disabled ||
+			removeApiKeyButton.disabled
+		) {
+			throw new Error(
+				'Clearing the API key input must discard only its unsaved value.',
+			);
+		}
+	},
 };

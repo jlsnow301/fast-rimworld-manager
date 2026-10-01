@@ -183,18 +183,30 @@ export function SettingsFeature() {
 							<FieldLabel htmlFor='steam-api-key'>
 								Steam Web API key
 							</FieldLabel>
-							<Input
-								autoComplete='off'
-								id='steam-api-key'
-								onChange={(event) =>
-									setSteamApiKeyInput(
-										event.currentTarget.value,
-									)}
-								placeholder='Enter your 32-character key'
-								spellCheck={false}
-								type='password'
-								value={steamApiKeyInput}
-							/>
+							<div className='flex min-w-0 items-center gap-2'>
+								<Input
+									autoComplete='off'
+									className='min-w-0 flex-1'
+									id='steam-api-key'
+									onChange={(event) =>
+										setSteamApiKeyInput(
+											event.currentTarget.value,
+										)}
+									placeholder='Enter your 32-character key'
+									spellCheck={false}
+									type='password'
+									value={steamApiKeyInput}
+								/>
+								<Button
+									aria-label='Clear Steam Web API key'
+									disabled={steamApiBusy || !steamApiKeyInput}
+									onClick={() => setSteamApiKeyInput('')}
+									type='button'
+									variant='outline'
+								>
+									Clear
+								</Button>
+							</div>
 						</Field>
 					</FieldGroup>
 					<div className='flex flex-wrap gap-2'>
@@ -250,9 +262,10 @@ function PathField(props: PathFieldProps) {
 	return (
 		<Field>
 			<FieldLabel htmlFor={`path-${name}`}>{label}</FieldLabel>
-			<div className='flex gap-2'>
+			<div className='flex items-center gap-2'>
 				<Input
 					autoComplete='off'
+					className='min-w-0 flex-1'
 					id={`path-${name}`}
 					onChange={(event) =>
 						onChange(name, event.currentTarget.value)}
@@ -260,7 +273,16 @@ function PathField(props: PathFieldProps) {
 					spellCheck={false}
 					value={value}
 				/>
-				<Button onClick={onBrowse} variant='outline'>
+				<Button
+					aria-label={`Clear ${label}`}
+					disabled={!value}
+					onClick={() => onChange(name, '')}
+					type='button'
+					variant='outline'
+				>
+					Clear
+				</Button>
+				<Button onClick={onBrowse} type='button' variant='outline'>
 					Browse
 				</Button>
 			</div>
