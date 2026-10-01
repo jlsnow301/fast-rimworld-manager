@@ -8,7 +8,6 @@ import {
 	installedModsAtom,
 } from '@/features/mod-list/atoms';
 import {
-	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
 } from '@/features/mod-preview/atoms';
@@ -40,7 +39,8 @@ const previewMod: InstalledMod = {
 	loadBefore: [],
 	incompatibleWith: [],
 	supportedVersions: ['1.6'],
-	path: 'Sample data/Mods/SampleVehicleMod',
+	path: String
+		.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\123456789\Mods\SampleVehicleMod`,
 	source: 'workshop',
 	dependencies: [
 		{
@@ -57,11 +57,10 @@ function createPreviewStoryStore(): StoryStore {
 	store.set(activeModsAtom, [previewMod.packageId]);
 	store.set(installedGameVersionAtom, '1.6');
 	store.set(selectedModAtom, previewMod);
-	store.set(previewMessageAtom, 'Steam Workshop details loaded.');
 	store.set(steamPreviewAtom, {
 		publishedFileId: '123456789',
 		title: previewMod.name,
-		description: 'Workshop description retained in the details dialog.',
+		description: 'Sample Workshop description.',
 		previewUrl:
 			'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
 		timeUpdated: 1722470400,
@@ -105,8 +104,9 @@ export const InfoShowsOnDiskDetails: Story = {
 			const detail of [
 				'Package ID',
 				'sample.vehiclemod',
-				'Workshop',
-				'Sample data/Mods/SampleVehicleMod',
+				'Steam Workshop ID',
+				String
+					.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\123456789\Mods\SampleVehicleMod`,
 				'123456789',
 				'Installed About.xml description for the sample mod.',
 				'Missing dependencies',
@@ -116,6 +116,20 @@ export const InfoShowsOnDiskDetails: Story = {
 			if (!detailsText.includes(detail)) {
 				throw new Error(`The details dialog must show ${detail}.`);
 			}
+		}
+		if (dialog.scrollWidth > dialog.clientWidth) {
+			throw new Error(
+				'The mod details dialog must not require horizontal scrolling.',
+			);
+		}
+		if (
+			Array.from(dialog.querySelectorAll('h3')).some((heading) =>
+				heading.textContent?.trim() === 'Steam Workshop'
+			)
+		) {
+			throw new Error(
+				'The on-disk details dialog must not show a Steam Workshop section.',
+			);
 		}
 
 		if (dialog.querySelectorAll('button').length !== 1) {

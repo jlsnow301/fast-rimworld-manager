@@ -23,7 +23,6 @@ import { Separator } from '@/components/ui/separator';
 import { useAppContext } from '@/context/app-context';
 import { activeModDiagnosticsAtom } from '@/features/mod-list/atoms';
 import {
-	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
 } from '@/features/mod-preview/atoms';
@@ -34,7 +33,6 @@ import type { ModIssue } from '@/utils/types';
 export function ModPreviewFeature() {
 	const { closeModPreview } = useAppContext();
 	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
-	const previewMessage = useAtomValue(previewMessageAtom);
 	const selectedMod = useAtomValue(selectedModAtom);
 	const steamPreview = useAtomValue(steamPreviewAtom);
 	const [detailsOpen, setDetailsOpen] = useState(false);
@@ -58,9 +56,6 @@ export function ModPreviewFeature() {
 	const workshopPageUrls = steamWorkshopPageUrls(
 		selectedMod.publishedFileId,
 	);
-	const lastUpdated = steamPreview?.timeUpdated
-		? new Date(steamPreview.timeUpdated * 1000).toLocaleString()
-		: null;
 	const diagnostics = activeModDiagnostics.byPackageId.get(
 		normalizedPackageId(selectedMod.packageId),
 	);
@@ -142,13 +137,12 @@ export function ModPreviewFeature() {
 				<Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
 					<DialogContent
 						showCloseButton={false}
-						className='max-h-[80vh] overflow-y-auto data-closed:hidden'
+						className='h-[min(85vh,48rem)] w-[min(85vw,48rem)] max-w-none overflow-x-hidden overflow-y-auto data-closed:hidden sm:max-w-none'
 					>
 						<DialogHeader>
 							<DialogTitle>Mod details</DialogTitle>
 							<DialogDescription>
-								Information read from the installed mod and
-								Workshop metadata.
+								Information read from the installed mod.
 							</DialogDescription>
 						</DialogHeader>
 						<dl className='grid gap-3 text-sm'>
@@ -185,7 +179,7 @@ export function ModPreviewFeature() {
 						<section className='flex flex-col gap-2'>
 							<Separator />
 							<h3 className='font-semibold'>About this mod</h3>
-							<p className='whitespace-pre-wrap text-sm text-muted-foreground'>
+							<p className='whitespace-pre-wrap break-words text-sm text-muted-foreground'>
 								{selectedMod.description ||
 									'No XML description available.'}
 							</p>
@@ -216,35 +210,6 @@ export function ModPreviewFeature() {
 									))}
 								</section>
 							)}
-						{steamPreview && (
-							<section className='flex flex-col gap-2'>
-								<Separator />
-								<h3 className='font-semibold'>
-									Steam Workshop
-								</h3>
-								<p className='font-medium'>
-									{steamPreview.title}
-								</p>
-								{lastUpdated && (
-									<p className='text-sm text-muted-foreground'>
-										Last updated {lastUpdated}
-									</p>
-								)}
-								{steamPreview.description && (
-									<p className='whitespace-pre-wrap text-sm text-muted-foreground'>
-										{steamPreview.description}
-									</p>
-								)}
-							</section>
-						)}
-						{previewMessage && (
-							<p
-								aria-live='polite'
-								className='text-sm text-muted-foreground'
-							>
-								{previewMessage}
-							</p>
-						)}
 						<DialogFooter>
 							<DialogClose render={<Button />}>Close</DialogClose>
 						</DialogFooter>
@@ -269,7 +234,7 @@ function IssueDetails(props: IssueDetailsProps) {
 			>
 				{issue.title}
 			</Badge>
-			<ul className='list-inside list-disc text-sm text-muted-foreground'>
+			<ul className='list-inside list-disc break-words text-sm text-muted-foreground'>
 				{issue.details.map((detail) => <li key={detail}>{detail}</li>)}
 			</ul>
 		</div>
