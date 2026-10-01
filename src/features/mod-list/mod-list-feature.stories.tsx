@@ -348,7 +348,7 @@ function createModListStoryState(
 		createModListSnapshot('1.5.4104', initialActiveMods, knownExpansions),
 	);
 	store.set(isTestModeAtom, false);
-	store.set(workshopUpdateResultAtom, null);
+	store.set(workshopUpdateResultAtom, workshopUpdateResult);
 	store.set(selectedModAtom, null);
 	store.set(previewMessageAtom, 'Select a mod to review its details.');
 
@@ -533,7 +533,7 @@ export const LoadedActiveAndInactiveLists: Story = {
 		}
 		const ordinaryModRow = context.canvasElement.ownerDocument
 			.querySelector(
-				'button[aria-label="Show details for Harmony"]',
+				'button[aria-label^="Show details for Harmony"]',
 			);
 		if (
 			!ordinaryModRow ||
@@ -543,6 +543,36 @@ export const LoadedActiveAndInactiveLists: Story = {
 		) {
 			throw new Error(
 				'Healthy mod rows must not show diagnostic icons.',
+			);
+		}
+		if (
+			ordinaryModRow?.textContent?.trim() !== 'Harmony' ||
+			ordinaryModRow.querySelector('[data-slot="badge"]')
+		) {
+			throw new Error(
+				'Healthy rows show only the mod name and status icons.',
+			);
+		}
+		const outdatedWorkshopRow = context.canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label^="Show details for Vanilla Expanded Framework"]',
+		);
+		const updateIcon = outdatedWorkshopRow?.querySelector<SVGElement>(
+			'svg.lucide-download',
+		);
+		if (
+			!outdatedWorkshopRow ||
+			!updateIcon ||
+			!updateIcon.parentElement?.getAttribute('title')?.includes(
+				'Steam update available',
+			) ||
+			outdatedWorkshopRow.textContent?.trim() !==
+				'Vanilla Expanded Framework' ||
+			outdatedWorkshopRow.querySelector('[data-slot="badge"]')
+		) {
+			throw new Error(
+				'Workshop updates should be a trailing icon, not row text.',
 			);
 		}
 		const diagnosticModRow = context.canvasElement.querySelector<
@@ -590,6 +620,10 @@ export const LoadedActiveAndInactiveLists: Story = {
 			!diagnosticLabel.includes('Warnings:') ||
 			!diagnosticLabel.includes('Required story framework') ||
 			!diagnosticLabel.includes('Game 1.5; supported 1.4') ||
+			diagnosticModRow.textContent?.trim() !==
+				'Extremely Long Dependency and Version Diagnostic Sample Mod for Testing Title Truncation' ||
+			diagnosticModRow.querySelector('[data-slot="badge"]') ||
+			diagnosticRowRect.height > 56 ||
 			getComputedStyle(diagnosticTitle).textOverflow !== 'ellipsis' ||
 			diagnosticTitle.scrollWidth <= diagnosticTitle.clientWidth ||
 			diagnosticTitleRect.right > diagnosticIconGroupRect.left ||
@@ -641,16 +675,16 @@ export const LoadedActiveAndInactiveLists: Story = {
 		await nextFrame();
 		if (
 			!inactivePanel.querySelector(
-				'button[aria-label="Show details for Allow Tool"]',
+				'button[aria-label^="Show details for Allow Tool"]',
 			) ||
 			!activePanel.querySelector(
-				'button[aria-label="Show details for HugsLib"]',
+				'button[aria-label^="Show details for HugsLib"]',
 			) ||
 			activePanel.querySelector(
 				'button[aria-label="Show details for RimWorld"]',
 			) ||
 			inactivePanel.querySelector(
-				'button[aria-label="Show details for Vanilla Expanded Framework"]',
+				'button[aria-label^="Show details for Vanilla Expanded Framework"]',
 			)
 		) {
 			throw new Error(
@@ -668,15 +702,15 @@ export const LoadedActiveAndInactiveLists: Story = {
 		dimCheckbox.click();
 		await nextFrame();
 		const matchedTitle = inactivePanel
-			.querySelector('button[aria-label="Show details for Allow Tool"]')
+			.querySelector('button[aria-label^="Show details for Allow Tool"]')
 			?.querySelector('.truncate');
 		const dimmedTitle = inactivePanel
 			.querySelector(
-				'button[aria-label="Show details for Vanilla Expanded Framework"]',
+				'button[aria-label^="Show details for Vanilla Expanded Framework"]',
 			)
 			?.querySelector('.truncate');
-		const matchedContent = matchedTitle?.parentElement?.parentElement;
-		const dimmedContent = dimmedTitle?.parentElement?.parentElement;
+		const matchedContent = matchedTitle?.parentElement;
+		const dimmedContent = dimmedTitle?.parentElement;
 		if (
 			!matchedContent ||
 			matchedContent.classList.contains('opacity-50') ||

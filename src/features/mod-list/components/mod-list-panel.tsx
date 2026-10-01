@@ -5,6 +5,7 @@ import {
 	CircleAlert,
 	Crown,
 	Dna,
+	Download,
 	Gamepad2,
 	Ghost,
 	type LucideIcon,
@@ -229,103 +230,62 @@ export function ModListPanel(props: ModListPanelProps) {
 										>
 											<span
 												className={cn(
-													'flex min-w-0 flex-1 flex-col items-start gap-1',
+													'flex w-full min-w-0 flex-1 items-center gap-2',
 													!isMatch && 'opacity-50',
 												)}
 											>
-												<span className='flex w-full min-w-0 items-center gap-2'>
-													{OfficialContentIcon && (
-														<OfficialContentIcon
-															aria-hidden='true'
-															data-icon='inline-start'
-															className='mt-0.5 shrink-0 text-muted-foreground'
-															focusable='false'
-														/>
-													)}
-													<span className='min-w-0 flex-1 truncate'>
-														{mod?.name ?? packageId}
-													</span>
-													{(errorDetails ||
-														warningDetails) && (
-														<span className='ml-auto flex shrink-0 items-center gap-1'>
-															{errorDetails && (
-																<span
-																	className='shrink-0'
-																	title={errorDetails}
-																>
-																	<CircleAlert
-																		aria-hidden='true'
-																		className='shrink-0 text-destructive'
-																		focusable='false'
-																	/>
-																</span>
-															)}
-															{warningDetails && (
-																<span
-																	className='shrink-0'
-																	title={warningDetails}
-																>
-																	<TriangleAlert
-																		aria-hidden='true'
-																		className='shrink-0 text-muted-foreground'
-																		focusable='false'
-																	/>
-																</span>
-															)}
-														</span>
-													)}
-												</span>
-												{mod && (
-													<span className='flex flex-wrap gap-2'>
-														<Badge variant='secondary'>
-															{mod.packageId}
-														</Badge>
-														<Badge variant='outline'>
-															{mod.source}
-														</Badge>
-													</span>
+												{OfficialContentIcon && (
+													<OfficialContentIcon
+														aria-hidden='true'
+														data-icon='inline-start'
+														className='mt-0.5 shrink-0 text-muted-foreground'
+														focusable='false'
+													/>
 												)}
-												{diagnostics?.errors.map((
-													issue,
-												) => (
-													<Badge
-														key={issue.code}
-														title={issue.details
-															.join(
-																', ',
-															)}
-														variant='destructive'
-													>
-														{issue.title}
-													</Badge>
-												))}
-												{diagnostics?.warnings.map((
-													issue,
-												) => (
-													<Badge
-														key={issue.code}
-														title={issue.details
-															.join(
-																', ',
-															)}
-														variant='outline'
-													>
-														{issue.title}
-													</Badge>
-												))}
-												{outdatedWorkshopMod && (
-													<Badge
-														title={`Installed update: ${
-															new Date(
-																outdatedWorkshopMod
-																	.installedTimeUpdated *
-																	1000,
-															).toLocaleString()
-														}`}
-														variant='secondary'
-													>
-														Update available
-													</Badge>
+												<span className='min-w-0 flex-1 truncate'>
+													{mod?.name ?? packageId}
+												</span>
+												{(errorDetails ||
+													warningDetails ||
+													updateDetails) && (
+													<span className='ml-auto flex shrink-0 items-center gap-1'>
+														{errorDetails && (
+															<span
+																className='shrink-0'
+																title={errorDetails}
+															>
+																<CircleAlert
+																	aria-hidden='true'
+																	className='shrink-0 text-destructive'
+																	focusable='false'
+																/>
+															</span>
+														)}
+														{warningDetails && (
+															<span
+																className='shrink-0'
+																title={warningDetails}
+															>
+																<TriangleAlert
+																	aria-hidden='true'
+																	className='shrink-0 text-muted-foreground'
+																	focusable='false'
+																/>
+															</span>
+														)}
+														{updateDetails && (
+															<span
+																className='shrink-0'
+																title={updateDetails}
+															>
+																<Download
+																	aria-hidden='true'
+																	className='shrink-0 text-muted-foreground'
+																	focusable='false'
+																/>
+															</span>
+														)}
+													</span>
 												)}
 											</span>
 										</Button>
