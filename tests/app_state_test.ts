@@ -27,6 +27,7 @@ function installedMod(packageId: string, name: string): InstalledMod {
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: [],
+		versionWarningSilenced: false,
 		path: '',
 		source: 'local',
 		dependencies: [],

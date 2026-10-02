@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -6,7 +6,12 @@ use serde_json::{Map, Value};
 
 use super::model::{InstalledMod, ModDependency};
 
-pub(crate) fn enrich_installed_mods(database_directory: &Path, mods: &mut [InstalledMod]) {
+pub(crate) fn enrich_installed_mods(
+    database_directory: &Path,
+    mods: &mut [InstalledMod],
+    game_version: &str,
+) {
+    let no_version_warning_ids = version_warning_package_ids(database_directory, game_version);
     let community_rules = read_database(&database_directory.join("communityRules.json"));
     let steam_database = read_database(&database_directory.join("steamDB.json"));
     let community_rules_by_package_id = index_community_rules(&community_rules);
@@ -17,6 +22,8 @@ pub(crate) fn enrich_installed_mods(database_directory: &Path, mods: &mut [Insta
     let steam_package_ids = index_steam_package_ids(steam_entries);
 
     for mod_entry in mods {
+        mod_entry.version_warning_silenced =
+            no_version_warning_ids.contains(&normalize_package_id(&mod_entry.package_id));
         if let Some(rule) =
             community_rules_by_package_id.get(&normalize_package_id(&mod_entry.package_id))
         {
@@ -61,6 +68,37 @@ pub(crate) fn enrich_installed_mods(database_directory: &Path, mods: &mut [Insta
     }
 }
 
+fn version_warning_package_ids(database_directory: &Path, game_version: &str) -> HashSet<String> {
+    let Some(version_directory) = game_version_directory(game_version) else {
+        return HashSet::new();
+    };
+    let contents = fs::read(
+        database_directory
+            .join(version_directory)
+            .join("ModIdsToFix.xml"),
+    );
+    contents
+        .ok()
+        .and_then(|contents| {
+            super::super::databases::no_version_warning::parse_package_ids(&contents).ok()
+        })
+        .unwrap_or_default()
+}
+
+fn game_version_directory(version: &str) -> Option<String> {
+    let version = version.trim().trim_start_matches(['v', 'V']);
+    let mut components = version.split('.');
+    let major = components.next()?;
+    let minor = components.next()?;
+    if major.is_empty()
+        || minor.is_empty()
+        || !major.chars().all(|character| character.is_ascii_digit())
+        || !minor.chars().all(|character| character.is_ascii_digit())
+    {
+        return None;
+    }
+    Some(format!("{major}.{minor}"))
+}
 fn read_database(path: &Path) -> Option<Value> {
     let contents = fs::read_to_string(path).ok()?;
     serde_json::from_str(&contents).ok()
@@ -184,6 +222,7 @@ mod tests {
             load_before: Vec::new(),
             incompatible_with: Vec::new(),
             supported_versions: Vec::new(),
+            version_warning_silenced: false,
             dependencies: Vec::new(),
             path: String::new(),
             source: "workshop".to_string(),
@@ -206,7 +245,7 @@ mod tests {
         .expect("Steam database should be written");
         let mut mods = [installed_mod("author.mod", Some("100"))];
 
-        enrich_installed_mods(&directory, &mut mods);
+        enrich_installed_mods(&directory, &mut mods, "1.6");
 
         assert_eq!(mods[0].load_after, ["author.framework"]);
         assert_eq!(mods[0].load_before, ["author.patch"]);
@@ -229,6 +268,31 @@ mod tests {
     }
 
     #[test]
+    fn applies_version_warning_database_to_matching_game_version() {
+        let directory = unique_temp_directory();
+        let version_directory = directory.join("1.6");
+        fs::create_dir_all(&version_directory).expect("version directory should be created");
+        fs::write(
+            version_directory.join("ModIdsToFix.xml"),
+            "<ModIdsToFix><li>Example.Mod</li></ModIdsToFix>",
+        )
+        .expect("warning database should be written");
+        let mut mods = [
+            installed_mod("Example.Mod", None),
+            installed_mod("Other.Mod", None),
+        ];
+
+        enrich_installed_mods(&directory, &mut mods, "1.6.4104 rev573");
+
+        assert!(mods[0].version_warning_silenced);
+        assert!(!mods[1].version_warning_silenced);
+        let mut other_game_version = [installed_mod("Example.Mod", None)];
+        enrich_installed_mods(&directory, &mut other_game_version, "1.5.4104");
+        assert!(!other_game_version[0].version_warning_silenced);
+        fs::remove_dir_all(directory).expect("database directory should be removed");
+    }
+
+    #[test]
     fn malformed_or_missing_databases_leave_mod_metadata_unchanged() {
         let directory = unique_temp_directory();
         fs::create_dir_all(&directory).expect("database directory should be created");
@@ -236,7 +300,7 @@ mod tests {
             .expect("invalid community rules should be written");
         let mut mods = [installed_mod("author.mod", Some("100"))];
 
-        enrich_installed_mods(&directory, &mut mods);
+        enrich_installed_mods(&directory, &mut mods, "1.6");
 
         assert!(mods[0].load_after.is_empty());
         assert!(mods[0].load_before.is_empty());

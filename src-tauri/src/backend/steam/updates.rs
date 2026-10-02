@@ -203,6 +203,7 @@ mod tests {
             load_before: Vec::new(),
             incompatible_with: Vec::new(),
             supported_versions: Vec::new(),
+            version_warning_silenced: false,
             dependencies: Vec::new(),
             path: format!("C:/Workshop/{published_file_id}"),
             source: "workshop".to_string(),

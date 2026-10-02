@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) enum DatabaseKind {
     CommunityRules,
     SteamWorkshop,
+    NoVersionWarning,
 }
 
 #[derive(Debug, Serialize)]

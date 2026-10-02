@@ -97,7 +97,9 @@ function createSettingsStoryController(
 			]);
 			const databaseName = database === 'communityRules'
 				? 'Community Rules'
-				: 'Steam Workshop';
+				: database === 'steamWorkshop'
+				? 'Steam Workshop'
+				: 'No Version Warning';
 			store.set(databaseMessageAtom, `Updated ${databaseName} database.`);
 			store.set(downloadingDatabaseAtom, null);
 			return Promise.resolve();
@@ -146,7 +148,7 @@ function SettingsStory(props: SettingsStoryProps) {
 		);
 		storyStore.set(
 			databaseMessageAtom,
-			'Database file status is shown for both repositories.',
+			'Database status is shown for all supported metadata sources.',
 		);
 		storyStore.set(
 			databaseFileStatusesAtom,
@@ -157,10 +159,12 @@ function SettingsStory(props: SettingsStoryProps) {
 						lastModified: new Date(2026, 8, 29, 12).getTime(),
 					},
 					{ database: 'steamWorkshop', lastModified: null },
+					{ database: 'noVersionWarning', lastModified: null },
 				]
 				: [
 					{ database: 'communityRules', lastModified: null },
 					{ database: 'steamWorkshop', lastModified: null },
+					{ database: 'noVersionWarning', lastModified: null },
 				],
 		);
 		storyStore.set(steamApiKeyConfiguredAtom, configured);
@@ -194,15 +198,18 @@ export const DatabaseFileStatuses: Story = {
 		const workshopStatus = canvasElement.querySelector<HTMLElement>(
 			'[aria-label="Database status for Steam Workshop"]',
 		);
+		const versionWarningStatus = canvasElement.querySelector<HTMLElement>(
+			'[aria-label="Database status for No Version Warning"]',
+		);
 		if (
 			!communityStatus?.textContent?.startsWith('Last updated ') ||
-			workshopStatus?.textContent?.trim() !== 'Not downloaded.'
+			workshopStatus?.textContent?.trim() !== 'Not downloaded.' ||
+			versionWarningStatus?.textContent?.trim() !== 'Not downloaded.'
 		) {
 			throw new Error(
 				'Stored and missing databases must show their respective statuses.',
 			);
 		}
-
 		const downloadButton = canvasElement.querySelector<HTMLButtonElement>(
 			'button[aria-label="Download or update Steam Workshop database"]',
 		);
@@ -215,6 +222,22 @@ export const DatabaseFileStatuses: Story = {
 		if (!workshopStatus.textContent?.startsWith('Last updated ')) {
 			throw new Error(
 				'Downloading a database must update its displayed file date.',
+			);
+		}
+		const versionWarningDownload = canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Download or update No Version Warning database"]',
+		);
+		if (!versionWarningDownload) {
+			throw new Error(
+				'The No Version Warning download action must be available.',
+			);
+		}
+		await userEvent.click(versionWarningDownload);
+		if (!versionWarningStatus?.textContent?.startsWith('Last updated ')) {
+			throw new Error(
+				'Downloading the warning database must update its status.',
 			);
 		}
 	},

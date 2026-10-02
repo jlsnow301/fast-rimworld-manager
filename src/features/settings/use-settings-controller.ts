@@ -10,6 +10,7 @@ import type {
 	PathSettings,
 } from '@/utils/types';
 import {
+	gameVersionAtom,
 	installedGameVersionAtom,
 	isTestModeAtom,
 } from '@/features/mod-list/atoms';
@@ -126,6 +127,7 @@ export function useSettingsController(props: SettingsControllerOptions) {
 		try {
 			const foundMods = await invokeDesktop<InstalledMod[]>(
 				'list_installed_mods',
+				{ gameVersion: store.get(gameVersionAtom) },
 			);
 			refreshInstalledMods(foundMods);
 			setStatus(`Found ${foundMods.length} installed mods.`);
@@ -153,16 +155,13 @@ export function useSettingsController(props: SettingsControllerOptions) {
 	async function downloadDatabase(database: DatabaseKind) {
 		setDownloadingDatabase(database);
 		setDatabaseMessage(
-			`Downloading ${
-				database === 'communityRules'
-					? 'Community Rules'
-					: 'Steam Workshop'
-			} database…`,
+			`Downloading ${databaseDisplayName(database)} database…`,
 		);
+		const gameVersion = store.get(gameVersionAtom);
 		try {
 			const result = await invokeDesktop<DatabaseDownloadResult>(
 				'download_database',
-				{ database },
+				{ database, gameVersion },
 			);
 			setDatabaseFileStatuses((statuses) => [
 				...(statuses ?? []).filter((status) =>
@@ -173,12 +172,11 @@ export function useSettingsController(props: SettingsControllerOptions) {
 					lastModified: result.lastModified,
 				},
 			]);
-			const displayName = result.database === 'communityRules'
-				? 'Community Rules'
-				: 'Steam Workshop';
+			const displayName = databaseDisplayName(result.database);
 			try {
 				const foundMods = await invokeDesktop<InstalledMod[]>(
 					'list_installed_mods',
+					{ gameVersion },
 				);
 				refreshInstalledMods(foundMods);
 				setDatabaseMessage(
@@ -210,4 +208,15 @@ export function useSettingsController(props: SettingsControllerOptions) {
 		downloadDatabase,
 		refreshDatabaseStatuses,
 	};
+}
+
+function databaseDisplayName(database: DatabaseKind) {
+	switch (database) {
+		case 'communityRules':
+			return 'Community Rules';
+		case 'steamWorkshop':
+			return 'Steam Workshop';
+		case 'noVersionWarning':
+			return 'No Version Warning';
+	}
 }

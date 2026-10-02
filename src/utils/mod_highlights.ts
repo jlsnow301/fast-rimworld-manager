@@ -163,7 +163,9 @@ export function createActiveModDiagnostics(
 		);
 		const currentVersion = normalizedGameVersion(gameVersion);
 		if (
-			supportedVersions.size && currentVersion &&
+			!mod.versionWarningSilenced &&
+			supportedVersions.size &&
+			currentVersion &&
 			!supportedVersions.has(currentVersion)
 		) {
 			addIssue(

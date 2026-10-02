@@ -43,6 +43,12 @@ const DATABASES: DatabaseOption[] = [
 		label: 'Steam Workshop',
 		description: 'Mod metadata and dependency information.',
 	},
+	{
+		id: 'noVersionWarning',
+		label: 'No Version Warning',
+		description:
+			'Suppresses known false-positive game version mismatch warnings.',
+	},
 ];
 
 export function SettingsFeature() {

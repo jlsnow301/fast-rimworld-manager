@@ -17,24 +17,32 @@ impl DatabaseKind {
         match self {
             Self::CommunityRules => "communityRules.json",
             Self::SteamWorkshop => "steamDB.json",
+            Self::NoVersionWarning => "ModIdsToFix.xml",
         }
     }
 
-    fn endpoint(self) -> &'static str {
+    fn endpoint(self, game_version: &str) -> Result<String, String> {
         match self {
-            Self::CommunityRules => {
+            Self::CommunityRules => Ok(
                 "https://raw.githubusercontent.com/RimSort/Community-Rules-Database/main/communityRules.json"
-            }
-            Self::SteamWorkshop => {
+                    .to_string(),
+            ),
+            Self::SteamWorkshop => Ok(
                 "https://raw.githubusercontent.com/RimSort/Steam-Workshop-Database/main/steamDB.json"
-            }
+                    .to_string(),
+            ),
+            Self::NoVersionWarning => Ok(format!(
+                "https://raw.githubusercontent.com/emipa606/NoVersionWarning/main/{}/ModIdsToFix.xml",
+                normalized_game_version(game_version)?
+            )),
         }
     }
 
-    fn root_key(self) -> &'static str {
+    fn root_key(self) -> Option<&'static str> {
         match self {
-            Self::CommunityRules => "rules",
-            Self::SteamWorkshop => "database",
+            Self::CommunityRules => Some("rules"),
+            Self::SteamWorkshop => Some("database"),
+            Self::NoVersionWarning => None,
         }
     }
 
@@ -42,8 +50,37 @@ impl DatabaseKind {
         match self {
             Self::CommunityRules => "Community Rules",
             Self::SteamWorkshop => "Steam Workshop",
+            Self::NoVersionWarning => "No Version Warning",
         }
     }
+}
+
+fn normalized_game_version(version: &str) -> Result<String, String> {
+    let version = version.trim().trim_start_matches(['v', 'V']);
+    let mut components = version.split('.');
+    let major = components.next().unwrap_or_default();
+    let minor = components.next().unwrap_or_default();
+    if major.is_empty()
+        || minor.is_empty()
+        || !major.chars().all(|character| character.is_ascii_digit())
+        || !minor.chars().all(|character| character.is_ascii_digit())
+    {
+        return Err(format!("Invalid RimWorld game version: {version}"));
+    }
+    Ok(format!("{major}.{minor}"))
+}
+
+fn database_file_path(
+    directory: &Path,
+    database: DatabaseKind,
+    game_version: &str,
+) -> Result<PathBuf, String> {
+    let directory = if database == DatabaseKind::NoVersionWarning {
+        directory.join(normalized_game_version(game_version)?)
+    } else {
+        directory.to_path_buf()
+    };
+    Ok(directory.join(database.file_name()))
 }
 
 fn database_directory(app: &tauri::AppHandle) -> Result<PathBuf, String> {
@@ -61,29 +98,67 @@ pub(crate) fn list_database_statuses(
 }
 
 fn database_statuses_in(directory: &Path) -> Result<Vec<DatabaseFileStatus>, String> {
-    [DatabaseKind::CommunityRules, DatabaseKind::SteamWorkshop]
-        .into_iter()
-        .map(|database| {
-            Ok(DatabaseFileStatus {
-                database,
-                last_modified: database_file_modified_at(&directory.join(database.file_name()))?,
-            })
+    [
+        DatabaseKind::CommunityRules,
+        DatabaseKind::SteamWorkshop,
+        DatabaseKind::NoVersionWarning,
+    ]
+    .into_iter()
+    .map(|database| {
+        let last_modified = if database == DatabaseKind::NoVersionWarning {
+            latest_version_warning_database_modified_at(directory)?
+        } else {
+            database_file_modified_at(&directory.join(database.file_name()))?
+        };
+        Ok(DatabaseFileStatus {
+            database,
+            last_modified,
         })
-        .collect()
+    })
+    .collect()
+}
+
+fn latest_version_warning_database_modified_at(directory: &Path) -> Result<Option<u64>, String> {
+    let entries = match fs::read_dir(directory) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(format!("Could not list database versions: {error}")),
+    };
+    let mut latest = None;
+    for entry in entries {
+        let entry = entry.map_err(|error| format!("Could not list database versions: {error}"))?;
+        if !entry
+            .file_type()
+            .map_err(|error| format!("Could not inspect database version: {error}"))?
+            .is_dir()
+        {
+            continue;
+        }
+        let modified_at = database_file_modified_at(
+            &entry
+                .path()
+                .join(DatabaseKind::NoVersionWarning.file_name()),
+        )?;
+        latest = latest.max(modified_at);
+    }
+    Ok(latest)
 }
 
 pub(crate) async fn download_database(
     app: tauri::AppHandle,
     database: DatabaseKind,
+    game_version: String,
 ) -> Result<DatabaseDownloadResult, String> {
+    let endpoint = database.endpoint(&game_version)?;
     let directory = database_directory(&app)?;
-    download_database_from_url(database, database.endpoint(), &directory).await
+    download_database_from_url(database, &endpoint, &directory, &game_version).await
 }
 
 async fn download_database_from_url(
     database: DatabaseKind,
     endpoint: &str,
     directory: &Path,
+    game_version: &str,
 ) -> Result<DatabaseDownloadResult, String> {
     let client = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
@@ -135,7 +210,11 @@ async fn download_database_from_url(
     }
 
     validate_database_contents(database, &contents)?;
-    let saved_file = save_database_atomically(directory, database.file_name(), &contents)?;
+    let saved_file = database_file_path(directory, database, game_version)?;
+    let saved_parent = saved_file
+        .parent()
+        .ok_or_else(|| "Could not resolve the database file directory.".to_string())?;
+    let saved_file = save_database_atomically(saved_parent, database.file_name(), &contents)?;
     let last_modified = database_file_modified_at(&saved_file)?.ok_or_else(|| {
         format!(
             "The {} database file is missing after download.",
@@ -151,17 +230,26 @@ async fn download_database_from_url(
 }
 
 fn validate_database_contents(database: DatabaseKind, contents: &[u8]) -> Result<(), String> {
+    if database == DatabaseKind::NoVersionWarning {
+        return super::no_version_warning::parse_package_ids(contents)
+            .map(|_| ())
+            .map_err(|error| {
+                format!("The downloaded No Version Warning database is invalid: {error}")
+            });
+    }
+
     let value: Value = serde_json::from_slice(contents).map_err(|error| {
         format!(
             "The downloaded {} database is not valid JSON: {error}",
             database.display_name()
         )
     })?;
-    if !value.get(database.root_key()).is_some_and(Value::is_object) {
+    let root_key = database.root_key().unwrap_or_default();
+    if !value.get(root_key).is_some_and(Value::is_object) {
         return Err(format!(
             "The downloaded {} database is missing its '{}' object.",
             database.display_name(),
-            database.root_key()
+            root_key
         ));
     }
     Ok(())
@@ -284,17 +372,25 @@ mod tests {
                 DatabaseKind::CommunityRules,
                 r#"{"timestamp":1,"rules":{"a.mod":{}}}"#,
                 "communityRules.json",
+                "1.6",
             ),
             (
                 DatabaseKind::SteamWorkshop,
                 r#"{"version":1,"database":{"123":{}}}"#,
                 "steamDB.json",
+                "1.6",
+            ),
+            (
+                DatabaseKind::NoVersionWarning,
+                "<ModIdsToFix><li>Example.Mod</li></ModIdsToFix>",
+                "1.6/ModIdsToFix.xml",
+                "1.6",
             ),
         ];
 
-        for (database, body, file_name) in cases {
+        for (database, body, file_name, game_version) in cases {
             let endpoint = serve_once("200 OK", body).await;
-            let result = download_database_from_url(database, &endpoint, &directory)
+            let result = download_database_from_url(database, &endpoint, &directory, game_version)
                 .await
                 .expect("compatible database should download");
 
@@ -312,7 +408,7 @@ mod tests {
             );
         }
 
-        fs::remove_dir_all(directory).expect("download directory should be removed");
+        fs::remove_dir_all(directory).expect("database directory should be removed");
     }
 
     #[tokio::test]
@@ -324,7 +420,8 @@ mod tests {
         let endpoint = serve_once("200 OK", r#"{"rules":[]}"#).await;
 
         let result =
-            download_database_from_url(DatabaseKind::CommunityRules, &endpoint, &directory).await;
+            download_database_from_url(DatabaseKind::CommunityRules, &endpoint, &directory, "1.6")
+                .await;
 
         assert!(result.is_err());
         assert_eq!(fs::read(&destination).unwrap(), b"previous database");
@@ -337,14 +434,15 @@ mod tests {
         let endpoint = serve_once("503 Service Unavailable", "{}").await;
 
         let result =
-            download_database_from_url(DatabaseKind::CommunityRules, &endpoint, &directory).await;
+            download_database_from_url(DatabaseKind::CommunityRules, &endpoint, &directory, "1.6")
+                .await;
 
         assert!(result.is_err());
         assert!(!directory.exists());
     }
 
     #[test]
-    fn rejects_non_json_and_unrecognized_database_shapes() {
+    fn rejects_invalid_database_shapes() {
         assert!(validate_database_contents(DatabaseKind::CommunityRules, b"not json").is_err());
         assert!(
             validate_database_contents(DatabaseKind::CommunityRules, br#"{"rules":[]}"#).is_err()
@@ -352,23 +450,49 @@ mod tests {
         assert!(
             validate_database_contents(DatabaseKind::SteamWorkshop, br#"{"database":{}}"#).is_ok()
         );
+        assert!(validate_database_contents(
+            DatabaseKind::NoVersionWarning,
+            b"<ModIdsToFix><li>example.mod</li></ModIdsToFix>"
+        )
+        .is_ok());
+        assert!(
+            validate_database_contents(DatabaseKind::NoVersionWarning, b"<Invalid />").is_err()
+        );
     }
     #[test]
     fn reports_downloaded_and_missing_database_statuses() {
         let directory = unique_temp_directory("database-status");
         fs::create_dir_all(&directory).expect("status directory should be created");
         fs::write(directory.join("communityRules.json"), b"{}")
-            .expect("downloaded database should be written");
+            .expect("community rules database should be written");
+        fs::create_dir_all(directory.join("1.6")).expect("version directory should be created");
+        fs::write(
+            directory.join("1.6").join("ModIdsToFix.xml"),
+            b"<ModIdsToFix />",
+        )
+        .expect("version warning database should be written");
 
         let statuses =
             database_statuses_in(&directory).expect("database file statuses should be available");
 
-        assert_eq!(statuses.len(), 2);
+        assert_eq!(statuses.len(), 3);
         assert_eq!(statuses[0].database, DatabaseKind::CommunityRules);
         assert!(statuses[0].last_modified.is_some());
         assert_eq!(statuses[1].database, DatabaseKind::SteamWorkshop);
         assert_eq!(statuses[1].last_modified, None);
-        fs::remove_dir_all(directory).expect("status directory should be removed");
+        assert_eq!(statuses[2].database, DatabaseKind::NoVersionWarning);
+        assert!(statuses[2].last_modified.is_some());
+    }
+
+    #[test]
+    fn selects_the_warning_database_for_the_game_version() {
+        assert_eq!(
+            DatabaseKind::NoVersionWarning
+                .endpoint("v1.6.4104 rev573")
+                .expect("valid game version should select a database"),
+            "https://raw.githubusercontent.com/emipa606/NoVersionWarning/main/1.6/ModIdsToFix.xml"
+        );
+        assert!(DatabaseKind::NoVersionWarning.endpoint("unknown").is_err());
     }
 
     #[test]
@@ -376,6 +500,9 @@ mod tests {
         let database: DatabaseKind = serde_json::from_str("\"communityRules\"")
             .expect("frontend database name should deserialize");
         assert_eq!(database, DatabaseKind::CommunityRules);
+        let warning_database: DatabaseKind = serde_json::from_str("\"noVersionWarning\"")
+            .expect("frontend warning database name should deserialize");
+        assert_eq!(warning_database, DatabaseKind::NoVersionWarning);
 
         let result = DatabaseDownloadResult {
             database,

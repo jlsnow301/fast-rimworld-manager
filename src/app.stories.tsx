@@ -153,6 +153,7 @@ function createAppStoryState(): AppStoryState {
 			lastModified: new Date(2026, 8, 29, 12).getTime(),
 		},
 		{ database: 'steamWorkshop', lastModified: null },
+		{ database: 'noVersionWarning', lastModified: null },
 	]);
 	store.set(steamApiKeyConfiguredAtom, false);
 

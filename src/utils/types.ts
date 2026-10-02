@@ -9,7 +9,10 @@ export type ImportedModListFile = {
 	fileName: string;
 	contents: string;
 };
-export type DatabaseKind = 'communityRules' | 'steamWorkshop';
+export type DatabaseKind =
+	| 'communityRules'
+	| 'steamWorkshop'
+	| 'noVersionWarning';
 
 export type DatabaseDownloadResult = {
 	database: DatabaseKind;
@@ -45,6 +48,7 @@ export type InstalledMod = {
 	loadBefore: string[];
 	incompatibleWith: string[];
 	supportedVersions: string[];
+	versionWarningSilenced: boolean;
 	path: string;
 	source: string;
 	dependencies: ModDependency[];

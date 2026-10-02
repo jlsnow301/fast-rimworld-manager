@@ -81,6 +81,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data`,
 		source: 'Core',
@@ -96,6 +97,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Royalty`,
 		source: 'DLC',
@@ -111,6 +113,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Ideology`,
 		source: 'DLC',
@@ -126,6 +129,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Biotech`,
 		source: 'DLC',
@@ -141,6 +145,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Anomaly`,
 		source: 'DLC',
@@ -156,6 +161,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Data\Odyssey`,
 		source: 'DLC',
@@ -171,6 +177,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2009463077`,
 		source: 'workshop',
@@ -186,6 +193,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\818773962`,
 		source: 'workshop',
@@ -201,6 +209,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\2023507013`,
 		source: 'workshop',
@@ -216,6 +225,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\761421485`,
 		source: 'workshop',
@@ -231,6 +241,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.5'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\1279012058`,
 		source: 'workshop',
@@ -248,6 +259,7 @@ const storyMods: InstalledMod[] = [
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: ['1.4'],
+		versionWarningSilenced: false,
 		path: String
 			.raw`C:\Storybook\Mods\DiagnosticSample`,
 		source: 'local',

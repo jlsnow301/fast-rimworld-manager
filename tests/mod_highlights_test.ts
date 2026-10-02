@@ -15,6 +15,7 @@ function mod(
 		loadBefore: [],
 		incompatibleWith: [],
 		supportedVersions: [],
+		versionWarningSilenced: false,
 		dependencies: [],
 		path: '',
 		source: 'local',
@@ -99,6 +100,41 @@ Deno.test('reports active config errors and warnings by affected mod', () => {
 	if (diagnostics.errorCount !== 3 || diagnostics.warningCount !== 1) {
 		throw new Error(
 			`Unexpected summary counts: ${JSON.stringify(diagnostics)}`,
+		);
+	}
+});
+
+Deno.test('suppresses database-covered version warnings only', () => {
+	const silenced = mod('Author.Silenced', {
+		supportedVersions: ['1.5'],
+		versionWarningSilenced: true,
+	});
+	const unsilenced = mod('Author.Unsilenced', {
+		supportedVersions: ['1.5'],
+	});
+	const diagnostics = createActiveModDiagnostics(
+		['Author.Silenced', 'Author.Unsilenced'],
+		new Map([
+			['author.silenced', silenced],
+			['author.unsilenced', unsilenced],
+		]),
+		'1.6.3682',
+	);
+	const silencedWarnings = diagnostics.byPackageId.get('author.silenced')
+		?.warnings;
+	const unsilencedWarnings = diagnostics.byPackageId.get('author.unsilenced')
+		?.warnings;
+	if (
+		silencedWarnings?.some((issue) => issue.code === 'version-mismatch') ||
+		!unsilencedWarnings?.some((issue) =>
+			issue.code === 'version-mismatch'
+		) ||
+		diagnostics.warningCount !== 1
+	) {
+		throw new Error(
+			`Unexpected database-silenced diagnostics: ${
+				JSON.stringify(diagnostics)
+			}`,
 		);
 	}
 });

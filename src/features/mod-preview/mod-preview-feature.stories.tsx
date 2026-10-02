@@ -39,6 +39,7 @@ const previewMod: InstalledMod = {
 	loadBefore: [],
 	incompatibleWith: [],
 	supportedVersions: ['1.6'],
+	versionWarningSilenced: false,
 	path: String
 		.raw`C:\Program Files (x86)\Steam\steamapps\workshop\content\294100\123456789\Mods\SampleVehicleMod`,
 	source: 'workshop',

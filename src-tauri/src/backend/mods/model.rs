@@ -12,6 +12,7 @@ pub(crate) struct InstalledMod {
     pub(crate) load_before: Vec<String>,
     pub(crate) incompatible_with: Vec<String>,
     pub(crate) supported_versions: Vec<String>,
+    pub(crate) version_warning_silenced: bool,
     pub(crate) dependencies: Vec<ModDependency>,
     pub(crate) path: String,
     pub(crate) source: String,

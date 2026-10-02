@@ -19,11 +19,18 @@ const RIMWORLD_GAME_CONTENT_NAMES: &[(&str, &str)] = &[
     ("ludeon.rimworld.odyssey", "RimWorld - Odyssey"),
 ];
 
-pub(crate) fn list_installed_mods(app: AppHandle) -> Result<Vec<InstalledMod>, String> {
+pub(crate) fn list_installed_mods(
+    app: AppHandle,
+    game_version: String,
+) -> Result<Vec<InstalledMod>, String> {
     let settings = load_path_settings_for_app(&app)?;
     let mut mods = collect_installed_mods(&settings)?;
     if let Ok(config_directory) = app.path().app_config_dir() {
-        metadata::enrich_installed_mods(&config_directory.join("databases"), &mut mods);
+        metadata::enrich_installed_mods(
+            &config_directory.join("databases"),
+            &mut mods,
+            &game_version,
+        );
     }
     Ok(mods)
 }
@@ -125,6 +132,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             load_before: parsed_rules.load_before,
             incompatible_with: parsed_rules.incompatible_with,
             supported_versions,
+            version_warning_silenced: false,
             dependencies,
             path: mod_path.to_string_lossy().into_owned(),
             source: source.to_string(),

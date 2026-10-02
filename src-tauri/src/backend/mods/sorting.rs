@@ -174,6 +174,7 @@ mod tests {
             load_before: load_before.iter().map(|id| id.to_string()).collect(),
             incompatible_with: Vec::new(),
             supported_versions: Vec::new(),
+            version_warning_silenced: false,
             dependencies: Vec::new(),
             path: String::new(),
             source: "local".to_string(),

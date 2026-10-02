@@ -17,6 +17,7 @@ import { settingsOpenAtom } from '@/features/settings/atoms';
 import { normalizedPackageId } from '@/utils/mods';
 import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
 import { steamWorkshopDownloadUrls } from '@/utils/workshop_update_urls';
+import { parseModsConfig } from '@/utils/mods_config';
 import type {
 	InstalledMod,
 	OutdatedWorkshopMod,
@@ -75,27 +76,38 @@ export function useAppController() {
 			settingsController.setPathSettings(settings);
 			settingsController.setSettingsMessage('Saved paths loaded.');
 
-			const [modsResult, configResult, versionResult] = await Promise
-				.allSettled([
-					invokeDesktop<InstalledMod[]>('list_installed_mods'),
-					settings.configPath
-						? invokeDesktop<string | null>('load_startup_mod_list')
-						: Promise.resolve(null),
-					settings.gamePath
-						? invokeDesktop<string | null>(
-							'detect_rimworld_version',
-							{
-								gamePath: settings.gamePath,
-							},
-						)
-						: Promise.resolve(null),
-				]);
+			const [configResult, versionResult] = await Promise.allSettled([
+				settings.configPath
+					? invokeDesktop<string | null>('load_startup_mod_list')
+					: Promise.resolve(null),
+				settings.gamePath
+					? invokeDesktop<string | null>('detect_rimworld_version', {
+						gamePath: settings.gamePath,
+					})
+					: Promise.resolve(null),
+			]);
 			if (cancelled) return;
-			setInstalledGameVersion(
-				versionResult.status === 'fulfilled'
-					? versionResult.value
-					: null,
-			);
+			const detectedGameVersion = versionResult.status === 'fulfilled'
+				? versionResult.value
+				: null;
+			setInstalledGameVersion(detectedGameVersion);
+			let configuredGameVersion: string | null = null;
+			if (configResult.status === 'fulfilled' && configResult.value) {
+				try {
+					configuredGameVersion =
+						parseModsConfig(configResult.value).version;
+				} catch {
+					configuredGameVersion = null;
+				}
+			}
+			const metadataGameVersion = detectedGameVersion?.trim() ||
+				configuredGameVersion || '1.4';
+			const [modsResult] = await Promise.allSettled([
+				invokeDesktop<InstalledMod[]>('list_installed_mods', {
+					gameVersion: metadataGameVersion,
+				}),
+			]);
+			if (cancelled) return;
 
 			const foundMods = modsResult.status === 'fulfilled'
 				? modsResult.value

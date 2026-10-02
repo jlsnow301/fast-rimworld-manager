@@ -7,8 +7,9 @@ use super::{
 pub async fn download_database(
     app: tauri::AppHandle,
     database: DatabaseKind,
+    game_version: String,
 ) -> Result<DatabaseDownloadResult, String> {
-    service::download_database(app, database).await
+    service::download_database(app, database, game_version).await
 }
 
 #[tauri::command]
