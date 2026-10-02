@@ -91,9 +91,6 @@ fn sort_package_ids(
     for (dependency_index, dependent_index) in inferred_edges {
         edges[dependency_index].insert(dependent_index);
     }
-    if graph_has_cycle(&edges) {
-        return Err("Active mods contain circular load-order rules.".to_string());
-    }
 
     let mut dependencies = vec![HashSet::new(); active_mods.len()];
     for (dependency_index, dependents) in edges.iter().enumerate() {
@@ -143,20 +140,37 @@ fn sort_package_ids(
         })
         .collect();
 
-    let mut sorted_indices = Vec::with_capacity(active_mods.len());
-    let mut sorted_set = HashSet::with_capacity(active_mods.len());
-    for tier in [tier_zero, tier_one, tier_two, tier_three] {
-        for index in sort_tier(&tier, &edges, &sort_keys) {
-            if sorted_set.insert(index) {
-                sorted_indices.push(index);
-            }
-        }
-    }
+    let sorted_indices = sort_tiers(
+        [tier_zero, tier_one, tier_two, tier_three],
+        &edges,
+        &sort_keys,
+    )?;
 
     Ok(sorted_indices
         .into_iter()
         .map(|index| active_mods[index].clone())
         .collect())
+}
+
+fn sort_tiers(
+    tiers: [HashSet<usize>; 4],
+    edges: &[HashSet<usize>],
+    sort_keys: &[(String, String)],
+) -> Result<Vec<usize>, String> {
+    let mut sorted_indices = Vec::with_capacity(edges.len());
+    let mut sorted_set = HashSet::with_capacity(edges.len());
+    for tier in tiers {
+        let tier_indices = sort_tier(&tier, edges, sort_keys);
+        if tier_indices.len() != tier.len() {
+            return Err("Active mods contain circular load-order rules.".to_string());
+        }
+        for index in tier_indices {
+            if sorted_set.insert(index) {
+                sorted_indices.push(index);
+            }
+        }
+    }
+    Ok(sorted_indices)
 }
 
 const TIER_ZERO_PACKAGE_IDS: &[&str] = &[
@@ -186,33 +200,6 @@ const TIER_ONE_PACKAGE_IDS: &[&str] = &[
     "unlimitedhugs.hugslib",
     "vanillaexpanded.backgrounds",
 ];
-
-fn graph_has_cycle(edges: &[HashSet<usize>]) -> bool {
-    let mut indegrees = vec![0; edges.len()];
-    for dependents in edges {
-        for dependent_index in dependents {
-            indegrees[*dependent_index] += 1;
-        }
-    }
-
-    let mut ready: Vec<usize> = indegrees
-        .iter()
-        .enumerate()
-        .filter_map(|(index, indegree)| (*indegree == 0).then_some(index))
-        .collect();
-    let mut sorted_count = 0;
-    while let Some(index) = ready.pop() {
-        sorted_count += 1;
-        for dependent_index in &edges[index] {
-            indegrees[*dependent_index] -= 1;
-            if indegrees[*dependent_index] == 0 {
-                ready.push(*dependent_index);
-            }
-        }
-    }
-
-    sorted_count != edges.len()
-}
 
 fn expand_graph(roots: HashSet<usize>, graph: &[HashSet<usize>]) -> HashSet<usize> {
     let mut expanded = roots;
@@ -647,15 +634,21 @@ mod tests {
     }
 
     #[test]
-    fn reports_cycles_that_cross_category_tiers() {
-        let active = vec!["Ludeon.RimWorld".to_string(), "Author.Mod".to_string()];
-        let installed = vec![
-            installed_mod("Ludeon.RimWorld", "Core", &["Author.Mod"], &[]),
-            installed_mod("Author.Mod", "Mod", &["Ludeon.RimWorld"], &[]),
+    fn sorts_cross_tier_cycles_in_tier_order() {
+        let edges = vec![HashSet::from([1]), HashSet::from([0])];
+        let tiers = [
+            HashSet::from([0]),
+            HashSet::new(),
+            HashSet::from([1]),
+            HashSet::new(),
+        ];
+        let sort_keys = vec![
+            ("Zulu".to_string(), "tier-zero".to_string()),
+            ("Alpha".to_string(), "tier-two".to_string()),
         ];
 
-        let error = sort_package_ids(&active, &installed).expect_err("cycle must fail");
+        let sorted = sort_tiers(tiers, &edges, &sort_keys).expect("tiers should sort");
 
-        assert_eq!(error, "Active mods contain circular load-order rules.");
+        assert_eq!(sorted, vec![0, 1]);
     }
 }
