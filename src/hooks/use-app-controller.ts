@@ -1,30 +1,21 @@
-import { openUrl } from '@tauri-apps/plugin-opener';
-import { useAtom, useAtomValue, useSetAtom, useStore } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import {
-	checkingWorkshopUpdatesAtom,
 	installedGameVersionAtom,
 	isTestModeAtom,
 	modListLoadStateAtom,
 	statusAtom,
-	workshopUpdateResultAtom,
 } from '@/features/mod-list/atoms';
+import { useWorkshopUpdatesController } from '@/features/mod-list/use-workshop-updates-controller';
 import {
 	closeModPreviewAtom,
 	selectedModAtom,
 } from '@/features/mod-preview/atoms';
 import { settingsOpenAtom } from '@/features/settings/atoms';
 import { normalizedPackageId } from '@/utils/mods';
-import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
-import { steamWorkshopDownloadUrls } from '@/utils/workshop_update_urls';
+import { invokeDesktop } from '@/utils/tauri';
 import { parseModsConfig } from '@/utils/mods_config';
-import type {
-	InstalledMod,
-	OutdatedWorkshopMod,
-	PathSettings,
-	WorkshopUpdateCheckResult,
-	WorkshopUpdateDispatchResult,
-} from '@/utils/types';
+import type { InstalledMod, PathSettings } from '@/utils/types';
 import { useModLists } from '@/hooks/use-mod-lists';
 import { useSettingsController } from '@/features/settings/use-settings-controller';
 import { useSteamApiKeyController } from '@/features/settings/use-steam-api-key-controller';
@@ -34,14 +25,12 @@ export function useAppController() {
 	const [, setSettingsOpen] = useAtom(settingsOpenAtom);
 	const [, setStatus] = useAtom(statusAtom);
 	const [, setInstalledGameVersion] = useAtom(installedGameVersionAtom);
-	const store = useStore();
 	const setModListLoadState = useSetAtom(modListLoadStateAtom);
-	const setCheckingWorkshopUpdates = useSetAtom(checkingWorkshopUpdatesAtom);
-	const setWorkshopUpdateResult = useSetAtom(workshopUpdateResultAtom);
 	const setSelectedMod = useSetAtom(selectedModAtom);
 	const closeModPreview = useSetAtom(closeModPreviewAtom);
 	const isTestMode = useAtomValue(isTestModeAtom);
 	const modLists = useModLists(setStatus);
+	const workshopUpdatesController = useWorkshopUpdatesController(setStatus);
 	const settingsController = useSettingsController({
 		refreshInstalledMods: modLists.refreshInstalledMods,
 		setStatus,
@@ -169,91 +158,6 @@ export function useAppController() {
 		}
 	}
 
-	async function checkForModUpdates(): Promise<
-		WorkshopUpdateCheckResult | null
-	> {
-		if (store.get(isTestModeAtom)) {
-			const result = store.get(workshopUpdateResultAtom);
-			setStatus(
-				'Test mode: showing sample Workshop update results. Downloads are disabled.',
-			);
-			return result;
-		}
-		setCheckingWorkshopUpdates(true);
-		setWorkshopUpdateResult(null);
-		setStatus('Checking installed Workshop mods for updates…');
-		try {
-			const result = await invokeDesktop<WorkshopUpdateCheckResult>(
-				'check_outdated_mods',
-			);
-			if (store.get(isTestModeAtom)) return null;
-			setWorkshopUpdateResult(result);
-			const updateCount = result.outdatedMods.length;
-			const skipped = result.skippedCount
-				? ` ${result.skippedCount} could not be compared.`
-				: '';
-			setStatus(
-				`Checked ${result.checkedCount} Workshop mods; ${updateCount} update${
-					updateCount === 1 ? '' : 's'
-				} available.${skipped}`,
-			);
-			return result;
-		} catch (error) {
-			if (!store.get(isTestModeAtom)) {
-				setStatus(
-					error instanceof Error ? error.message : String(error),
-				);
-			}
-			return null;
-		} finally {
-			setCheckingWorkshopUpdates(false);
-		}
-	}
-
-	async function updateSelectedOutdatedWorkshopMods(
-		selectedMods: readonly OutdatedWorkshopMod[],
-	): Promise<WorkshopUpdateDispatchResult> {
-		if (selectedMods.length === 0) {
-			setStatus('No Workshop mods selected for update.');
-			return { openedCount: 0, failedCount: 0 };
-		}
-		if (store.get(isTestModeAtom)) {
-			setStatus('Workshop downloads are disabled in test mode.');
-			return { openedCount: 0, failedCount: 0 };
-		}
-		const urls = steamWorkshopDownloadUrls(selectedMods);
-		if (urls.length === 0) {
-			setStatus(
-				'No valid outdated Workshop items are selected for update.',
-			);
-			return { openedCount: 0, failedCount: 0 };
-		}
-		try {
-			ensureDesktopRuntime();
-		} catch (error) {
-			setStatus(error instanceof Error ? error.message : String(error));
-			return { openedCount: 0, failedCount: urls.length };
-		}
-
-		let openedCount = 0;
-		let failedCount = 0;
-		for (const url of urls) {
-			try {
-				await openUrl(url);
-				openedCount += 1;
-			} catch {
-				failedCount += 1;
-			}
-		}
-
-		const failureMessage = failedCount > 0
-			? ` ${failedCount} request(s) could not be sent.`
-			: '';
-		setStatus(
-			`Sent ${openedCount} of ${urls.length} Workshop update requests to Steam.${failureMessage} Keep Steam running and signed in.`,
-		);
-		return { openedCount, failedCount };
-	}
 	function selectMod(packageId: string) {
 		const mod = modLists.modDetailsByPackageId.get(
 			normalizedPackageId(packageId),
@@ -274,8 +178,9 @@ export function useAppController() {
 		closeModPreview,
 		sortMods,
 		selectMod,
-		checkForModUpdates,
-		updateSelectedOutdatedWorkshopMods,
+		checkForModUpdates: workshopUpdatesController.checkForModUpdates,
+		updateSelectedOutdatedWorkshopMods:
+			workshopUpdatesController.updateSelectedOutdatedWorkshopMods,
 		refreshSteamApiKeyStatus:
 			steamApiKeyController.refreshSteamApiKeyStatus,
 		saveSteamApiKey: steamApiKeyController.saveSteamApiKey,
