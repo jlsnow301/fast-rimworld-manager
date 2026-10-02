@@ -652,7 +652,8 @@ export const LoadedActiveAndInactiveLists: Story = {
 			!diagnosticLabel.includes('Errors:') ||
 			!diagnosticLabel.includes('Warnings:') ||
 			!diagnosticLabel.includes('Required story framework') ||
-			!diagnosticLabel.includes('Game 1.5; supported 1.4') ||
+			!diagnosticLabel.includes('Warnings: Version mismatch: 1.5.') ||
+			diagnosticLabel.includes('supported 1.4') ||
 			diagnosticModRow.textContent?.trim() !==
 				'Extremely Long Dependency and Version Diagnostic Sample Mod for Testing Title Truncation' ||
 			diagnosticModRow.querySelector('[data-slot="badge"]') ||
@@ -682,7 +683,14 @@ export const LoadedActiveAndInactiveLists: Story = {
 					requestAnimationFrame(() => resolve())
 				);
 			}
-			throw new Error(errorMessage);
+			const actualText = tooltipDocument.querySelector<HTMLElement>(
+				'[data-slot="tooltip-content"][data-open]',
+			)?.textContent?.trim();
+			throw new Error(
+				`${errorMessage} Expected ${expectedText}, got ${
+					actualText ?? 'no open tooltip'
+				}.`,
+			);
 		}
 		await userEvent.hover(updateTooltipTrigger);
 		await waitForTooltipContent(
@@ -696,11 +704,28 @@ export const LoadedActiveAndInactiveLists: Story = {
 			'Error details must open in a shadcn tooltip.',
 		);
 		await userEvent.unhover(errorTooltipTrigger);
+		warningTooltipTrigger.scrollIntoView({
+			block: 'nearest',
+			inline: 'nearest',
+		});
 		await userEvent.hover(warningTooltipTrigger);
 		await waitForTooltipContent(
-			'Game version mismatch',
+			'Version mismatch: 1.5.',
 			'Warning details must open in a shadcn tooltip.',
 		);
+		const warningTooltipContent = tooltipDocument.querySelector<
+			HTMLElement
+		>(
+			'[data-slot="tooltip-content"][data-open]',
+		);
+		if (
+			warningTooltipContent?.textContent?.trim() !==
+				'Version mismatch: 1.5.'
+		) {
+			throw new Error(
+				'The version mismatch tooltip must show only the normalized game version.',
+			);
+		}
 		const ownerDocument = context.canvasElement.ownerDocument;
 		const inactiveSearchField = ownerDocument.querySelector<
 			HTMLInputElement

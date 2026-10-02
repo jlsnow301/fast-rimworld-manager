@@ -182,3 +182,32 @@ Deno.test('accepts alternative dependencies and supported game versions', () => 
 		);
 	}
 });
+
+Deno.test('formats version mismatch warnings with normalized game versions', () => {
+	const supportedVersions = ['1.4'];
+	const testCases = [
+		{ gameVersion: '1.5.0', expected: 'Version mismatch: 1.5.' },
+		{ gameVersion: 'v1.6.3682', expected: 'Version mismatch: 1.6.' },
+	];
+
+	for (const { gameVersion, expected } of testCases) {
+		const diagnostics = createActiveModDiagnostics(
+			['Author.Consumer'],
+			new Map([
+				[
+					'author.consumer',
+					mod('Author.Consumer', { supportedVersions }),
+				],
+			]),
+			gameVersion,
+		);
+		const issue = diagnostics.byPackageId.get('author.consumer')
+			?.warnings[0];
+		const actual = issue && `${issue.title}: ${issue.details.join(', ')}`;
+		if (actual !== expected) {
+			throw new Error(
+				`Expected ${expected}, got ${actual ?? 'no version warning'}`,
+			);
+		}
+	}
+});

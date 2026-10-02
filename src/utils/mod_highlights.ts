@@ -172,14 +172,11 @@ export function createActiveModDiagnostics(
 				mod.packageId,
 				'warning',
 				'version-mismatch',
-				'Game version mismatch',
-				`Game ${currentVersion}; supported ${
-					[...supportedVersions].join(', ')
-				}.`,
+				'Version mismatch',
+				`${currentVersion}.`,
 			);
 		}
 	}
-
 	let errorCount = 0;
 	let warningCount = 0;
 	for (const state of byPackageId.values()) {
