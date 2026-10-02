@@ -56,6 +56,8 @@ const OFFICIAL_CONTENT_ICONS: Record<string, LucideIcon> = {
 export type ModListProps = {
 	count: number;
 	dimNonMatchingMods: boolean;
+	filterWarnings: boolean;
+	filterErrors: boolean;
 	emptyMessage: string;
 	modDetailsByPackageId: ReadonlyMap<string, InstalledMod>;
 	outdatedWorkshopModsByPackageId: ReadonlyMap<string, OutdatedWorkshopMod>;
@@ -63,6 +65,8 @@ export type ModListProps = {
 	isLoading: boolean;
 	mods: VisibleMod[];
 	onDimNonMatchingModsChange: (dim: boolean) => void;
+	onFilterWarningsChange: (filter: boolean) => void;
+	onFilterErrorsChange: (filter: boolean) => void;
 	onSearchChange: (search: string) => void;
 	onSelectMod: (packageId: string) => void;
 	onDropMod: (
@@ -79,6 +83,8 @@ export function ModList(props: ModListProps) {
 	const {
 		count,
 		dimNonMatchingMods,
+		filterWarnings,
+		filterErrors,
 		emptyMessage,
 		modDetailsByPackageId,
 		activeDiagnosticsByPackageId,
@@ -86,6 +92,8 @@ export function ModList(props: ModListProps) {
 		isLoading,
 		mods,
 		onDimNonMatchingModsChange,
+		onFilterWarningsChange,
+		onFilterErrorsChange,
 		onSearchChange,
 		onSelectMod,
 		onDropMod,
@@ -151,6 +159,58 @@ export function ModList(props: ModListProps) {
 								{dimNonMatchingMods
 									? 'Show unmatched mods at full brightness'
 									: 'Dim unmatched mods'}
+							</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<Button
+										aria-label={`Toggle warning filter for ${type} mods`}
+										aria-pressed={filterWarnings}
+										onClick={() =>
+											onFilterWarningsChange(
+												!filterWarnings,
+											)}
+										size='icon-sm'
+										type='button'
+										variant='ghost'
+									/>
+								}
+							>
+								<TriangleAlert
+									aria-hidden='true'
+									data-icon='inline-start'
+								/>
+							</TooltipTrigger>
+							<TooltipContent>
+								{filterWarnings
+									? 'Stop filtering by warnings'
+									: 'Filter to mods with warnings'}
+							</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<Button
+										aria-label={`Toggle error filter for ${type} mods`}
+										aria-pressed={filterErrors}
+										onClick={() =>
+											onFilterErrorsChange(!filterErrors)}
+										size='icon-sm'
+										type='button'
+										variant='ghost'
+									/>
+								}
+							>
+								<CircleAlert
+									aria-hidden='true'
+									data-icon='inline-start'
+								/>
+							</TooltipTrigger>
+							<TooltipContent>
+								{filterErrors
+									? 'Stop filtering by errors'
+									: 'Filter to mods with errors'}
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>

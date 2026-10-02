@@ -1,90 +1,172 @@
 import { filterVisibleMods } from '@/utils/mod_search.ts';
+import type { ModHighlightState, VisibleMod } from '@/utils/types.ts';
 
-Deno.test('search matches package IDs case-insensitively and keeps source indices', () => {
-	const packageIds = ['Core', 'Author.Mod', 'Author.Other'];
-	const modDetails = new Map([
-		['core', { name: 'Core' }],
-		['author.mod', { name: 'Display Name' }],
-		['author.other', { name: 'Other Display Name' }],
-	]);
+const packageIds = [
+	'Warnings.Mod',
+	'Errors.Mod',
+	'Both.Mod',
+	'Clean.Mod',
+	'Missing.Mod',
+];
+const modDetails = new Map([
+	['warnings.mod', { name: 'Warnings Mod' }],
+	['errors.mod', { name: 'Errors Mod' }],
+	['both.mod', { name: 'Both Mod' }],
+	['clean.mod', { name: 'Clean Mod' }],
+]);
+const diagnosticsByPackageId = new Map<string, ModHighlightState>([
+	['warnings.mod', {
+		errors: [],
+		warnings: [{
+			code: 'version-mismatch',
+			severity: 'warning',
+			title: 'Version mismatch',
+			details: [],
+		}],
+	}],
+	['errors.mod', {
+		errors: [{
+			code: 'missing-dependency',
+			severity: 'error',
+			title: 'Missing dependencies',
+			details: [],
+		}],
+		warnings: [],
+	}],
+	['both.mod', {
+		errors: [{
+			code: 'missing-dependency',
+			severity: 'error',
+			title: 'Missing dependencies',
+			details: [],
+		}],
+		warnings: [{
+			code: 'version-mismatch',
+			severity: 'warning',
+			title: 'Version mismatch',
+			details: [],
+		}],
+	}],
+]);
 
-	const result = filterVisibleMods(packageIds, modDetails, 'AUTHOR.MOD');
-	const expected = [
-		{ packageId: 'Author.Mod', index: 1, isMatch: true },
-	];
-
-	if (JSON.stringify(result) !== JSON.stringify(expected)) {
+function assertVisibleMods(actual: VisibleMod[], expected: VisibleMod[]) {
+	if (JSON.stringify(actual) !== JSON.stringify(expected)) {
 		throw new Error(
 			`Expected ${JSON.stringify(expected)}, got ${
-				JSON.stringify(result)
+				JSON.stringify(actual)
 			}`,
 		);
 	}
+}
+
+Deno.test('search matches package IDs case-insensitively and keeps source indices', () => {
+	const result = filterVisibleMods(packageIds, modDetails, 'ERRORS.MOD');
+	assertVisibleMods(result, [
+		{ packageId: 'Errors.Mod', index: 1, isMatch: true },
+	]);
 });
 
 Deno.test('search matches installed mod display names', () => {
-	const packageIds = ['Core', 'Author.Mod'];
-	const modDetails = new Map([
-		['core', { name: 'Core' }],
-		['author.mod', { name: 'Great Mod' }],
+	const result = filterVisibleMods(packageIds, modDetails, 'warnings mod');
+	assertVisibleMods(result, [
+		{ packageId: 'Warnings.Mod', index: 0, isMatch: true },
 	]);
-
-	const result = filterVisibleMods(packageIds, modDetails, 'great mod');
-	const expected = [
-		{ packageId: 'Author.Mod', index: 1, isMatch: true },
-	];
-
-	if (JSON.stringify(result) !== JSON.stringify(expected)) {
-		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${
-				JSON.stringify(result)
-			}`,
-		);
-	}
 });
 
-Deno.test('dim mode retains installed nonmatches but excludes missing IDs', () => {
-	const packageIds = ['Author.Match', 'Author.Other', 'Missing.Match'];
-	const modDetails = new Map([
-		['author.match', { name: 'Matching Mod' }],
-		['author.other', { name: 'Other Mod' }],
+Deno.test('warning filter includes only warning and combined-severity mods', () => {
+	const result = filterVisibleMods(packageIds, modDetails, '', {
+		filterWarnings: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Warnings.Mod', index: 0, isMatch: true },
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
 	]);
+});
 
-	const result = filterVisibleMods(
-		packageIds,
-		modDetails,
-		'match',
-		true,
+Deno.test('error filter includes only error and combined-severity mods', () => {
+	const result = filterVisibleMods(packageIds, modDetails, '', {
+		filterErrors: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Errors.Mod', index: 1, isMatch: true },
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
+	]);
+});
+
+Deno.test('warning and error filters use OR semantics', () => {
+	const result = filterVisibleMods(packageIds, modDetails, '', {
+		filterWarnings: true,
+		filterErrors: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Warnings.Mod', index: 0, isMatch: true },
+		{ packageId: 'Errors.Mod', index: 1, isMatch: true },
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
+	]);
+});
+
+Deno.test('no severity filters preserve every row with a blank search', () => {
+	const result = filterVisibleMods(packageIds, modDetails, '', {
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(
+		result,
+		packageIds.map((packageId, index) => ({
+			packageId,
+			index,
+			isMatch: true,
+		})),
 	);
-	const expected = [
-		{ packageId: 'Author.Match', index: 0, isMatch: true },
-		{ packageId: 'Author.Other', index: 1, isMatch: false },
-	];
-
-	if (JSON.stringify(result) !== JSON.stringify(expected)) {
-		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${
-				JSON.stringify(result)
-			}`,
-		);
-	}
 });
 
-Deno.test('blank queries restore all IDs in their original order', () => {
-	const packageIds = ['Core', 'Author.Mod'];
-	const modDetails = new Map([['core', { name: 'Core' }]]);
+Deno.test('search and severity filters combine as an intersection', () => {
+	const result = filterVisibleMods(packageIds, modDetails, 'both', {
+		filterWarnings: true,
+		filterErrors: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
+	]);
+});
 
-	const result = filterVisibleMods(packageIds, modDetails, '  ', true);
-	const expected = [
-		{ packageId: 'Core', index: 0, isMatch: true },
-		{ packageId: 'Author.Mod', index: 1, isMatch: true },
-	];
+Deno.test('dim mode retains and dims installed rows outside search and severity filters', () => {
+	const result = filterVisibleMods(packageIds, modDetails, 'both', {
+		dimNonMatchingMods: true,
+		filterWarnings: true,
+		filterErrors: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Warnings.Mod', index: 0, isMatch: false },
+		{ packageId: 'Errors.Mod', index: 1, isMatch: false },
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
+		{ packageId: 'Clean.Mod', index: 3, isMatch: false },
+	]);
+});
 
-	if (JSON.stringify(result) !== JSON.stringify(expected)) {
-		throw new Error(
-			`Expected ${JSON.stringify(expected)}, got ${
-				JSON.stringify(result)
-			}`,
-		);
-	}
+Deno.test('dim-off mode hides rows that do not match search and active filters', () => {
+	const result = filterVisibleMods(packageIds, modDetails, 'both', {
+		filterWarnings: true,
+		filterErrors: true,
+		diagnosticsByPackageId,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Both.Mod', index: 2, isMatch: true },
+	]);
+});
+
+Deno.test('search excludes missing IDs while dim mode retains installed nonmatches', () => {
+	const result = filterVisibleMods(packageIds, modDetails, 'missing', {
+		dimNonMatchingMods: true,
+	});
+	assertVisibleMods(result, [
+		{ packageId: 'Warnings.Mod', index: 0, isMatch: false },
+		{ packageId: 'Errors.Mod', index: 1, isMatch: false },
+		{ packageId: 'Both.Mod', index: 2, isMatch: false },
+		{ packageId: 'Clean.Mod', index: 3, isMatch: false },
+	]);
 });

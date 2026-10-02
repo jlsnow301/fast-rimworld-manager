@@ -43,6 +43,10 @@ export const activeModSearchAtom = atom('');
 export const inactiveModSearchAtom = atom('');
 export const activeDimNonMatchingModsAtom = atom(false);
 export const inactiveDimNonMatchingModsAtom = atom(false);
+export const activeWarningFilterAtom = atom(false);
+export const inactiveWarningFilterAtom = atom(false);
+export const activeErrorFilterAtom = atom(false);
+export const inactiveErrorFilterAtom = atom(false);
 export const savedSnapshotAtom = atom<ModListSnapshot>(
 	createModListSnapshot('1.4', [], []),
 );
@@ -78,6 +82,10 @@ type TestModeBackup = {
 	inactiveModSearch: string;
 	activeDimNonMatchingMods: boolean;
 	inactiveDimNonMatchingMods: boolean;
+	activeWarningFilter: boolean;
+	inactiveWarningFilter: boolean;
+	activeErrorFilter: boolean;
+	inactiveErrorFilter: boolean;
 	workshopUpdateResult: WorkshopUpdateCheckResult | null;
 };
 
@@ -99,6 +107,10 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		set(inactiveModSearchAtom, backup.inactiveModSearch);
 		set(activeDimNonMatchingModsAtom, backup.activeDimNonMatchingMods);
 		set(inactiveDimNonMatchingModsAtom, backup.inactiveDimNonMatchingMods);
+		set(activeWarningFilterAtom, backup.activeWarningFilter);
+		set(inactiveWarningFilterAtom, backup.inactiveWarningFilter);
+		set(activeErrorFilterAtom, backup.activeErrorFilter);
+		set(inactiveErrorFilterAtom, backup.inactiveErrorFilter);
 		set(workshopUpdateResultAtom, backup.workshopUpdateResult);
 		set(testModeBackupAtom, null);
 		set(isTestModeAtom, false);
@@ -123,6 +135,10 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 		inactiveModSearch: get(inactiveModSearchAtom),
 		activeDimNonMatchingMods: get(activeDimNonMatchingModsAtom),
 		inactiveDimNonMatchingMods: get(inactiveDimNonMatchingModsAtom),
+		activeWarningFilter: get(activeWarningFilterAtom),
+		inactiveWarningFilter: get(inactiveWarningFilterAtom),
+		activeErrorFilter: get(activeErrorFilterAtom),
+		inactiveErrorFilter: get(inactiveErrorFilterAtom),
 		workshopUpdateResult: get(workshopUpdateResultAtom),
 	});
 	set(installedModsAtom, TEST_MOD_LIST.installedMods);
@@ -151,6 +167,10 @@ export const toggleTestModeAtom = atom(null, (get, set) => {
 	set(inactiveModSearchAtom, '');
 	set(activeDimNonMatchingModsAtom, false);
 	set(inactiveDimNonMatchingModsAtom, false);
+	set(activeWarningFilterAtom, false);
+	set(inactiveWarningFilterAtom, false);
+	set(activeErrorFilterAtom, false);
+	set(inactiveErrorFilterAtom, false);
 	set(workshopUpdateResultAtom, TEST_MOD_LIST.updateCheckResult);
 	set(checkingWorkshopUpdatesAtom, false);
 	set(isTestModeAtom, true);
@@ -187,7 +207,12 @@ export const visibleActiveModsAtom = atom((get) =>
 		get(activeModsAtom),
 		get(modDetailsByPackageIdAtom),
 		get(activeModSearchAtom),
-		get(activeDimNonMatchingModsAtom),
+		{
+			dimNonMatchingMods: get(activeDimNonMatchingModsAtom),
+			filterWarnings: get(activeWarningFilterAtom),
+			filterErrors: get(activeErrorFilterAtom),
+			diagnosticsByPackageId: get(activeModDiagnosticsAtom).byPackageId,
+		},
 	)
 );
 
@@ -196,7 +221,12 @@ export const visibleInactiveModsAtom = atom((get) =>
 		get(inactiveModsAtom),
 		get(modDetailsByPackageIdAtom),
 		get(inactiveModSearchAtom),
-		get(inactiveDimNonMatchingModsAtom),
+		{
+			dimNonMatchingMods: get(inactiveDimNonMatchingModsAtom),
+			filterWarnings: get(inactiveWarningFilterAtom),
+			filterErrors: get(inactiveErrorFilterAtom),
+			diagnosticsByPackageId: get(activeModDiagnosticsAtom).byPackageId,
+		},
 	)
 );
 

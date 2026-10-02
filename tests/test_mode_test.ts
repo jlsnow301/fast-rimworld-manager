@@ -1,14 +1,18 @@
 import { createStore } from 'jotai';
 import {
 	activeDimNonMatchingModsAtom,
+	activeErrorFilterAtom,
 	activeModDiagnosticsAtom,
 	activeModsAtom,
 	activeModSearchAtom,
+	activeWarningFilterAtom,
 	configuredGameVersionAtom,
 	gameVersionAtom,
 	inactiveDimNonMatchingModsAtom,
+	inactiveErrorFilterAtom,
 	inactiveModsAtom,
 	inactiveModSearchAtom,
+	inactiveWarningFilterAtom,
 	installedGameVersionAtom,
 	installedModsAtom,
 	isModListDirtyAtom,
@@ -114,13 +118,21 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 	store.set(inactiveModSearchAtom, 'inactive actual');
 	store.set(activeDimNonMatchingModsAtom, true);
 	store.set(inactiveDimNonMatchingModsAtom, false);
+	store.set(activeWarningFilterAtom, true);
+	store.set(inactiveWarningFilterAtom, false);
+	store.set(activeErrorFilterAtom, false);
+	store.set(inactiveErrorFilterAtom, true);
 
 	store.set(toggleTestModeAtom);
 	if (
 		store.get(activeModSearchAtom) !== '' ||
 		store.get(inactiveModSearchAtom) !== '' ||
 		store.get(activeDimNonMatchingModsAtom) ||
-		store.get(inactiveDimNonMatchingModsAtom)
+		store.get(inactiveDimNonMatchingModsAtom) ||
+		store.get(activeWarningFilterAtom) ||
+		store.get(inactiveWarningFilterAtom) ||
+		store.get(activeErrorFilterAtom) ||
+		store.get(inactiveErrorFilterAtom)
 	) {
 		throw new Error(
 			'Test mode should start with default search preferences.',
@@ -157,6 +169,16 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 	) {
 		throw new Error('The original search preferences should be restored.');
 	}
+	if (
+		store.get(activeWarningFilterAtom) !== true ||
+		store.get(inactiveWarningFilterAtom) !== false ||
+		store.get(activeErrorFilterAtom) !== false ||
+		store.get(inactiveErrorFilterAtom) !== true
+	) {
+		throw new Error(
+			'The original severity filter preferences should be restored.',
+		);
+	}
 	if (store.get(workshopUpdateResultAtom) !== originalWorkshopUpdateResult) {
 		throw new Error(
 			'The previous Workshop update results should be restored.',
@@ -164,5 +186,31 @@ Deno.test('exiting test mode restores prior user list and search state', () => {
 	}
 	if (!store.get(isModListDirtyAtom)) {
 		throw new Error('The original dirty state should be restored.');
+	}
+});
+
+Deno.test('warning and error filters are independent for each mod list', () => {
+	const store = createStore();
+	store.set(activeWarningFilterAtom, true);
+	if (
+		!store.get(activeWarningFilterAtom) ||
+		store.get(inactiveWarningFilterAtom) ||
+		store.get(activeErrorFilterAtom) ||
+		store.get(inactiveErrorFilterAtom)
+	) {
+		throw new Error(
+			'Enabling active warnings must not enable other filters.',
+		);
+	}
+	store.set(inactiveErrorFilterAtom, true);
+	if (
+		!store.get(activeWarningFilterAtom) ||
+		!store.get(inactiveErrorFilterAtom) ||
+		store.get(activeErrorFilterAtom) ||
+		store.get(inactiveWarningFilterAtom)
+	) {
+		throw new Error(
+			'Each list and severity must retain its own filter state.',
+		);
 	}
 });

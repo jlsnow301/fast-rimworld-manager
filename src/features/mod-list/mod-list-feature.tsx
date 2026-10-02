@@ -3,16 +3,20 @@ import { useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
 	activeDimNonMatchingModsAtom,
+	activeErrorFilterAtom,
 	activeModDiagnosticsAtom,
 	activeModsAtom,
 	activeModSearchAtom,
+	activeWarningFilterAtom,
 	checkingWorkshopUpdatesAtom,
 	gameVersionAtom,
 	hasModListAtom,
 	hasWorkshopModsAtom,
 	inactiveDimNonMatchingModsAtom,
+	inactiveErrorFilterAtom,
 	inactiveModsAtom,
 	inactiveModSearchAtom,
+	inactiveWarningFilterAtom,
 	isTestModeAtom,
 	modDetailsByPackageIdAtom,
 	modListLoadStateAtom,
@@ -41,6 +45,10 @@ export function ModListFeature() {
 		activeDimNonMatchingModsAtom,
 	);
 	const activeModSearch = useAtomValue(activeModSearchAtom);
+	const activeWarningFilter = useAtomValue(activeWarningFilterAtom);
+	const setActiveWarningFilter = useSetAtom(activeWarningFilterAtom);
+	const activeErrorFilter = useAtomValue(activeErrorFilterAtom);
+	const setActiveErrorFilter = useSetAtom(activeErrorFilterAtom);
 	const setActiveModSearch = useSetAtom(activeModSearchAtom);
 	const inactiveMods = useAtomValue(inactiveModsAtom);
 	const inactiveDimNonMatchingMods = useAtomValue(
@@ -51,6 +59,10 @@ export function ModListFeature() {
 	);
 	const inactiveModSearch = useAtomValue(inactiveModSearchAtom);
 	const setInactiveModSearch = useSetAtom(inactiveModSearchAtom);
+	const inactiveWarningFilter = useAtomValue(inactiveWarningFilterAtom);
+	const setInactiveWarningFilter = useSetAtom(inactiveWarningFilterAtom);
+	const inactiveErrorFilter = useAtomValue(inactiveErrorFilterAtom);
+	const setInactiveErrorFilter = useSetAtom(inactiveErrorFilterAtom);
 	const modDetailsByPackageId = useAtomValue(modDetailsByPackageIdAtom);
 	const activeModDiagnostics = useAtomValue(activeModDiagnosticsAtom);
 	const status = useAtomValue(statusAtom);
@@ -148,6 +160,8 @@ export function ModListFeature() {
 								<ModPreviewFeature />
 							</div>
 							<ModList
+								filterWarnings={inactiveWarningFilter}
+								filterErrors={inactiveErrorFilter}
 								count={inactiveMods.length}
 								dimNonMatchingMods={inactiveDimNonMatchingMods}
 								isLoading={modListLoadState === 'loading'}
@@ -157,6 +171,8 @@ export function ModListFeature() {
 									.byPackageId}
 								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 								modDetailsByPackageId={modDetailsByPackageId}
+								onFilterWarningsChange={setInactiveWarningFilter}
+								onFilterErrorsChange={setInactiveErrorFilter}
 								onDimNonMatchingModsChange={setInactiveDimNonMatchingMods}
 								onSearchChange={setInactiveModSearch}
 								onDropMod={moveMod}
@@ -166,6 +182,8 @@ export function ModListFeature() {
 								type='inactive'
 							/>
 							<ModList
+								filterWarnings={activeWarningFilter}
+								filterErrors={activeErrorFilter}
 								count={activeMods.length}
 								dimNonMatchingMods={activeDimNonMatchingMods}
 								isLoading={modListLoadState === 'loading'}
@@ -177,6 +195,8 @@ export function ModListFeature() {
 									.byPackageId}
 								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 								modDetailsByPackageId={modDetailsByPackageId}
+								onFilterWarningsChange={setActiveWarningFilter}
+								onFilterErrorsChange={setActiveErrorFilter}
 								onDimNonMatchingModsChange={setActiveDimNonMatchingMods}
 								onSearchChange={setActiveModSearch}
 								onDropMod={moveMod}

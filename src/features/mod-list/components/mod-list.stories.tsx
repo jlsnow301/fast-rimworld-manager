@@ -36,6 +36,10 @@ function ModListDemo() {
 	const [inactiveSearch, setInactiveSearch] = useState('');
 	const [dimActiveNonMatching, setDimActiveNonMatching] = useState(false);
 	const [dimInactiveNonMatching, setDimInactiveNonMatching] = useState(false);
+	const [filterActiveWarnings, setFilterActiveWarnings] = useState(false);
+	const [filterInactiveWarnings, setFilterInactiveWarnings] = useState(false);
+	const [filterActiveErrors, setFilterActiveErrors] = useState(false);
+	const [filterInactiveErrors, setFilterInactiveErrors] = useState(false);
 	const [selectedPackageId, setSelectedPackageId] = useState('');
 	const activeDiagnostics = createActiveModDiagnostics(
 		activeMods,
@@ -46,13 +50,23 @@ function ModListDemo() {
 		activeMods,
 		modDetailsByPackageId,
 		activeSearch,
-		dimActiveNonMatching,
+		{
+			dimNonMatchingMods: dimActiveNonMatching,
+			filterWarnings: filterActiveWarnings,
+			filterErrors: filterActiveErrors,
+			diagnosticsByPackageId: activeDiagnostics.byPackageId,
+		},
 	);
 	const visibleInactiveMods = filterVisibleMods(
 		inactiveMods,
 		modDetailsByPackageId,
 		inactiveSearch,
-		dimInactiveNonMatching,
+		{
+			dimNonMatchingMods: dimInactiveNonMatching,
+			filterWarnings: filterInactiveWarnings,
+			filterErrors: filterInactiveErrors,
+			diagnosticsByPackageId: activeDiagnostics.byPackageId,
+		},
 	);
 
 	function handleDropMod(
@@ -77,6 +91,8 @@ function ModListDemo() {
 			<ModList
 				count={inactiveMods.length}
 				dimNonMatchingMods={dimInactiveNonMatching}
+				filterWarnings={filterInactiveWarnings}
+				filterErrors={filterInactiveErrors}
 				isLoading={false}
 				emptyMessage='No inactive sample mods.'
 				mods={visibleInactiveMods}
@@ -84,6 +100,8 @@ function ModListDemo() {
 				outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 				modDetailsByPackageId={modDetailsByPackageId}
 				onDimNonMatchingModsChange={setDimInactiveNonMatching}
+				onFilterWarningsChange={setFilterInactiveWarnings}
+				onFilterErrorsChange={setFilterInactiveErrors}
 				onSearchChange={setInactiveSearch}
 				onDropMod={handleDropMod}
 				onSelectMod={setSelectedPackageId}
@@ -94,6 +112,8 @@ function ModListDemo() {
 			<ModList
 				count={activeMods.length}
 				dimNonMatchingMods={dimActiveNonMatching}
+				filterWarnings={filterActiveWarnings}
+				filterErrors={filterActiveErrors}
 				isLoading={false}
 				emptyMessage='No active sample mods.'
 				mods={visibleActiveMods}
@@ -101,6 +121,8 @@ function ModListDemo() {
 				outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
 				modDetailsByPackageId={modDetailsByPackageId}
 				onDimNonMatchingModsChange={setDimActiveNonMatching}
+				onFilterWarningsChange={setFilterActiveWarnings}
+				onFilterErrorsChange={setFilterActiveErrors}
 				onSearchChange={setActiveSearch}
 				onDropMod={handleDropMod}
 				onSelectMod={setSelectedPackageId}

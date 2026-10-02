@@ -878,6 +878,125 @@ export const LoadedActiveAndInactiveLists: Story = {
 		) {
 			throw new Error('Clearing search must restore missing IDs.');
 		}
+		setSearch(activeSearchField, '');
+		await nextFrame();
+		const activeWarningFilterButton = ownerDocument.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle warning filter for active mods"]',
+		);
+		const inactiveWarningFilterButton = ownerDocument.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle warning filter for inactive mods"]',
+		);
+		const activeErrorFilterButton = ownerDocument.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle error filter for active mods"]',
+		);
+		const inactiveErrorFilterButton = ownerDocument.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Toggle error filter for inactive mods"]',
+		);
+		if (
+			!activeWarningFilterButton ||
+			!inactiveWarningFilterButton ||
+			!activeErrorFilterButton ||
+			!inactiveErrorFilterButton ||
+			!activeWarningFilterButton.querySelector(
+				'svg.lucide-triangle-alert',
+			) ||
+			!activeErrorFilterButton.querySelector('svg.lucide-circle-alert') ||
+			activeWarningFilterButton.getAttribute('aria-pressed') !==
+				'false' ||
+			inactiveWarningFilterButton.getAttribute('aria-pressed') !==
+				'false' ||
+			activeErrorFilterButton.getAttribute('aria-pressed') !== 'false' ||
+			inactiveErrorFilterButton.getAttribute('aria-pressed') !== 'false'
+		) {
+			throw new Error(
+				'Each mod list must render independent warning and error controls.',
+			);
+		}
+		await userEvent.hover(activeWarningFilterButton);
+		await waitForTooltipContent(
+			'Filter to mods with warnings',
+			'The warning filter must explain its action in a tooltip.',
+		);
+		await userEvent.unhover(activeWarningFilterButton);
+		await userEvent.hover(activeErrorFilterButton);
+		await waitForTooltipContent(
+			'Filter to mods with errors',
+			'The error filter must explain its action in a tooltip.',
+		);
+		await userEvent.unhover(activeErrorFilterButton);
+		await userEvent.click(activeWarningFilterButton);
+		await nextFrame();
+		if (
+			activeWarningFilterButton.getAttribute('aria-pressed') !== 'true' ||
+			inactiveWarningFilterButton.getAttribute('aria-pressed') !==
+				'false' ||
+			activePanel.querySelector(
+				'button[aria-label^="Show details for HugsLib"]',
+			) ||
+			!activePanel.querySelector(
+				'button[aria-label^="Show details for Extremely Long Dependency"]',
+			)
+		) {
+			throw new Error(
+				'The warning filter must select diagnosed active mods only.',
+			);
+		}
+		await userEvent.click(activeErrorFilterButton);
+		await nextFrame();
+		if (
+			activeErrorFilterButton.getAttribute('aria-pressed') !== 'true' ||
+			!activePanel.querySelector(
+				'button[aria-label^="Show details for Extremely Long Dependency"]',
+			)
+		) {
+			throw new Error(
+				'Warning and error filters must remain independently enabled.',
+			);
+		}
+		setSearch(activeSearchField, 'hugs');
+		await nextFrame();
+		if (
+			activePanel.querySelector(
+				'button[aria-label^="Show details for HugsLib"]',
+			)
+		) {
+			throw new Error(
+				'Severity filters must combine with search when dimming is off.',
+			);
+		}
+		activeDimButton.click();
+		await nextFrame();
+		const dimmedSeverityNonmatch = activePanel
+			.querySelector('button[aria-label^="Show details for HugsLib"]')
+			?.querySelector('.truncate');
+		if (
+			!dimmedSeverityNonmatch?.parentElement?.classList.contains(
+				'opacity-50',
+			)
+		) {
+			throw new Error(
+				'Dim mode must retain and dim severity-filtered nonmatches.',
+			);
+		}
+		await userEvent.click(inactiveWarningFilterButton);
+		await nextFrame();
+		if (
+			inactiveWarningFilterButton.getAttribute('aria-pressed') !==
+				'true' ||
+			activeWarningFilterButton.getAttribute('aria-pressed') !== 'true'
+		) {
+			throw new Error(
+				'Warning filter state must remain independent across lists.',
+			);
+		}
 	},
 };
 
