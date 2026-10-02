@@ -179,6 +179,7 @@ export function ModList(props: ModListProps) {
 							>
 								<TriangleAlert
 									aria-hidden='true'
+									className='shrink-0 text-yellow-600 dark:text-yellow-400'
 									data-icon='inline-start'
 								/>
 							</TooltipTrigger>
@@ -204,6 +205,7 @@ export function ModList(props: ModListProps) {
 							>
 								<CircleAlert
 									aria-hidden='true'
+									className='shrink-0 text-destructive'
 									data-icon='inline-start'
 								/>
 							</TooltipTrigger>

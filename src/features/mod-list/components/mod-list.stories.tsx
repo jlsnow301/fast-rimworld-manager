@@ -155,4 +155,31 @@ type Story = StoryObj<typeof meta>;
 
 export const ActiveAndInactive: Story = {
 	render: () => <ModListDemo />,
+	play: ({ canvasElement }) => {
+		for (const type of ['inactive', 'active']) {
+			const warningButton = canvasElement.querySelector<
+				HTMLButtonElement
+			>(
+				`button[aria-label="Toggle warning filter for ${type} mods"]`,
+			);
+			const warningIcon = warningButton?.querySelector<SVGElement>(
+				'svg.lucide-triangle-alert',
+			);
+			const errorButton = canvasElement.querySelector<HTMLButtonElement>(
+				`button[aria-label="Toggle error filter for ${type} mods"]`,
+			);
+			const errorIcon = errorButton?.querySelector<SVGElement>(
+				'svg.lucide-circle-alert',
+			);
+			if (
+				!warningIcon?.classList.contains('text-yellow-600') ||
+				!warningIcon.classList.contains('dark:text-yellow-400') ||
+				!errorIcon?.classList.contains('text-destructive')
+			) {
+				throw new Error(
+					`${type} warning and error filter icons must use yellow and red colors.`,
+				);
+			}
+		}
+	},
 };
