@@ -20,7 +20,7 @@ const meta = {
 	title: 'Mod Preview/Installed Details',
 	component: ModPreviewFeature,
 	parameters: {
-		layout: 'centered',
+		layout: 'fullscreen',
 	},
 	tags: ['autodocs'],
 } satisfies Meta<typeof ModPreviewFeature>;
@@ -32,6 +32,28 @@ type PreviewStoryController = Pick<AppController, 'closeModPreview'>;
 type PreviewStoryProps = {
 	loading?: boolean;
 };
+
+function assertPreviewDoesNotScroll(card: HTMLElement) {
+	const cardContent = card.querySelector<HTMLElement>(
+		'[data-slot="card-content"]',
+	);
+	const previewColumn = card.parentElement;
+	if (!cardContent || !previewColumn) {
+		throw new Error(
+			'The preview must have a card content area and column.',
+		);
+	}
+	const contentOverflow = getComputedStyle(cardContent).overflowY;
+	const columnOverflow = getComputedStyle(previewColumn).overflowY;
+	if (
+		card.clientHeight === 0 || cardContent.clientHeight === 0 ||
+		contentOverflow === 'auto' || contentOverflow === 'scroll' ||
+		columnOverflow === 'auto' || columnOverflow === 'scroll' ||
+		cardContent.scrollHeight > cardContent.clientHeight
+	) {
+		throw new Error('The mod preview must not scroll vertically.');
+	}
+}
 
 const previewMod: InstalledMod = {
 	name: 'Sample Vehicle Mod',
@@ -101,22 +123,58 @@ function PreviewStory(props: PreviewStoryProps) {
 	};
 
 	return (
-		<Provider store={store}>
-			<AppProvider value={controller as AppController}>
-				<ModPreviewFeature />
-			</AppProvider>
-		</Provider>
+		<div className='grid h-dvh min-h-0 grid-cols-1 p-6'>
+			<Provider store={store}>
+				<AppProvider value={controller as AppController}>
+					<ModPreviewFeature />
+				</AppProvider>
+			</Provider>
+		</div>
 	);
 }
 
 export const InfoShowsOnDiskDetails: Story = {
 	render: () => <PreviewStory />,
-	play: async ({ canvasElement }) => {
+	play: async ({ canvasElement, userEvent }) => {
 		const document = canvasElement.ownerDocument;
-		const infoButton = Array.from(canvasElement.querySelectorAll('button'))
-			.find((button) => button.textContent?.trim() === 'Info');
-		if (!infoButton) throw new Error('The Info action must be available.');
-		infoButton.click();
+		const infoButton = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label="Show on-disk details"]',
+		);
+		const previewCloseButton = canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label="Close mod preview"]',
+		);
+		if (
+			!infoButton || infoButton.textContent?.trim() ||
+			!infoButton.querySelector('svg') || !previewCloseButton ||
+			previewCloseButton.textContent?.trim() ||
+			!previewCloseButton.querySelector('svg')
+		) {
+			throw new Error(
+				'Preview actions must be icon-only buttons with accessible names.',
+			);
+		}
+		async function waitForTooltip(expectedText: string) {
+			for (let frame = 0; frame < 30; frame += 1) {
+				const tooltip = document.querySelector<HTMLElement>(
+					'[data-slot="tooltip-content"][data-open]',
+				);
+				if (tooltip?.textContent?.includes(expectedText)) return;
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => resolve())
+				);
+			}
+			throw new Error(`The ${expectedText} tooltip must open.`);
+		}
+		await userEvent.hover(infoButton);
+		await waitForTooltip('Show on-disk details');
+		await userEvent.unhover(infoButton);
+		await userEvent.hover(previewCloseButton);
+		await waitForTooltip('Close mod preview');
+		await userEvent.unhover(previewCloseButton);
+		await userEvent.click(infoButton);
+
 		await new Promise<void>((resolve) =>
 			requestAnimationFrame(() => resolve())
 		);
@@ -169,12 +227,22 @@ export const InfoShowsOnDiskDetails: Story = {
 				'The dialog Close action must be visually primary.',
 			);
 		}
-		closeButton.click();
+		await userEvent.click(closeButton);
 		await new Promise<void>((resolve) => setTimeout(resolve, 200));
 		const closedDialog = document.querySelector('[role="dialog"]');
 		if (closedDialog && getComputedStyle(closedDialog).display !== 'none') {
 			throw new Error(
 				'The dialog must close from its primary Close action.',
+			);
+		}
+		await userEvent.click(previewCloseButton);
+		if (
+			!canvasElement.textContent?.includes(
+				'Select a mod to see its details.',
+			)
+		) {
+			throw new Error(
+				'The icon-only Close action must close the preview.',
 			);
 		}
 	},
@@ -195,6 +263,7 @@ export const LoadingKeepsPreviewHeight: Story = {
 		if (card.querySelectorAll('[data-slot="skeleton"]').length === 0) {
 			throw new Error('The loading state must render shadcn Skeletons.');
 		}
+		assertPreviewDoesNotScroll(card);
 		const loadingHeight = card.getBoundingClientRect().height;
 		await new Promise<void>((resolve) => setTimeout(resolve, 1100));
 		const loadedHeight = card.getBoundingClientRect().height;
@@ -203,6 +272,7 @@ export const LoadingKeepsPreviewHeight: Story = {
 				`The preview boundary changed from ${loadingHeight}px to ${loadedHeight}px.`,
 			);
 		}
+		assertPreviewDoesNotScroll(card);
 		if (
 			!canvasElement.querySelector(
 				'img[alt="Sample Vehicle Mod Workshop preview"]',

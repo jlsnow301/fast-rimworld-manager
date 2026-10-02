@@ -1,3 +1,4 @@
+import { Info, X } from 'lucide-react';
 import { useState } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { useAtomValue } from 'jotai';
@@ -21,6 +22,12 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useAppContext } from '@/context/app-context';
 import { activeModDiagnosticsAtom } from '@/features/mod-list/atoms';
 import {
@@ -45,7 +52,7 @@ export function ModPreviewFeature() {
 
 	if (!selectedMod) {
 		return (
-			<Card className='h-80 min-w-0'>
+			<Card className='h-full min-h-0 min-w-0'>
 				<CardHeader>
 					<CardTitle>Mod preview</CardTitle>
 				</CardHeader>
@@ -75,27 +82,55 @@ export function ModPreviewFeature() {
 	}
 
 	return (
-		<Card className='h-80 min-w-0'>
+		<Card className='h-full min-h-0 min-w-0'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
 				<CardAction className='flex gap-2'>
-					<Button
-						onClick={() => setDetailsOpen(true)}
-						size='sm'
-						variant='outline'
-					>
-						Info
-					</Button>
-					<Button
-						onClick={closeModPreview}
-						size='sm'
-						variant='outline'
-					>
-						Close
-					</Button>
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<Button
+										aria-label='Show on-disk details'
+										onClick={() => setDetailsOpen(true)}
+										size='icon-sm'
+										type='button'
+										variant='outline'
+									/>
+								}
+							>
+								<Info
+									aria-hidden='true'
+									data-icon='inline-start'
+								/>
+							</TooltipTrigger>
+							<TooltipContent>
+								Show on-disk details
+							</TooltipContent>
+						</Tooltip>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<Button
+										aria-label='Close mod preview'
+										onClick={closeModPreview}
+										size='icon-sm'
+										type='button'
+										variant='outline'
+									/>
+								}
+							>
+								<X
+									aria-hidden='true'
+									data-icon='inline-start'
+								/>
+							</TooltipTrigger>
+							<TooltipContent>Close mod preview</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
 				</CardAction>
 			</CardHeader>
-			<CardContent className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'>
+			<CardContent className='flex min-h-0 flex-1 flex-col gap-3'>
 				{isSteamPreviewLoading
 					? (
 						<div

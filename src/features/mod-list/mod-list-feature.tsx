@@ -156,7 +156,7 @@ export function ModListFeature() {
 							)}
 						</div>
 						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
-							<div className='min-h-0 overflow-y-auto'>
+							<div className='min-h-0'>
 								<ModPreviewFeature />
 							</div>
 							<ModList
