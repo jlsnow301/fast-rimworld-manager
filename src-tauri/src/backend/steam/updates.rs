@@ -199,6 +199,8 @@ mod tests {
             package_id: format!("sample.mod{published_file_id}"),
             description: String::new(),
             published_file_id: Some(published_file_id.to_string()),
+            load_top: false,
+            load_bottom: false,
             load_after: Vec::new(),
             load_before: Vec::new(),
             incompatible_with: Vec::new(),

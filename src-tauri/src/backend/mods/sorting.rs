@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use tauri::AppHandle;
 
@@ -91,40 +91,184 @@ fn sort_package_ids(
     for (dependency_index, dependent_index) in inferred_edges {
         edges[dependency_index].insert(dependent_index);
     }
+    if graph_has_cycle(&edges) {
+        return Err("Active mods contain circular load-order rules.".to_string());
+    }
 
-    let mut indegrees = vec![0; active_mods.len()];
-    for dependents in &edges {
-        for dependent in dependents {
-            indegrees[*dependent] += 1;
+    let mut dependencies = vec![HashSet::new(); active_mods.len()];
+    for (dependency_index, dependents) in edges.iter().enumerate() {
+        for dependent_index in dependents {
+            dependencies[*dependent_index].insert(dependency_index);
         }
     }
 
-    let mut ready = BTreeSet::new();
-    for (index, indegree) in indegrees.iter().enumerate() {
-        if *indegree == 0 {
-            ready.insert(index);
+    let mut tier_zero_roots = HashSet::new();
+    let mut tier_one_roots = HashSet::new();
+    let mut tier_three_roots = HashSet::new();
+    for (index, package_id) in active_mods.iter().enumerate() {
+        let normalized_id = normalize_package_id(package_id);
+        if TIER_ZERO_PACKAGE_IDS.contains(&normalized_id.as_str()) {
+            tier_zero_roots.insert(index);
         }
-    }
-
-    let mut sorted_indices = Vec::with_capacity(active_mods.len());
-    while let Some(index) = ready.pop_first() {
-        sorted_indices.push(index);
-        for dependent in &edges[index] {
-            indegrees[*dependent] -= 1;
-            if indegrees[*dependent] == 0 {
-                ready.insert(*dependent);
+        if TIER_ONE_PACKAGE_IDS.contains(&normalized_id.as_str()) {
+            tier_one_roots.insert(index);
+        }
+        if let Some(mod_entry) = installed_by_id.get(&normalized_id) {
+            if mod_entry.load_top && !TIER_ZERO_PACKAGE_IDS.contains(&normalized_id.as_str()) {
+                tier_one_roots.insert(index);
+            }
+            if mod_entry.load_bottom {
+                tier_three_roots.insert(index);
             }
         }
     }
 
-    if sorted_indices.len() != active_mods.len() {
-        return Err("Active mods contain circular load-order rules.".to_string());
+    let tier_zero = expand_graph(tier_zero_roots, &dependencies);
+    let tier_one = expand_graph(tier_one_roots, &dependencies);
+    let tier_three = expand_graph(tier_three_roots, &edges);
+    let tier_two = (0..active_mods.len())
+        .filter(|index| {
+            !tier_zero.contains(index) && !tier_one.contains(index) && !tier_three.contains(index)
+        })
+        .collect();
+
+    let sort_keys: Vec<(String, String)> = active_mods
+        .iter()
+        .map(|package_id| {
+            let normalized_id = normalize_package_id(package_id);
+            let name = installed_by_id
+                .get(&normalized_id)
+                .map_or(package_id.as_str(), |mod_entry| mod_entry.name.as_str());
+            (name.to_lowercase(), normalized_id)
+        })
+        .collect();
+
+    let mut sorted_indices = Vec::with_capacity(active_mods.len());
+    let mut sorted_set = HashSet::with_capacity(active_mods.len());
+    for tier in [tier_zero, tier_one, tier_two, tier_three] {
+        for index in sort_tier(&tier, &edges, &sort_keys) {
+            if sorted_set.insert(index) {
+                sorted_indices.push(index);
+            }
+        }
     }
 
     Ok(sorted_indices
         .into_iter()
         .map(|index| active_mods[index].clone())
         .collect())
+}
+
+const TIER_ZERO_PACKAGE_IDS: &[&str] = &[
+    "brrainz.harmony",
+    "brrainz.visualexceptions",
+    "ludeon.rimworld",
+    "ludeon.rimworld.anomaly",
+    "ludeon.rimworld.biotech",
+    "ludeon.rimworld.ideology",
+    "ludeon.rimworld.odyssey",
+    "ludeon.rimworld.royalty",
+    "zetrith.prepatcher",
+];
+
+const TIER_ONE_PACKAGE_IDS: &[&str] = &[
+    "adaptive.storage.framework",
+    "aoba.exosuit.framework",
+    "aoba.framework",
+    "ebsg.framework",
+    "imranfish.xmlextensions",
+    "ohno.asf.ab.local",
+    "oskarpotocki.vanillafactionsexpanded.core",
+    "owlchemist.cherrypicker",
+    "redmattis.betterprerequisites",
+    "smashphil.vehicleframework",
+    "thesepeople.ritualattachableoutcomes",
+    "unlimitedhugs.hugslib",
+    "vanillaexpanded.backgrounds",
+];
+
+fn graph_has_cycle(edges: &[HashSet<usize>]) -> bool {
+    let mut indegrees = vec![0; edges.len()];
+    for dependents in edges {
+        for dependent_index in dependents {
+            indegrees[*dependent_index] += 1;
+        }
+    }
+
+    let mut ready: Vec<usize> = indegrees
+        .iter()
+        .enumerate()
+        .filter_map(|(index, indegree)| (*indegree == 0).then_some(index))
+        .collect();
+    let mut sorted_count = 0;
+    while let Some(index) = ready.pop() {
+        sorted_count += 1;
+        for dependent_index in &edges[index] {
+            indegrees[*dependent_index] -= 1;
+            if indegrees[*dependent_index] == 0 {
+                ready.push(*dependent_index);
+            }
+        }
+    }
+
+    sorted_count != edges.len()
+}
+
+fn expand_graph(roots: HashSet<usize>, graph: &[HashSet<usize>]) -> HashSet<usize> {
+    let mut expanded = roots;
+    let mut pending: Vec<usize> = expanded.iter().copied().collect();
+    while let Some(index) = pending.pop() {
+        for adjacent_index in &graph[index] {
+            if expanded.insert(*adjacent_index) {
+                pending.push(*adjacent_index);
+            }
+        }
+    }
+    expanded
+}
+
+fn sort_tier(
+    tier: &HashSet<usize>,
+    edges: &[HashSet<usize>],
+    sort_keys: &[(String, String)],
+) -> Vec<usize> {
+    let mut indegrees = vec![0; edges.len()];
+    for index in tier {
+        for dependent_index in &edges[*index] {
+            if tier.contains(dependent_index) {
+                indegrees[*dependent_index] += 1;
+            }
+        }
+    }
+
+    let mut ready: Vec<usize> = tier
+        .iter()
+        .copied()
+        .filter(|index| indegrees[*index] == 0)
+        .collect();
+    let mut sorted = Vec::with_capacity(tier.len());
+    let mut next_level = Vec::new();
+    while !ready.is_empty() {
+        ready.sort_unstable_by(|left, right| {
+            sort_keys[*left]
+                .cmp(&sort_keys[*right])
+                .then_with(|| left.cmp(right))
+        });
+        for index in ready.drain(..) {
+            sorted.push(index);
+            for dependent_index in &edges[index] {
+                if tier.contains(dependent_index) {
+                    indegrees[*dependent_index] -= 1;
+                    if indegrees[*dependent_index] == 0 {
+                        next_level.push(*dependent_index);
+                    }
+                }
+            }
+        }
+        std::mem::swap(&mut ready, &mut next_level);
+    }
+
+    sorted
 }
 
 fn normalize_package_id(package_id: &str) -> String {
@@ -152,6 +296,8 @@ mod tests {
             package_id: package_id.to_string(),
             description: String::new(),
             published_file_id: None,
+            load_top: false,
+            load_bottom: false,
             load_after: load_after.iter().map(|id| id.to_string()).collect(),
             load_before: load_before.iter().map(|id| id.to_string()).collect(),
             incompatible_with: Vec::new(),
@@ -175,7 +321,7 @@ mod tests {
     }
 
     #[test]
-    fn sorts_dependencies_before_dependents_and_keeps_unrelated_order_stable() {
+    fn sorts_dependencies_before_dependents_and_keeps_the_known_core_in_tier_zero() {
         let active = vec![
             "Author.Consumer".to_string(),
             "Author.Unrelated".to_string(),
@@ -198,16 +344,16 @@ mod tests {
         assert_eq!(
             sorted,
             vec![
-                "Author.Unrelated",
                 "Ludeon.RimWorld",
                 "Author.Framework",
+                "Author.Unrelated",
                 "Author.Consumer"
             ]
         );
     }
 
     #[test]
-    fn keeps_unconstrained_mods_in_input_order() {
+    fn sorts_unconstrained_mods_alphabetically_by_name() {
         let active = vec![
             "Author.Zulu".to_string(),
             "Author.Alpha".to_string(),
@@ -221,7 +367,7 @@ mod tests {
 
         let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
 
-        assert_eq!(sorted, active);
+        assert_eq!(sorted, vec!["Author.Alpha", "Author.Middle", "Author.Zulu"]);
     }
 
     #[test]
@@ -309,6 +455,204 @@ mod tests {
         let mut second = installed_mod("Author.Second", "Second", &[], &[]);
         second.dependencies = vec![dependency("Author.First", &[])];
         let installed = vec![first, second];
+
+        let error = sort_package_ids(&active, &installed).expect_err("cycle must fail");
+
+        assert_eq!(error, "Active mods contain circular load-order rules.");
+    }
+    #[test]
+    fn sorts_known_categories_and_top_bottom_rules_into_ordered_tiers() {
+        let active = vec![
+            "Author.Regular".to_string(),
+            "Author.Bottom.Child".to_string(),
+            "Author.Bottom".to_string(),
+            "Author.Top".to_string(),
+            "unlimitedhugs.hugslib".to_string(),
+            "ludeon.rimworld.royalty".to_string(),
+            "ludeon.rimworld.ideology".to_string(),
+            "ludeon.rimworld.biotech".to_string(),
+            "ludeon.rimworld.anomaly".to_string(),
+            "ludeon.rimworld.odyssey".to_string(),
+            "brrainz.harmony".to_string(),
+            "zetrith.prepatcher".to_string(),
+            "ludeon.rimworld".to_string(),
+        ];
+        let mut top = installed_mod("Author.Top", "Top", &[], &[]);
+        top.load_top = true;
+        let mut bottom = installed_mod("Author.Bottom", "Bottom", &[], &[]);
+        bottom.load_bottom = true;
+        let installed = vec![
+            installed_mod("Author.Regular", "Regular", &[], &[]),
+            installed_mod(
+                "Author.Bottom.Child",
+                "Bottom Child",
+                &["Author.Bottom"],
+                &[],
+            ),
+            bottom,
+            top,
+            installed_mod("unlimitedhugs.hugslib", "Framework", &[], &[]),
+            installed_mod("ludeon.rimworld.ideology", "RimWorld Ideology", &[], &[]),
+            installed_mod("ludeon.rimworld.biotech", "RimWorld Biotech", &[], &[]),
+            installed_mod("ludeon.rimworld.anomaly", "RimWorld Anomaly", &[], &[]),
+            installed_mod("ludeon.rimworld.odyssey", "RimWorld Odyssey", &[], &[]),
+            installed_mod("ludeon.rimworld.royalty", "RimWorld Royalty", &[], &[]),
+            installed_mod("brrainz.harmony", "Harmony", &[], &[]),
+            installed_mod("zetrith.prepatcher", "Prepatcher", &[], &[]),
+            installed_mod("ludeon.rimworld", "Core", &[], &[]),
+        ];
+
+        let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
+
+        assert_eq!(
+            sorted,
+            vec![
+                "ludeon.rimworld",
+                "brrainz.harmony",
+                "zetrith.prepatcher",
+                "ludeon.rimworld.anomaly",
+                "ludeon.rimworld.biotech",
+                "ludeon.rimworld.ideology",
+                "ludeon.rimworld.odyssey",
+                "ludeon.rimworld.royalty",
+                "unlimitedhugs.hugslib",
+                "Author.Top",
+                "Author.Regular",
+                "Author.Bottom",
+                "Author.Bottom.Child"
+            ]
+        );
+    }
+
+    #[test]
+    fn expands_known_tier_zero_dependencies_recursively() {
+        let active = vec![
+            "Ludeon.RimWorld".to_string(),
+            "Author.Dependency".to_string(),
+            "Author.DeepDependency".to_string(),
+        ];
+        let core = installed_mod("Ludeon.RimWorld", "Core", &["Author.Dependency"], &[]);
+        let dependency_mod = installed_mod(
+            "Author.Dependency",
+            "Dependency",
+            &["Author.DeepDependency"],
+            &[],
+        );
+        let installed = vec![
+            core,
+            dependency_mod,
+            installed_mod("Author.DeepDependency", "Deep Dependency", &[], &[]),
+        ];
+
+        let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
+
+        assert_eq!(
+            sorted,
+            vec![
+                "Author.DeepDependency",
+                "Author.Dependency",
+                "Ludeon.RimWorld"
+            ]
+        );
+    }
+
+    #[test]
+    fn expands_top_dependencies_and_bottom_reverse_dependencies_recursively() {
+        let active = vec![
+            "Author.Top".to_string(),
+            "Author.TopDependency".to_string(),
+            "Author.TopDependencyDependency".to_string(),
+            "Author.Regular".to_string(),
+            "Author.Bottom".to_string(),
+            "Author.BottomDependent".to_string(),
+            "Author.BottomReverseDependent".to_string(),
+        ];
+        let mut top = installed_mod("Author.Top", "Top", &[], &[]);
+        top.load_top = true;
+        top.dependencies = vec![dependency("Author.TopDependency", &[])];
+        let mut top_dependency = installed_mod("Author.TopDependency", "Top Dependency", &[], &[]);
+        top_dependency.dependencies = vec![dependency("Author.TopDependencyDependency", &[])];
+        let mut bottom = installed_mod("Author.Bottom", "Bottom", &[], &[]);
+        bottom.load_bottom = true;
+        let installed = vec![
+            top,
+            top_dependency,
+            installed_mod(
+                "Author.TopDependencyDependency",
+                "Top Dependency Dependency",
+                &[],
+                &[],
+            ),
+            installed_mod("Author.Regular", "Regular", &[], &[]),
+            bottom,
+            installed_mod(
+                "Author.BottomDependent",
+                "Bottom Dependent",
+                &["Author.Bottom"],
+                &[],
+            ),
+            installed_mod(
+                "Author.BottomReverseDependent",
+                "Bottom Reverse Dependent",
+                &["Author.BottomDependent"],
+                &[],
+            ),
+        ];
+
+        let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
+
+        assert_eq!(
+            sorted,
+            vec![
+                "Author.TopDependencyDependency",
+                "Author.TopDependency",
+                "Author.Top",
+                "Author.Regular",
+                "Author.Bottom",
+                "Author.BottomDependent",
+                "Author.BottomReverseDependent"
+            ]
+        );
+    }
+
+    #[test]
+    fn sorts_each_topological_level_alphabetically() {
+        let active = vec![
+            "Author.Dependent".to_string(),
+            "Author.Free".to_string(),
+            "Author.Root".to_string(),
+        ];
+        let installed = vec![
+            installed_mod("Author.Dependent", "Aardvark", &[], &[]),
+            installed_mod("Author.Free", "Beta", &[], &[]),
+            installed_mod("Author.Root", "Zulu", &[], &["Author.Dependent"]),
+        ];
+
+        let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
+
+        assert_eq!(
+            sorted,
+            vec!["Author.Free", "Author.Root", "Author.Dependent"]
+        );
+    }
+
+    #[test]
+    fn retains_active_ids_without_installed_metadata() {
+        let active = vec!["missing.package".to_string(), "Author.A".to_string()];
+        let installed = vec![installed_mod("Author.A", "A", &[], &[])];
+
+        let sorted = sort_package_ids(&active, &installed).expect("mods should sort");
+
+        assert_eq!(sorted, vec!["Author.A", "missing.package"]);
+    }
+
+    #[test]
+    fn reports_cycles_that_cross_category_tiers() {
+        let active = vec!["Ludeon.RimWorld".to_string(), "Author.Mod".to_string()];
+        let installed = vec![
+            installed_mod("Ludeon.RimWorld", "Core", &["Author.Mod"], &[]),
+            installed_mod("Author.Mod", "Mod", &["Ludeon.RimWorld"], &[]),
+        ];
 
         let error = sort_package_ids(&active, &installed).expect_err("cycle must fail");
 

@@ -8,6 +8,10 @@ pub(crate) struct InstalledMod {
     pub(crate) package_id: String,
     pub(crate) description: String,
     pub(crate) published_file_id: Option<String>,
+    #[serde(skip)]
+    pub(crate) load_top: bool,
+    #[serde(skip)]
+    pub(crate) load_bottom: bool,
     pub(crate) load_after: Vec<String>,
     pub(crate) load_before: Vec<String>,
     pub(crate) incompatible_with: Vec<String>,

@@ -128,6 +128,8 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
             package_id,
             description,
             published_file_id,
+            load_top: false,
+            load_bottom: false,
             load_after: parsed_rules.load_after,
             load_before: parsed_rules.load_before,
             incompatible_with: parsed_rules.incompatible_with,

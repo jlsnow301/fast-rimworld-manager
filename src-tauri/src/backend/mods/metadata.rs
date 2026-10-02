@@ -27,6 +27,16 @@ pub(crate) fn enrich_installed_mods(
         if let Some(rule) =
             community_rules_by_package_id.get(&normalize_package_id(&mod_entry.package_id))
         {
+            mod_entry.load_top = rule
+                .get("loadTop")
+                .and_then(|load_top| load_top.get("value"))
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            mod_entry.load_bottom = rule
+                .get("loadBottom")
+                .and_then(|load_bottom| load_bottom.get("value"))
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
             append_rule_package_ids(&mut mod_entry.load_after, rule.get("loadAfter"));
             append_rule_package_ids(&mut mod_entry.load_before, rule.get("loadBefore"));
         }
@@ -218,6 +228,8 @@ mod tests {
             package_id: package_id.to_string(),
             description: String::new(),
             published_file_id: published_file_id.map(str::to_string),
+            load_top: false,
+            load_bottom: false,
             load_after: Vec::new(),
             load_before: Vec::new(),
             incompatible_with: Vec::new(),
@@ -235,7 +247,7 @@ mod tests {
         fs::create_dir_all(&directory).expect("database directory should be created");
         fs::write(
             directory.join("communityRules.json"),
-            r#"{"timestamp":1,"rules":{"Author.Mod":{"loadAfter":{"author.framework":{"name":["Framework"]}},"loadBefore":{"author.patch":{"name":["Patch"]}}}}}"#,
+            r#"{"timestamp":1,"rules":{"Author.Mod":{"loadAfter":{"author.framework":{"name":["Framework"]}},"loadBefore":{"author.patch":{"name":["Patch"]}},"loadTop":{"value":true,"comment":"Load this mod early"},"loadBottom":{"value":true,"comment":"Load this mod last"}}}}"#,
         )
         .expect("community rules should be written");
         fs::write(
@@ -249,6 +261,8 @@ mod tests {
 
         assert_eq!(mods[0].load_after, ["author.framework"]);
         assert_eq!(mods[0].load_before, ["author.patch"]);
+        assert!(mods[0].load_top);
+        assert!(mods[0].load_bottom);
         assert_eq!(
             mods[0].dependencies,
             [
@@ -306,5 +320,13 @@ mod tests {
         assert!(mods[0].load_before.is_empty());
         assert!(mods[0].dependencies.is_empty());
         fs::remove_dir_all(directory).expect("database directory should be removed");
+    }
+    #[test]
+    fn omits_internal_category_flags_from_serialized_mods() {
+        let serialized =
+            serde_json::to_value(installed_mod("author.mod", None)).expect("mod should serialize");
+
+        assert!(serialized.get("loadTop").is_none());
+        assert!(serialized.get("loadBottom").is_none());
     }
 }
