@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createStore, Provider } from 'jotai';
 import { AppProvider } from '@/context/app-context';
 import {
@@ -8,12 +8,13 @@ import {
 	installedModsAtom,
 } from '@/features/mod-list/atoms';
 import {
+	previewMessageAtom,
 	selectedModAtom,
 	steamPreviewAtom,
 } from '@/features/mod-preview/atoms';
 import { ModPreviewFeature } from '@/features/mod-preview/mod-preview-feature';
 import type { AppController } from '@/hooks/use-app-controller';
-import type { InstalledMod } from '@/utils/types';
+import type { InstalledMod, SteamModPreview } from '@/utils/types';
 
 const meta = {
 	title: 'Mod Preview/Installed Details',
@@ -28,6 +29,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 type StoryStore = ReturnType<typeof createStore>;
 type PreviewStoryController = Pick<AppController, 'closeModPreview'>;
+type PreviewStoryProps = {
+	loading?: boolean;
+};
 
 const previewMod: InstalledMod = {
 	name: 'Sample Vehicle Mod',
@@ -52,25 +56,44 @@ const previewMod: InstalledMod = {
 	],
 };
 
-function createPreviewStoryStore(): StoryStore {
-	const store = createStore();
-	store.set(installedModsAtom, [previewMod]);
-	store.set(activeModsAtom, [previewMod.packageId]);
-	store.set(installedGameVersionAtom, '1.6');
-	store.set(selectedModAtom, previewMod);
-	store.set(steamPreviewAtom, {
+function createSteamPreview(): SteamModPreview {
+	return {
 		publishedFileId: '123456789',
 		title: previewMod.name,
 		description: 'Sample Workshop description.',
 		previewUrl:
 			'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
 		timeUpdated: 1722470400,
-	});
+	};
+}
+
+function createPreviewStoryStore(loading = false): StoryStore {
+	const store = createStore();
+	store.set(installedModsAtom, [previewMod]);
+	store.set(activeModsAtom, [previewMod.packageId]);
+	store.set(installedGameVersionAtom, '1.6');
+	store.set(selectedModAtom, previewMod);
+	store.set(steamPreviewAtom, loading ? null : createSteamPreview());
+	store.set(
+		previewMessageAtom,
+		loading
+			? 'Loading Steam Workshop details…'
+			: 'Steam Workshop details loaded.',
+	);
 	return store;
 }
 
-function PreviewStory() {
-	const [store] = useState(createPreviewStoryStore);
+function PreviewStory(props: PreviewStoryProps) {
+	const { loading = false } = props;
+	const [store] = useState(() => createPreviewStoryStore(loading));
+	useEffect(() => {
+		if (!loading) return;
+		const timeoutId = globalThis.setTimeout(() => {
+			store.set(steamPreviewAtom, createSteamPreview());
+			store.set(previewMessageAtom, 'Steam Workshop details loaded.');
+		}, 1000);
+		return () => globalThis.clearTimeout(timeoutId);
+	}, [loading, store]);
 	const controller: PreviewStoryController = {
 		closeModPreview() {
 			store.set(selectedModAtom, null);
@@ -152,6 +175,44 @@ export const InfoShowsOnDiskDetails: Story = {
 		if (closedDialog && getComputedStyle(closedDialog).display !== 'none') {
 			throw new Error(
 				'The dialog must close from its primary Close action.',
+			);
+		}
+	},
+};
+
+export const LoadingKeepsPreviewHeight: Story = {
+	render: () => <PreviewStory loading />,
+	play: async ({ canvasElement }) => {
+		const card = canvasElement.querySelector<HTMLElement>(
+			'[data-slot="card"]',
+		);
+		const loadingStatus = canvasElement.querySelector(
+			'[aria-label="Loading mod preview"]',
+		);
+		if (!card || !loadingStatus) {
+			throw new Error('The mod preview must show its loading Skeleton.');
+		}
+		if (card.querySelectorAll('[data-slot="skeleton"]').length === 0) {
+			throw new Error('The loading state must render shadcn Skeletons.');
+		}
+		const loadingHeight = card.getBoundingClientRect().height;
+		await new Promise<void>((resolve) => setTimeout(resolve, 1100));
+		const loadedHeight = card.getBoundingClientRect().height;
+		if (loadedHeight !== loadingHeight) {
+			throw new Error(
+				`The preview boundary changed from ${loadingHeight}px to ${loadedHeight}px.`,
+			);
+		}
+		if (
+			!canvasElement.querySelector(
+				'img[alt="Sample Vehicle Mod Workshop preview"]',
+			)
+		) {
+			throw new Error('The resolved mod preview must show its image.');
+		}
+		if (!canvasElement.textContent?.includes('Workshop Author')) {
+			throw new Error(
+				'The resolved mod preview must preserve its content.',
 			);
 		}
 	},
