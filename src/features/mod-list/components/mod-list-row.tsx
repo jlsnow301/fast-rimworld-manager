@@ -62,6 +62,8 @@ export function ModListRow(props: ModListRowProps) {
 	} = data;
 	const normalizedId = normalizedPackageId(packageId);
 	const OfficialContentIcon = OFFICIAL_CONTENT_ICONS[normalizedId];
+	const hasErrors = Boolean(diagnostics?.errors.length);
+	const hasWarnings = Boolean(diagnostics?.warnings.length);
 	const errorDetails = diagnostics?.errors
 		.map((issue) => `${issue.title}: ${issue.details.join(', ')}`)
 		.join('. ');
@@ -91,10 +93,8 @@ export function ModListRow(props: ModListRowProps) {
 				canDrag
 					? 'cursor-grab active:cursor-grabbing'
 					: 'cursor-default',
-				diagnostics?.errors.length &&
-					'border-l-2 border-destructive',
-				!diagnostics?.errors.length &&
-					diagnostics?.warnings.length &&
+				hasErrors && 'border-l-2 border-destructive',
+				!hasErrors && hasWarnings &&
 					'border-l-2 border-muted-foreground',
 			)}
 			draggable={canDrag}
@@ -117,12 +117,20 @@ export function ModListRow(props: ModListRowProps) {
 				{OfficialContentIcon && (
 					<OfficialContentIcon
 						aria-hidden='true'
-						data-icon='inline-start'
 						className='mt-0.5 shrink-0 text-muted-foreground'
 						focusable='false'
 					/>
 				)}
-				<span className='min-w-0 flex-1 truncate'>{name}</span>
+				<span
+					className={cn(
+						'min-w-0 flex-1 truncate',
+						hasErrors && 'text-destructive',
+						!hasErrors && hasWarnings &&
+							'text-yellow-600 dark:text-yellow-400',
+					)}
+				>
+					{name}
+				</span>
 				{(errorDetails || warningDetails || updateDetails) && (
 					<TooltipProvider>
 						<span className='ml-auto flex shrink-0 items-center gap-1'>
@@ -149,7 +157,7 @@ export function ModListRow(props: ModListRowProps) {
 									>
 										<TriangleAlert
 											aria-hidden='true'
-											className='shrink-0 text-muted-foreground'
+											className='shrink-0 text-yellow-600 dark:text-yellow-400'
 											focusable='false'
 										/>
 									</TooltipTrigger>
