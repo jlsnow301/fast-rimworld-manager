@@ -1,5 +1,5 @@
 import { Check, LoaderCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
 	activeDimNonMatchingModsAtom,
@@ -24,6 +24,7 @@ import {
 	statusAtom,
 	visibleActiveModsAtom,
 	visibleInactiveModsAtom,
+	workshopUpdateResultAtom,
 	workshopUpdateStatusAtom,
 } from '@/features/mod-list/atoms';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +81,29 @@ export function ModListFeature() {
 	const workshopUpdateStatus = useAtomValue(workshopUpdateStatusAtom);
 	const [showWorkshopUpdates, setShowWorkshopUpdates] = useState(false);
 	const [selectedUpdateIds, setSelectedUpdateIds] = useState<string[]>([]);
+	const updateCount = useAtomValue(workshopUpdateResultAtom)?.outdatedMods
+		.length ?? 0;
+	const checkForUpdatesLabel = checkingWorkshopUpdates
+		? 'Checking Workshop…'
+		: isTestMode
+		? 'Preview Workshop updates'
+		: 'Check for updates';
+	const checkForUpdatesAriaLabel = updateCount > 0
+		? `${checkForUpdatesLabel}, ${updateCount} update${
+			updateCount === 1 ? '' : 's'
+		} available`
+		: checkForUpdatesLabel;
+	const displayedUpdateCount = updateCount > 9 ? '9+' : updateCount;
+	const hasCheckedForUpdatesOnStartup = useRef(false);
+
+	useEffect(() => {
+		if (
+			modListLoadState !== 'loaded' || isTestMode || !hasWorkshopMods ||
+			hasCheckedForUpdatesOnStartup.current
+		) return;
+		hasCheckedForUpdatesOnStartup.current = true;
+		void checkForModUpdates();
+	}, [checkForModUpdates, hasWorkshopMods, isTestMode, modListLoadState]);
 
 	async function handleCheckForUpdates() {
 		const result = await checkForModUpdates();
@@ -110,17 +134,23 @@ export function ModListFeature() {
 							<div className='flex items-center gap-3'>
 								<Button
 									aria-busy={checkingWorkshopUpdates}
+									aria-label={checkForUpdatesAriaLabel}
 									disabled={checkingWorkshopUpdates ||
 										(!isTestMode && !hasWorkshopMods)}
 									onClick={handleCheckForUpdates}
 									size='sm'
 									variant='outline'
 								>
-									{checkingWorkshopUpdates
-										? 'Checking Workshop…'
-										: isTestMode
-										? 'Preview Workshop updates'
-										: 'Check for updates'}
+									{checkForUpdatesLabel}
+									{updateCount > 0 && (
+										<Badge
+											aria-hidden='true'
+											className='size-5 rounded-full border border-current px-0 py-0 tracking-normal'
+											variant='outline'
+										>
+											{displayedUpdateCount}
+										</Badge>
+									)}
 								</Button>
 								<Button
 									disabled={activeMods.length < 2}

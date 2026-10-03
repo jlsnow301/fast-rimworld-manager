@@ -68,7 +68,22 @@ type ModListStoryState = {
 };
 type ActiveInactiveStoryProps = {
 	failWorkshopUpdateDispatch?: boolean;
+	autoCheckWorkshopUpdates?: boolean;
 };
+
+async function waitForCheckForUpdatesButton(canvasElement: HTMLElement) {
+	const nextFrame = () =>
+		new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+	await nextFrame();
+	for (let frame = 0; frame < 60; frame += 1) {
+		const button = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label^="Check for updates"]',
+		);
+		if (button && !button.disabled) return button;
+		await nextFrame();
+	}
+	throw new Error('The Workshop update check button must become available.');
+}
 
 const storyMods: InstalledMod[] = [
 	{
@@ -340,9 +355,21 @@ const workshopUpdateResult: WorkshopUpdateCheckResult = {
 	skippedCount: 2,
 	outdatedMods: outdatedWorkshopMods,
 };
+const startupWorkshopUpdateResult: WorkshopUpdateCheckResult = {
+	checkedCount: 12,
+	skippedCount: 0,
+	outdatedMods: Array.from({ length: 12 }, (_, index) => ({
+		name: `Startup Workshop Mod ${index + 1}`,
+		packageId: `sample.startupmod${index + 1}`,
+		publishedFileId: String(1_000_000_000 + index),
+		installedTimeUpdated: 1717200000,
+		steamTimeUpdated: 1722470400,
+	})),
+};
 
 function createModListStoryState(
 	failWorkshopUpdateDispatch = false,
+	autoCheckWorkshopUpdates = false,
 ): ModListStoryState {
 	const store = createStore();
 	store.set(installedModsAtom, loadedStoryMods);
@@ -358,9 +385,14 @@ function createModListStoryState(
 		createModListSnapshot('1.5.4104', initialActiveMods, knownExpansions),
 	);
 	store.set(isTestModeAtom, false);
-	store.set(workshopUpdateResultAtom, workshopUpdateResult);
+	store.set(
+		workshopUpdateResultAtom,
+		autoCheckWorkshopUpdates ? null : workshopUpdateResult,
+	);
 	store.set(selectedModAtom, null);
 	store.set(previewMessageAtom, 'Select a mod to review its details.');
+
+	let startupWorkshopUpdateCheckCount = 0;
 
 	const controller: ModListStoryController = {
 		moveMod(index, source, target) {
@@ -417,9 +449,19 @@ function createModListStoryState(
 		async checkForModUpdates() {
 			store.set(checkingWorkshopUpdatesAtom, true);
 			await Promise.resolve();
-			store.set(workshopUpdateResultAtom, workshopUpdateResult);
+			const result = autoCheckWorkshopUpdates
+				? startupWorkshopUpdateResult
+				: workshopUpdateResult;
+			if (autoCheckWorkshopUpdates) {
+				startupWorkshopUpdateCheckCount += 1;
+				store.set(
+					statusAtom,
+					`Automatic Workshop update check ${startupWorkshopUpdateCheckCount}.`,
+				);
+			}
+			store.set(workshopUpdateResultAtom, result);
 			store.set(checkingWorkshopUpdatesAtom, false);
-			return workshopUpdateResult;
+			return result;
 		},
 		updateSelectedOutdatedWorkshopMods(mods) {
 			if (failWorkshopUpdateDispatch) {
@@ -452,9 +494,15 @@ function createModListStoryState(
 }
 
 function ActiveInactiveStory(props: ActiveInactiveStoryProps) {
-	const { failWorkshopUpdateDispatch = false } = props;
+	const {
+		failWorkshopUpdateDispatch = false,
+		autoCheckWorkshopUpdates = false,
+	} = props;
 	const [storyState] = useState(() =>
-		createModListStoryState(failWorkshopUpdateDispatch)
+		createModListStoryState(
+			failWorkshopUpdateDispatch,
+			autoCheckWorkshopUpdates,
+		)
 	);
 
 	return (
@@ -1024,6 +1072,47 @@ export const LoadedActiveAndInactiveLists: Story = {
 		}
 	},
 };
+export const StartupWorkshopUpdateCount: Story = {
+	globals: { viewport: { value: 'application', isRotated: false } },
+	render: () => <ActiveInactiveStory autoCheckWorkshopUpdates />,
+	play: async ({ canvasElement }) => {
+		const ownerDocument = canvasElement.ownerDocument;
+		const buttonSelector =
+			'button[aria-label="Check for updates, 12 updates available"]';
+		let updateButton: HTMLButtonElement | null = null;
+		for (let frame = 0; frame < 60; frame += 1) {
+			updateButton = ownerDocument.querySelector<HTMLButtonElement>(
+				buttonSelector,
+			);
+			if (updateButton) break;
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve())
+			);
+		}
+		const updateCountBadge = updateButton?.querySelector<HTMLElement>(
+			'[data-slot="badge"]',
+		);
+		const statusMessage = canvasElement.querySelector(
+			'p[aria-live="polite"]',
+		)?.textContent?.trim();
+		if (
+			!updateButton ||
+			updateCountBadge?.textContent?.trim() !== '9+' ||
+			statusMessage !== 'Automatic Workshop update check 1.' ||
+			!canvasElement.querySelector(
+				'input[aria-label="Search active mods"]',
+			) ||
+			!canvasElement.querySelector(
+				'input[aria-label="Search inactive mods"]',
+			) ||
+			canvasElement.querySelector('[data-testid="workshop-update-list"]')
+		) {
+			throw new Error(
+				'Startup must check updates once, keep the mod lists open, and cap the button count at 9+.',
+			);
+		}
+	},
+};
 
 export const WorkshopUpdatesSelectionFlow: Story = {
 	globals: { viewport: { value: 'application', isRotated: false } },
@@ -1059,12 +1148,7 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 			}
 			throw new Error('Both mod lists did not return.');
 		}
-		const checkButton = Array.from(
-			canvasElement.querySelectorAll('button'),
-		).find((button) => button.textContent?.trim() === 'Check for updates');
-		if (!checkButton) {
-			throw new Error('The update check action must appear.');
-		}
+		const checkButton = await waitForCheckForUpdatesButton(canvasElement);
 		checkButton.click();
 		await waitForHeading('Workshop updates');
 		if (
@@ -1129,12 +1213,9 @@ export const WorkshopUpdatesSelectionFlow: Story = {
 		}
 		backButton.click();
 		await waitForModListCards();
-		const checkForUpdatesButton = Array.from(
-			canvasElement.querySelectorAll('button'),
-		).find((button) => button.textContent?.trim() === 'Check for updates');
-		if (!checkForUpdatesButton) {
-			throw new Error('The update check action must remain available.');
-		}
+		const checkForUpdatesButton = await waitForCheckForUpdatesButton(
+			canvasElement,
+		);
 		checkForUpdatesButton.click();
 		await waitForHeading('Workshop updates');
 		const updateSelectedButton = Array.from(
@@ -1165,12 +1246,7 @@ export const WorkshopUpdatesDispatchFailure: Story = {
 			new Promise<void>((resolve) =>
 				requestAnimationFrame(() => resolve())
 			);
-		const checkButton = Array.from(
-			canvasElement.querySelectorAll('button'),
-		).find((button) => button.textContent?.trim() === 'Check for updates');
-		if (!checkButton) {
-			throw new Error('The update check action must appear.');
-		}
+		const checkButton = await waitForCheckForUpdatesButton(canvasElement);
 		checkButton.click();
 		await nextFrame();
 		const updateButton = Array.from(

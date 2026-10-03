@@ -567,8 +567,9 @@ export const CompleteAppMockup: Story = {
 			);
 		}
 
-		const workshopButton = findButton(canvasElement, 'Check for updates') ??
-			findButton(canvasElement, 'Preview Workshop updates');
+		const workshopButton = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label^="Check for updates"], button[aria-label^="Preview Workshop updates"]',
+		);
 		if (!workshopButton) {
 			throw new Error(
 				'The app story must expose the Workshop update flow.',
