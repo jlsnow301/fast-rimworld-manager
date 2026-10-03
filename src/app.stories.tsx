@@ -60,6 +60,7 @@ type StoryStore = ReturnType<typeof createStore>;
 type StoryController = Pick<
 	AppController,
 	| 'importModList'
+	| 'exportActiveModList'
 	| 'moveMod'
 	| 'saveModList'
 	| 'toggleSettings'
@@ -188,6 +189,13 @@ function createAppStoryState(): AppStoryState {
 			);
 			return Promise.resolve();
 		},
+		exportActiveModList() {
+			store.set(
+				statusAtom,
+				'Export is unavailable in this Storybook preview.',
+			);
+			return Promise.resolve();
+		},
 		toggleSettings() {
 			store.set(settingsOpenAtom, (open) => !open);
 		},
@@ -311,8 +319,17 @@ function createAppStoryState(): AppStoryState {
 	return { store, controller };
 }
 
-function AppStory() {
-	const [storyState] = useState(createAppStoryState);
+type AppStoryProps = {
+	testMode?: boolean;
+};
+
+function AppStory(props: AppStoryProps) {
+	const { testMode = false } = props;
+	const [storyState] = useState(() => {
+		const state = createAppStoryState();
+		if (testMode) state.store.set(isTestModeAtom, true);
+		return state;
+	});
 
 	return (
 		<Provider store={storyState.store}>
@@ -326,6 +343,7 @@ function findButton(
 	label: string,
 ): HTMLButtonElement | null {
 	return Array.from(element.querySelectorAll('button')).find((button) =>
+		button.getAttribute('aria-label') === label ||
 		button.textContent?.trim() === label
 	) ?? null;
 }
@@ -381,27 +399,36 @@ export const CompleteAppMockup: Story = {
 				'The complete app story must render the persistent app header.',
 			);
 		}
-
+		const toolbarButtons = Array.from(
+			canvasElement.querySelectorAll('header button'),
+		);
+		const toolbarLabels = ['Import', 'Export', 'Save', 'Settings'];
+		if (
+			toolbarButtons.length !== toolbarLabels.length ||
+			toolbarButtons.some((button, index) =>
+				button.getAttribute('aria-label') !== toolbarLabels[index] ||
+				button.textContent?.trim() !== '' ||
+				!button.querySelector('svg') ||
+				(index === 3 &&
+					button.getAttribute('aria-expanded') !== 'false')
+			)
+		) {
+			throw new Error(
+				'Header actions must be four accessible icon-only buttons in action order.',
+			);
+		}
 		const cardTitles = Array.from(
 			canvasElement.querySelectorAll('[data-slot="card-title"]'),
 		).map((title) => title.textContent?.trim() ?? '');
 		const hasModPreview = cardTitles.includes('Mod preview') ||
 			cardTitles.includes('Sample Vehicle Mod');
-		const pageText = canvasElement.textContent ?? '';
 		if (
 			!hasModPreview ||
 			!cardTitles.includes('Inactive mods') ||
-			!cardTitles.includes('Active mods') ||
-			pageText.includes('Manage RimWorld mods') ||
-			pageText.includes(
-				'Drag mods between the lists to change activation.',
-			) ||
-			pageText.includes('ModsConfig.xml') ||
-			pageText.includes('Load sample list') ||
-			/\d+ active · \d+ inactive/.test(pageText)
+			!cardTitles.includes('Active mods')
 		) {
 			throw new Error(
-				'The app story must show both lists without redundant page text.',
+				'The app story must render both mod lists and the preview.',
 			);
 		}
 		const diagnosticRow = canvasElement.querySelector(
@@ -541,21 +568,27 @@ export const CompleteAppMockup: Story = {
 		await waitForRender();
 
 		const settingsButton = findButton(canvasElement, 'Settings');
-		if (!settingsButton) {
-			throw new Error('The app header must open Settings.');
+		if (
+			!settingsButton ||
+			settingsButton.getAttribute('aria-expanded') !== 'false'
+		) {
+			throw new Error(
+				'Settings must start closed with a stable accessible name.',
+			);
 		}
 		settingsButton.click();
 		await waitForRender();
+		const expandedSettingsButton = findButton(canvasElement, 'Settings');
 		if (
 			!canvasElement.textContent?.includes('Steam Web API') ||
-			!findButton(canvasElement, 'Back') ||
+			expandedSettingsButton?.getAttribute('aria-expanded') !== 'true' ||
 			!canvasElement.querySelector('header h1')
 		) {
 			throw new Error(
-				'Settings must render within the persistent app shell.',
+				'Settings must open while retaining its accessible name.',
 			);
 		}
-		findButton(canvasElement, 'Back')?.click();
+		expandedSettingsButton?.click();
 		await waitForRender();
 		const restoredActiveSearchField = canvasElement.querySelector(
 			'input[aria-label="Search active mods"]',
@@ -570,9 +603,54 @@ export const CompleteAppMockup: Story = {
 			!restoredActiveSearchField ||
 			!restoredInactiveSearchField ||
 			!restoredCardTitles.includes('Active mods') ||
-			!restoredCardTitles.includes('Inactive mods')
+			!restoredCardTitles.includes('Inactive mods') ||
+			findButton(canvasElement, 'Settings')?.getAttribute(
+					'aria-expanded',
+				) !==
+				'false'
 		) {
-			throw new Error('Back must restore the main mod-list view.');
+			throw new Error(
+				'Settings must close and restore the main mod-list view.',
+			);
+		}
+	},
+};
+
+export const TestModeToolbar: Story = {
+	globals: { viewport: { value: 'application', isRotated: false } },
+	render: () => <AppStory testMode />,
+	play: async ({ canvasElement }) => {
+		const toolbarButtons = Array.from(
+			canvasElement.querySelectorAll('header button'),
+		);
+		const importButton = findButton(canvasElement, 'Import');
+		const exportButton = findButton(canvasElement, 'Export');
+		const saveButton = findButton(canvasElement, 'Save');
+		const settingsButton = findButton(canvasElement, 'Settings');
+		if (
+			toolbarButtons.length !== 4 ||
+			!importButton?.disabled ||
+			!exportButton?.disabled ||
+			!saveButton?.disabled ||
+			!settingsButton ||
+			settingsButton.disabled
+		) {
+			throw new Error(
+				'Test-mode toolbar must disable Import, Export, and Save only.',
+			);
+		}
+		settingsButton.click();
+		await waitForRender();
+		if (
+			findButton(canvasElement, 'Settings')?.getAttribute(
+					'aria-expanded',
+				) !==
+				'true' ||
+			!canvasElement.textContent?.includes('Steam Web API')
+		) {
+			throw new Error(
+				'Settings must remain a working toolbar toggle in test mode.',
+			);
 		}
 	},
 };

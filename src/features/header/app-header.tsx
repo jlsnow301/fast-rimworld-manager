@@ -1,6 +1,13 @@
 import { useAtomValue } from 'jotai';
+import { FileDown, FileUp, Save, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
 	hasModListAtom,
 	isModListDirtyAtom,
@@ -14,6 +21,7 @@ import { useAppContext } from '@/context/app-context';
 export function AppHeader() {
 	const {
 		importModList,
+		exportActiveModList,
 		toggleSettings,
 		saveModList,
 	} = useAppContext();
@@ -53,30 +61,86 @@ export function AppHeader() {
 						Unsaved changes
 					</Badge>
 				)}
-				<Button
-					variant='outline'
-					size='sm'
-					disabled={isTestMode}
-					onClick={importModList}
-				>
-					Import list
-				</Button>
-				<Button
-					variant={isModListDirty ? 'default' : 'outline'}
-					size='sm'
-					disabled={!hasModList || isTestMode}
-					onClick={saveModList}
-				>
-					Save to RimWorld
-				</Button>
-				<Button
-					variant='outline'
-					size='sm'
-					aria-expanded={settingsOpen}
-					onClick={toggleSettings}
-				>
-					{settingsOpen ? 'Back' : 'Settings'}
-				</Button>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									aria-label='Import'
+									disabled={isTestMode}
+									onClick={importModList}
+									size='icon-sm'
+									type='button'
+									variant='outline'
+								>
+									<FileUp aria-hidden='true' />
+								</Button>
+							}
+						>
+							Import
+						</TooltipTrigger>
+						<TooltipContent>Import</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									aria-label='Export'
+									disabled={!hasModList || isTestMode}
+									onClick={exportActiveModList}
+									size='icon-sm'
+									type='button'
+									variant='outline'
+								>
+									<FileDown aria-hidden='true' />
+								</Button>
+							}
+						>
+							Export
+						</TooltipTrigger>
+						<TooltipContent>Export</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									aria-label='Save'
+									disabled={!hasModList || isTestMode}
+									onClick={saveModList}
+									size='icon-sm'
+									type='button'
+									variant={isModListDirty
+										? 'default'
+										: 'outline'}
+								>
+									<Save aria-hidden='true' />
+								</Button>
+							}
+						>
+							Save
+						</TooltipTrigger>
+						<TooltipContent>Save</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									aria-expanded={settingsOpen}
+									aria-label='Settings'
+									onClick={toggleSettings}
+									size='icon-sm'
+									type='button'
+									variant='outline'
+								>
+									<Settings aria-hidden='true' />
+								</Button>
+							}
+						>
+							Settings
+						</TooltipTrigger>
+						<TooltipContent>Settings</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 			</div>
 		</header>
 	);
