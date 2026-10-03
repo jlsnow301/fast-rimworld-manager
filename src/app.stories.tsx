@@ -56,6 +56,7 @@ const meta = {
 } satisfies Meta<typeof AppStory>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 type StoryStore = ReturnType<typeof createStore>;
 type StoryController = Pick<
@@ -80,6 +81,7 @@ type StoryController = Pick<
 	| 'testSteamApiConnection'
 	| 'removeSteamApiKey'
 >;
+
 type AppStoryState = {
 	store: StoryStore;
 	controller: StoryController;

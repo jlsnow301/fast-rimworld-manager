@@ -26,6 +26,7 @@ const meta = {
 } satisfies Meta<typeof SettingsFeature>;
 
 export default meta;
+
 type Story = StoryObj<typeof meta>;
 type StoryStore = ReturnType<typeof createStore>;
 type SettingsStoryController = Pick<
@@ -39,6 +40,7 @@ type SettingsStoryController = Pick<
 	| 'testSteamApiConnection'
 	| 'removeSteamApiKey'
 >;
+
 type SettingsStoryProps = {
 	configured: boolean;
 	hasSavedPaths: boolean;

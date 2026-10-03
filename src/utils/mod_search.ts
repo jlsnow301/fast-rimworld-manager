@@ -6,7 +6,9 @@ import type {
 } from '@/utils/types';
 
 type ModSearchDetails = Pick<InstalledMod, 'name'>;
+
 type ModSearchIndex = ReadonlyMap<string, ModSearchDetails>;
+
 type ModSearchOptions = {
 	dimNonMatchingMods?: boolean;
 	filterWarnings?: boolean;

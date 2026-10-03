@@ -23,6 +23,7 @@ import {
 } from '@/features/settings/atoms';
 
 type RefreshInstalledMods = (mods: InstalledMod[]) => void;
+
 type SetStatus = (message: string) => void;
 
 type SettingsControllerOptions = {

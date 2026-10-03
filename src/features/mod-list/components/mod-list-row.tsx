@@ -38,7 +38,7 @@ const OFFICIAL_CONTENT_ICONS: Record<string, LucideIcon> = {
 	'ludeon.rimworld.odyssey': Rocket,
 };
 
-export type ModListRowData = {
+type ModListRowData = {
 	packageId: string;
 	index: number;
 	isMatch: boolean;
@@ -47,7 +47,7 @@ export type ModListRowData = {
 	outdatedWorkshopMod?: OutdatedWorkshopMod;
 };
 
-export type ModListRowProps = {
+type ModListRowProps = {
 	data: ModListRowData;
 	type: ModListType;
 	onSelectMod: (packageId: string) => void;

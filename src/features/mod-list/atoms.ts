@@ -21,6 +21,7 @@ import {
 export type ModListLoadState = 'loading' | 'loaded' | 'failed';
 
 export const modListLoadStateAtom = atom<ModListLoadState>('loading');
+
 export const statusAtom = atom(
 	'Waiting for configured mods. Set the RimWorld paths in Settings.',
 );
@@ -90,6 +91,7 @@ type TestModeBackup = {
 };
 
 export const isTestModeAtom = atom(false);
+
 const testModeBackupAtom = atom<TestModeBackup | null>(null);
 
 export const toggleTestModeAtom = atom(null, (get, set) => {

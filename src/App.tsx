@@ -27,7 +27,7 @@ export function AppShell(props: AppShellProps) {
 	);
 }
 
-export function AppContent() {
+function AppContent() {
 	const settingsOpen = useAtomValue(settingsOpenAtom);
 
 	return (

@@ -9,6 +9,7 @@ export type ImportedModListFile = {
 	fileName: string;
 	contents: string;
 };
+
 export type DatabaseKind =
 	| 'communityRules'
 	| 'steamWorkshop'
