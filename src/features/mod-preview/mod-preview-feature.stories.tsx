@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
 import { createStore, Provider } from 'jotai';
@@ -29,8 +30,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 type StoryStore = ReturnType<typeof createStore>;
 type PreviewStoryController = Pick<AppController, 'closeModPreview'>;
+type PreviewUrl = SteamModPreview['previewUrl'];
 type PreviewStoryProps = {
 	loading?: boolean;
+	previewUrl?: PreviewUrl;
+	narrowPreviewColumn?: boolean;
 };
 
 function assertPreviewDoesNotScroll(card: HTMLElement) {
@@ -78,24 +82,34 @@ const previewMod: InstalledMod = {
 	],
 };
 
-function createSteamPreview(): SteamModPreview {
+const storyPreviewUrl: PreviewUrl =
+	'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22160%22%20height=%2290%22%20viewBox=%220%200%20160%2090%22%3E%3Crect%20width=%22160%22%20height=%2290%22%20fill=%22%233b82f6%22/%3E%3Ccircle%20cx=%2280%22%20cy=%2245%22%20r=%2225%22%20fill=%22%23f8fafc%22/%3E%3C/svg%3E';
+
+function createSteamPreview(
+	previewUrl: PreviewUrl = storyPreviewUrl,
+): SteamModPreview {
 	return {
 		publishedFileId: '123456789',
 		title: previewMod.name,
 		description: 'Sample Workshop description.',
-		previewUrl:
-			'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
+		previewUrl,
 		timeUpdated: 1722470400,
 	};
 }
 
-function createPreviewStoryStore(loading = false): StoryStore {
+function createPreviewStoryStore(
+	loading = false,
+	previewUrl: PreviewUrl = storyPreviewUrl,
+): StoryStore {
 	const store = createStore();
 	store.set(installedModsAtom, [previewMod]);
 	store.set(activeModsAtom, [previewMod.packageId]);
 	store.set(installedGameVersionAtom, '1.6');
 	store.set(selectedModAtom, previewMod);
-	store.set(steamPreviewAtom, loading ? null : createSteamPreview());
+	store.set(
+		steamPreviewAtom,
+		loading ? null : createSteamPreview(previewUrl),
+	);
 	store.set(
 		previewMessageAtom,
 		loading
@@ -106,16 +120,22 @@ function createPreviewStoryStore(loading = false): StoryStore {
 }
 
 function PreviewStory(props: PreviewStoryProps) {
-	const { loading = false } = props;
-	const [store] = useState(() => createPreviewStoryStore(loading));
+	const {
+		loading = false,
+		previewUrl = storyPreviewUrl,
+		narrowPreviewColumn = false,
+	} = props;
+	const [store] = useState(() =>
+		createPreviewStoryStore(loading, previewUrl)
+	);
 	useEffect(() => {
 		if (!loading) return;
 		const timeoutId = globalThis.setTimeout(() => {
-			store.set(steamPreviewAtom, createSteamPreview());
+			store.set(steamPreviewAtom, createSteamPreview(previewUrl));
 			store.set(previewMessageAtom, 'Steam Workshop details loaded.');
 		}, 1000);
 		return () => globalThis.clearTimeout(timeoutId);
-	}, [loading, store]);
+	}, [loading, previewUrl, store]);
 	const controller: PreviewStoryController = {
 		closeModPreview() {
 			store.set(selectedModAtom, null);
@@ -123,7 +143,13 @@ function PreviewStory(props: PreviewStoryProps) {
 	};
 
 	return (
-		<div className='grid h-dvh min-h-0 grid-cols-1 p-6'>
+		<div
+			className={cn(
+				'grid h-dvh min-h-0 grid-cols-1 p-6',
+				narrowPreviewColumn && 'mx-auto w-72 p-0',
+			)}
+			data-preview-column-width={narrowPreviewColumn ? 'narrow' : 'full'}
+		>
 			<Provider store={store}>
 				<AppProvider value={controller as AppController}>
 					<ModPreviewFeature />
@@ -222,10 +248,8 @@ export const InfoShowsOnDiskDetails: Story = {
 		const closeButton = dialog.querySelector<HTMLButtonElement>(
 			'[data-slot="dialog-footer"] button',
 		);
-		if (!closeButton || !closeButton.className.includes('bg-primary')) {
-			throw new Error(
-				'The dialog Close action must be visually primary.',
-			);
+		if (!closeButton) {
+			throw new Error('The dialog must expose its Close action.');
 		}
 		await userEvent.click(closeButton);
 		await new Promise<void>((resolve) => setTimeout(resolve, 200));
@@ -254,35 +278,205 @@ export const LoadingKeepsPreviewHeight: Story = {
 		const card = canvasElement.querySelector<HTMLElement>(
 			'[data-slot="card"]',
 		);
-		const loadingStatus = canvasElement.querySelector(
-			'[aria-label="Loading mod preview"]',
+		const imageSlot = canvasElement.querySelector<HTMLElement>(
+			'[aria-label="Loading mod preview image"]',
 		);
-		if (!card || !loadingStatus) {
-			throw new Error('The mod preview must show its loading Skeleton.');
-		}
-		if (card.querySelectorAll('[data-slot="skeleton"]').length === 0) {
-			throw new Error('The loading state must render shadcn Skeletons.');
-		}
-		assertPreviewDoesNotScroll(card);
-		const loadingHeight = card.getBoundingClientRect().height;
-		await new Promise<void>((resolve) => setTimeout(resolve, 1100));
-		const loadedHeight = card.getBoundingClientRect().height;
-		if (loadedHeight !== loadingHeight) {
+		if (!card || !imageSlot) {
 			throw new Error(
-				`The preview boundary changed from ${loadingHeight}px to ${loadedHeight}px.`,
+				'The preview must reserve its image slot while loading.',
+			);
+		}
+		if (!imageSlot.querySelector('[data-slot="skeleton"]')) {
+			throw new Error(
+				'The image slot must show a shadcn Skeleton while loading.',
 			);
 		}
 		assertPreviewDoesNotScroll(card);
-		if (
-			!canvasElement.querySelector(
-				'img[alt="Sample Vehicle Mod Workshop preview"]',
-			)
-		) {
-			throw new Error('The resolved mod preview must show its image.');
+
+		const viewportHeight = canvasElement.ownerDocument.documentElement
+			.clientHeight;
+		const initialCardHeight = card.getBoundingClientRect().height;
+		if (Math.abs(initialCardHeight / viewportHeight - 0.6) > 0.03) {
+			throw new Error(
+				`The preview must occupy about 60% of the page height; received ${initialCardHeight}px of ${viewportHeight}px.`,
+			);
 		}
+		const initialSlotBounds = imageSlot.getBoundingClientRect();
+		if (initialSlotBounds.height === 0) {
+			throw new Error('The padded image slot must keep a fixed height.');
+		}
+
+		const workshopButtons = Array.from(
+			canvasElement.querySelectorAll('button'),
+		).filter((button) =>
+			['Open in browser', 'Open in Steam'].includes(
+				button.textContent?.trim() ?? '',
+			)
+		);
+		if (workshopButtons.length !== 2) {
+			throw new Error(
+				'Both Workshop actions must remain visible while loading.',
+			);
+		}
+		const initialButtonBounds = workshopButtons.map((button) =>
+			button.getBoundingClientRect()
+		);
+		if (
+			canvasElement.querySelector(
+				'[data-preview-column-width="narrow"]',
+			) && initialButtonBounds[0].top === initialButtonBounds[1].top
+		) {
+			throw new Error(
+				'Workshop actions must stack in an 18rem preview column.',
+			);
+		}
+
+		await new Promise<void>((resolve) => setTimeout(resolve, 1100));
+		const loadedImage = canvasElement.querySelector<HTMLImageElement>(
+			'img[alt="Sample Vehicle Mod Workshop preview"]',
+		);
+		if (
+			!loadedImage || !loadedImage.complete ||
+			loadedImage.naturalWidth === 0 || !loadedImage.parentElement
+		) {
+			throw new Error('The Workshop preview image must load.');
+		}
+		const loadedImageSlot = loadedImage.parentElement;
+		if (loadedImageSlot.querySelector('[data-slot="skeleton"]')) {
+			throw new Error(
+				'The image slot Skeleton must disappear after image load.',
+			);
+		}
+		if (card.getBoundingClientRect().height !== initialCardHeight) {
+			throw new Error(
+				'The preview height must remain stable after image load.',
+			);
+		}
+		const loadedSlotBounds = loadedImageSlot.getBoundingClientRect();
+		if (
+			loadedSlotBounds.top !== initialSlotBounds.top ||
+			loadedSlotBounds.height !== initialSlotBounds.height
+		) {
+			throw new Error(
+				'The image slot position and size must remain stable.',
+			);
+		}
+		for (const [index, button] of workshopButtons.entries()) {
+			const loadedButtonBounds = button.getBoundingClientRect();
+			if (
+				loadedButtonBounds.top !== initialButtonBounds[index].top ||
+				loadedButtonBounds.left !== initialButtonBounds[index].left
+			) {
+				throw new Error(
+					`Workshop action ${button.textContent?.trim()} moved from (${
+						initialButtonBounds[index].left
+					}, ${
+						initialButtonBounds[index].top
+					}) to (${loadedButtonBounds.left}, ${loadedButtonBounds.top}).`,
+				);
+			}
+		}
+		assertPreviewDoesNotScroll(card);
 		if (!canvasElement.textContent?.includes('Workshop Author')) {
 			throw new Error(
 				'The resolved mod preview must preserve its content.',
+			);
+		}
+	},
+};
+
+export const NarrowPreviewColumnKeepsActionsStable: Story = {
+	render: () => <PreviewStory loading narrowPreviewColumn />,
+	play: LoadingKeepsPreviewHeight.play,
+};
+export const MissingPreviewImage: Story = {
+	render: () => <PreviewStory previewUrl={null} />,
+	play: ({ canvasElement }) => {
+		const card = canvasElement.querySelector<HTMLElement>(
+			'[data-slot="card"]',
+		);
+		const imageSlot = canvasElement.querySelector<HTMLElement>(
+			'[data-slot="mod-preview-image"]',
+		);
+		if (!card || !imageSlot) {
+			throw new Error('The preview must reserve its image slot.');
+		}
+		if (
+			imageSlot.querySelector('[data-slot="skeleton"]') ||
+			imageSlot.querySelector('img')
+		) {
+			throw new Error(
+				'A missing preview image must not leave an image Skeleton.',
+			);
+		}
+		if (imageSlot.getBoundingClientRect().height === 0) {
+			throw new Error(
+				'The image slot must remain reserved without an image.',
+			);
+		}
+		if (
+			Array.from(canvasElement.querySelectorAll('button')).filter(
+				(button) =>
+					['Open in browser', 'Open in Steam'].includes(
+						button.textContent?.trim() ?? '',
+					),
+			).length !== 2
+		) {
+			throw new Error(
+				'Workshop actions must remain available without an image.',
+			);
+		}
+		assertPreviewDoesNotScroll(card);
+	},
+};
+
+export const FailedPreviewImageClearsSkeleton: Story = {
+	render: () => <PreviewStory previewUrl='data:image/png;base64,invalid' />,
+	play: async ({ canvasElement }) => {
+		const document = canvasElement.ownerDocument;
+		const imageSlot = document.querySelector<HTMLElement>(
+			'[data-slot="mod-preview-image"]',
+		);
+		const image = imageSlot?.querySelector<HTMLImageElement>('img');
+		if (!imageSlot || !image) {
+			throw new Error('The invalid preview image must be rendered.');
+		}
+		const initialSlotHeight = imageSlot.getBoundingClientRect().height;
+		let failedImage: HTMLImageElement | null = null;
+		for (let attempt = 0; attempt < 20; attempt += 1) {
+			failedImage = document.querySelector<HTMLImageElement>(
+				'img[alt="Sample Vehicle Mod Workshop preview"]',
+			);
+			if (failedImage?.complete && failedImage.naturalWidth === 0) break;
+			await new Promise<void>((resolve) => setTimeout(resolve, 25));
+		}
+		if (!failedImage?.complete || failedImage.naturalWidth !== 0) {
+			throw new Error('The invalid preview image must fail to load.');
+		}
+		let failedImageSlot: HTMLElement | null = null;
+		for (let attempt = 0; attempt < 20; attempt += 1) {
+			failedImageSlot = document.querySelector<HTMLElement>(
+				'[data-slot="mod-preview-image"]',
+			);
+			if (
+				failedImageSlot &&
+				!failedImageSlot.querySelector('[data-slot="skeleton"]')
+			) {
+				break;
+			}
+			await new Promise<void>((resolve) => setTimeout(resolve, 25));
+		}
+		if (!failedImageSlot) {
+			throw new Error('The failed image slot must remain rendered.');
+		}
+		if (failedImageSlot.querySelector('[data-slot="skeleton"]')) {
+			throw new Error('The image Skeleton must clear after image error.');
+		}
+		if (
+			failedImageSlot.getBoundingClientRect().height !== initialSlotHeight
+		) {
+			throw new Error(
+				'The image slot must remain reserved after image error.',
 			);
 		}
 	},

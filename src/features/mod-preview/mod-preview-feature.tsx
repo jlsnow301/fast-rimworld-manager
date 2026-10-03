@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { Info, X } from 'lucide-react';
 import { useState } from 'react';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -46,13 +47,30 @@ export function ModPreviewFeature() {
 	const previewMessage = useAtomValue(previewMessageAtom);
 	const steamPreview = useAtomValue(steamPreviewAtom);
 	const [detailsOpen, setDetailsOpen] = useState(false);
+	const [loadedPreviewUrl, setLoadedPreviewUrl] = useState<string | null>(
+		null,
+	);
+	const [failedPreviewUrl, setFailedPreviewUrl] = useState<string | null>(
+		null,
+	);
 	const [linkError, setLinkError] = useState('');
 	const isSteamPreviewLoading =
 		previewMessage === 'Loading Steam Workshop details…';
+	const previewImageUrl = steamPreview?.previewUrl;
+	const previewImageLoaded = Boolean(
+		previewImageUrl && previewImageUrl === loadedPreviewUrl,
+	);
+	const previewImageFailed = Boolean(
+		previewImageUrl && previewImageUrl === failedPreviewUrl,
+	);
+	const isPreviewImageLoading = isSteamPreviewLoading ||
+		Boolean(
+			previewImageUrl && !previewImageLoaded && !previewImageFailed,
+		);
 
 	if (!selectedMod) {
 		return (
-			<Card className='h-full min-h-0 min-w-0'>
+			<Card className='h-[60dvh] max-h-full min-h-0 min-w-0'>
 				<CardHeader>
 					<CardTitle>Mod preview</CardTitle>
 				</CardHeader>
@@ -82,7 +100,7 @@ export function ModPreviewFeature() {
 	}
 
 	return (
-		<Card className='h-full min-h-0 min-w-0'>
+		<Card className='h-[60dvh] max-h-full gap-2 min-h-0 min-w-0'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
 				<CardAction className='flex gap-2'>
@@ -131,68 +149,72 @@ export function ModPreviewFeature() {
 				</CardAction>
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col gap-3'>
-				{isSteamPreviewLoading
-					? (
-						<div
-							aria-label='Loading mod preview'
-							className='flex flex-col gap-3'
-							role='status'
-						>
-							<Skeleton className='h-4 w-1/3' />
-							<Skeleton className='h-32 w-full' />
-							<Skeleton className='h-8 w-48' />
-						</div>
-					)
-					: (
+				<div className='flex h-5 shrink-0 items-center'>
+					{isSteamPreviewLoading
+						? <Skeleton className='h-4 w-1/3' />
+						: selectedMod.author && (
+							<p className='text-sm text-muted-foreground'>
+								{selectedMod.author}
+							</p>
+						)}
+				</div>
+				<div
+					aria-label={isPreviewImageLoading
+						? 'Loading mod preview image'
+						: undefined}
+					className='relative flex h-[min(8rem,14dvh)] w-full shrink-0 items-center justify-center rounded-md p-3 sm:h-[min(10rem,14dvh)] sm:p-4'
+					data-slot='mod-preview-image'
+					role={isPreviewImageLoading ? 'status' : undefined}
+				>
+					{isPreviewImageLoading && (
+						<Skeleton className='absolute inset-3 sm:inset-4' />
+					)}
+					{previewImageUrl && (
+						<img
+							alt={`${selectedMod.name} Workshop preview`}
+							className={cn(
+								'max-h-full max-w-full object-contain',
+								!previewImageLoaded && 'invisible',
+							)}
+							onError={() => setFailedPreviewUrl(previewImageUrl)}
+							onLoad={() => setLoadedPreviewUrl(previewImageUrl)}
+							src={previewImageUrl}
+						/>
+					)}
+				</div>
+				<div className='flex flex-wrap gap-2'>
+					{workshopPageUrls && (
 						<>
-							{selectedMod.author && (
-								<p className='text-sm text-muted-foreground'>
-									{selectedMod.author}
-								</p>
-							)}
-							{steamPreview?.previewUrl && (
-								<img
-									className='max-h-32 max-w-full self-start object-contain'
-									src={steamPreview.previewUrl}
-									alt={`${selectedMod.name} Workshop preview`}
-								/>
-							)}
-							<div className='flex flex-wrap gap-2'>
-								{workshopPageUrls && (
-									<>
-										<Button
-											onClick={() =>
-												void openWorkshopPage(
-													workshopPageUrls.browser,
-												)}
-											size='sm'
-											variant='outline'
-										>
-											Open in browser
-										</Button>
-										<Button
-											onClick={() =>
-												void openWorkshopPage(
-													workshopPageUrls.steam,
-												)}
-											size='sm'
-											variant='outline'
-										>
-											Open in Steam
-										</Button>
-									</>
-								)}
-							</div>
-							{linkError && (
-								<p
-									role='status'
-									className='text-sm text-muted-foreground'
-								>
-									{linkError}
-								</p>
-							)}
+							<Button
+								className='w-44'
+								onClick={() =>
+									void openWorkshopPage(
+										workshopPageUrls.browser,
+									)}
+								size='sm'
+								variant='outline'
+							>
+								Open in browser
+							</Button>
+							<Button
+								className='w-44'
+								onClick={() =>
+									void openWorkshopPage(
+										workshopPageUrls.steam,
+									)}
+								size='sm'
+								variant='outline'
+							>
+								Open in Steam
+							</Button>
 						</>
 					)}
+				</div>
+				{linkError && (
+					<p role='status' className='text-sm text-muted-foreground'>
+						{linkError}
+					</p>
+				)}
 				<Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
 					<DialogContent
 						showCloseButton={false}
