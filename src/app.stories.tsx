@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { userEvent } from 'storybook/test';
 import { createStore, Provider } from 'jotai';
 import { AppShell } from '@/app';
 import {
@@ -365,28 +366,48 @@ function findModListDropTarget(
 			.trim() === title
 	);
 	return card?.querySelector<HTMLDivElement>(
-		'[class*="overflow-y-auto"]',
+		`[data-mod-list-type="${
+			title === 'Active mods' ? 'active' : 'inactive'
+		}"]`,
 	) ?? null;
 }
 
 function readModListRows(dropTarget: HTMLElement): string[] {
 	return Array.from(
-		dropTarget.querySelectorAll<HTMLButtonElement>('button[draggable]'),
+		dropTarget.querySelectorAll<HTMLButtonElement>(
+			'button[aria-label^="Show details for"]',
+		),
 	).map((row) => row.textContent?.trim() ?? '');
 }
 
-function dispatchModDrag(source: HTMLElement, dropTarget: HTMLElement) {
-	const dataTransfer = new DataTransfer();
-	const eventOptions = {
+function dispatchModPointerDrag(source: HTMLElement, dropTarget: HTMLElement) {
+	const pointerOptions = {
 		bubbles: true,
 		cancelable: true,
-		dataTransfer,
+		pointerId: 31,
+		button: 0,
 	};
-	source.dispatchEvent(new DragEvent('dragstart', eventOptions));
-	dropTarget.dispatchEvent(new DragEvent('dragenter', eventOptions));
-	dropTarget.dispatchEvent(new DragEvent('dragover', eventOptions));
-	dropTarget.dispatchEvent(new DragEvent('drop', eventOptions));
-	source.dispatchEvent(new DragEvent('dragend', eventOptions));
+	source.dispatchEvent(
+		new PointerEvent('pointerdown', {
+			...pointerOptions,
+			clientX: 0,
+			clientY: 0,
+		}),
+	);
+	dropTarget.dispatchEvent(
+		new PointerEvent('pointermove', {
+			...pointerOptions,
+			clientX: 10,
+			clientY: 0,
+		}),
+	);
+	dropTarget.dispatchEvent(
+		new PointerEvent('pointerup', {
+			...pointerOptions,
+			clientX: 10,
+			clientY: 0,
+		}),
+	);
 }
 
 export const CompleteAppMockup: Story = {
@@ -435,10 +456,12 @@ export const CompleteAppMockup: Story = {
 			'button[aria-label^="Show details for Sample Vehicle Mod"]',
 		);
 		const diagnosticLabel = diagnosticRow?.getAttribute('aria-label') ?? '';
-		const activeSearchField = canvasElement.querySelector(
+		const activeSearchField = canvasElement.querySelector<HTMLInputElement>(
 			'input[aria-label="Search active mods"]',
 		);
-		const inactiveSearchField = canvasElement.querySelector(
+		const inactiveSearchField = canvasElement.querySelector<
+			HTMLInputElement
+		>(
 			'input[aria-label="Search inactive mods"]',
 		);
 		const activeDimButton = canvasElement.querySelector<HTMLButtonElement>(
@@ -474,50 +497,52 @@ export const CompleteAppMockup: Story = {
 			canvasElement,
 			'Active mods',
 		);
-		const inactiveFrameworkRow = canvasElement.querySelector<
+		await userEvent.type(inactiveSearchField, 'Sample Patch Pack');
+		await waitForRender();
+		const inactivePatchPackRow = canvasElement.querySelector<
 			HTMLButtonElement
 		>(
-			'button[aria-label^="Show details for Sample Framework"]',
+			'button[aria-label^="Show details for Sample Patch Pack"]',
 		);
-		if (!inactiveDropTarget || !activeDropTarget || !inactiveFrameworkRow) {
+		if (!inactiveDropTarget || !activeDropTarget || !inactivePatchPackRow) {
 			throw new Error(
-				'The mod lists must expose draggable rows and drop targets.',
+				'Filtered rows must remain draggable into the opposite list.',
 			);
 		}
 
-		dispatchModDrag(inactiveFrameworkRow, activeDropTarget);
+		dispatchModPointerDrag(inactivePatchPackRow, activeDropTarget);
 		await waitForRender();
 		const activatedRows = readModListRows(activeDropTarget);
 		const remainingInactiveRows = readModListRows(inactiveDropTarget);
 		const hasUnsavedChanges = canvasElement.querySelector('header')
 			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
 		if (
-			!activatedRows.includes('Sample Framework') ||
-			remainingInactiveRows.includes('Sample Framework') ||
+			!activatedRows.includes('Sample Patch Pack') ||
+			remainingInactiveRows.includes('Sample Patch Pack') ||
 			!hasUnsavedChanges
 		) {
 			throw new Error(
-				'Dropping an inactive mod in the active list must move it and show unsaved changes.',
+				'Dropping a filtered inactive mod into Active must move the indexed mod and mark the list dirty.',
 			);
 		}
 
-		const activatedFrameworkRow = canvasElement.querySelector<
+		const activatedPatchPackRow = canvasElement.querySelector<
 			HTMLButtonElement
 		>(
-			'button[aria-label^="Show details for Sample Framework"]',
+			'button[aria-label^="Show details for Sample Patch Pack"]',
 		);
-		if (!activatedFrameworkRow) {
+		if (!activatedPatchPackRow) {
 			throw new Error('The activated mod must remain draggable.');
 		}
-		dispatchModDrag(activatedFrameworkRow, inactiveDropTarget);
+		dispatchModPointerDrag(activatedPatchPackRow, inactiveDropTarget);
 		await waitForRender();
 		const restoredActiveRows = readModListRows(activeDropTarget);
 		const restoredInactiveRows = readModListRows(inactiveDropTarget);
 		const stillDirty = canvasElement.querySelector('header')
 			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
 		if (
-			restoredActiveRows.includes('Sample Framework') ||
-			!restoredInactiveRows.includes('Sample Framework') ||
+			restoredActiveRows.includes('Sample Patch Pack') ||
+			!restoredInactiveRows.includes('Sample Patch Pack') ||
 			stillDirty
 		) {
 			throw new Error(
@@ -528,9 +553,17 @@ export const CompleteAppMockup: Story = {
 		const coreRow = canvasElement.querySelector<HTMLButtonElement>(
 			'button[aria-label="Show details for Core"]',
 		);
-		if (!coreRow || coreRow.draggable) {
+		if (!coreRow) {
+			throw new Error('The RimWorld Core row must be present.');
+		}
+		dispatchModPointerDrag(coreRow, inactiveDropTarget);
+		await waitForRender();
+		if (
+			!readModListRows(activeDropTarget).includes('Core') ||
+			readModListRows(inactiveDropTarget).includes('Core')
+		) {
 			throw new Error(
-				'RimWorld Core must remain protected from dragging.',
+				'RimWorld Core must remain active after a drag gesture.',
 			);
 		}
 

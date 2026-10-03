@@ -18,7 +18,10 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { MOD_DRAG_MIME } from '@/utils/mod_drag';
+import {
+	consumeSuppressedModClick,
+	startModPointerDrag,
+} from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
 import type {
 	ModHighlightState,
@@ -93,17 +96,26 @@ export function ModListRow(props: ModListRowProps) {
 				canDrag
 					? 'cursor-grab active:cursor-grabbing'
 					: 'cursor-default',
+				canDrag && 'select-none',
 				hasErrors && 'border-l-2 border-destructive',
 				!hasErrors && hasWarnings &&
 					'border-l-2 border-muted-foreground',
 			)}
-			draggable={canDrag}
-			onClick={() => onSelectMod(packageId)}
-			onDragStart={(event) => {
-				event.dataTransfer.effectAllowed = 'move';
-				event.dataTransfer.setData(
-					MOD_DRAG_MIME,
-					JSON.stringify({ index, source: type }),
+			draggable={false}
+			onClick={() => {
+				if (consumeSuppressedModClick()) return;
+				onSelectMod(packageId);
+			}}
+			onPointerDown={(event) => {
+				if (
+					!canDrag || event.button !== 0 ||
+					event.pointerType === 'touch'
+				) return;
+				startModPointerDrag(
+					{ index, source: type },
+					event.pointerId,
+					event.clientX,
+					event.clientY,
 				);
 			}}
 			variant='ghost'

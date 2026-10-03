@@ -1,4 +1,4 @@
-import { type DragEvent as ReactDragEvent, Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { CircleAlert, Eye, EyeOff, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,11 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
-import { MOD_DRAG_MIME, parseModDragPayload } from '@/utils/mod_drag';
+import {
+	cancelModPointerDrag,
+	finishModPointerDrag,
+	updateModPointerDrag,
+} from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
 import type {
 	InstalledMod,
@@ -79,13 +83,49 @@ export function ModList(props: ModListProps) {
 		title,
 		type,
 	} = props;
-	function handleDrop(event: ReactDragEvent<HTMLDivElement>) {
-		event.preventDefault();
-		const payload = parseModDragPayload(
-			event.dataTransfer.getData(MOD_DRAG_MIME),
-		);
-		if (payload) onDropMod(payload.index, payload.source, type);
-	}
+	useEffect(() => {
+		function handlePointerMove(event: PointerEvent) {
+			updateModPointerDrag(
+				event.pointerId,
+				event.clientX,
+				event.clientY,
+			);
+		}
+		function handlePointerUp(event: PointerEvent) {
+			const dropTarget = event.target instanceof Element
+				? event.target.closest<HTMLElement>('[data-mod-list-type]')
+				: null;
+			if (!dropTarget) {
+				cancelModPointerDrag(event.pointerId);
+				return;
+			}
+			if (dropTarget.dataset.modListType !== type) return;
+			const payload = finishModPointerDrag(event.pointerId);
+			if (payload && payload.source !== type) {
+				onDropMod(payload.index, payload.source, type);
+			}
+		}
+		function handlePointerCancel(event: PointerEvent) {
+			cancelModPointerDrag(event.pointerId);
+		}
+
+		document.addEventListener('pointermove', handlePointerMove, true);
+		document.addEventListener('pointerup', handlePointerUp, true);
+		document.addEventListener('pointercancel', handlePointerCancel, true);
+		return () => {
+			document.removeEventListener(
+				'pointermove',
+				handlePointerMove,
+				true,
+			);
+			document.removeEventListener('pointerup', handlePointerUp, true);
+			document.removeEventListener(
+				'pointercancel',
+				handlePointerCancel,
+				true,
+			);
+		};
+	}, [onDropMod, type]);
 	return (
 		<Card className='flex min-h-0 min-w-0 flex-col' size='sm'>
 			<CardHeader className='gap-3'>
@@ -199,12 +239,7 @@ export function ModList(props: ModListProps) {
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<div
 					className='flex min-h-0 flex-1 flex-col overflow-y-auto border'
-					onDragEnter={(event) => event.preventDefault()}
-					onDragOver={(event) => {
-						event.preventDefault();
-						event.dataTransfer.dropEffect = 'move';
-					}}
-					onDrop={handleDrop}
+					data-mod-list-type={type}
 				>
 					{isLoading
 						? (
