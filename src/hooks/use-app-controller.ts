@@ -1,3 +1,5 @@
+import { save } from '@tauri-apps/plugin-dialog';
+
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import {
@@ -13,7 +15,7 @@ import {
 } from '@/features/mod-preview/atoms';
 import { settingsOpenAtom } from '@/features/settings/atoms';
 import { normalizedPackageId } from '@/utils/mods';
-import { invokeDesktop } from '@/utils/tauri';
+import { ensureDesktopRuntime, invokeDesktop } from '@/utils/tauri';
 import { parseModsConfig } from '@/utils/mods_config';
 import type { InstalledMod, PathSettings } from '@/utils/types';
 import { useModLists } from '@/hooks/use-mod-lists';
@@ -144,6 +146,30 @@ export function useAppController() {
 			setStatus(error instanceof Error ? error.message : String(error));
 		}
 	}
+	async function exportActiveModList() {
+		if (isTestMode) {
+			setStatus('Exporting is disabled in test mode.');
+			return;
+		}
+		const activeMods = [...modLists.activeMods];
+		try {
+			ensureDesktopRuntime();
+			const path = await save({
+				defaultPath: 'active-mods.txt',
+				filters: [{ name: 'Text files', extensions: ['txt'] }],
+				title: 'Export active mod list',
+			});
+			if (typeof path !== 'string') return;
+
+			await invokeDesktop<string>('export_active_mod_list', {
+				path,
+				activeMods,
+			});
+			setStatus('Active mod list exported.');
+		} catch (error) {
+			setStatus(error instanceof Error ? error.message : String(error));
+		}
+	}
 
 	async function sortMods() {
 		if (modLists.activeMods.length < 2) return;
@@ -168,6 +194,7 @@ export function useAppController() {
 	return {
 		importModList: modLists.importModList,
 		moveMod: modLists.moveMod,
+		exportActiveModList,
 		saveModList,
 		toggleSettings,
 		autoDetectPaths: settingsController.autoDetectPaths,

@@ -23,6 +23,7 @@ pub fn run() {
             backend::mods::commands::sort_active_mods,
             backend::mod_lists::commands::load_mod_list_file,
             backend::mod_lists::commands::save_mod_list,
+            backend::mod_lists::commands::export_active_mod_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,5 @@
 use super::{
-    config, import,
+    config, export, import,
     model::{ImportedModListFile, SaveModListArgs},
 };
 
@@ -16,4 +16,8 @@ pub fn load_startup_mod_list(app: tauri::AppHandle) -> Result<Option<String>, St
 #[tauri::command]
 pub fn save_mod_list(app: tauri::AppHandle, args: SaveModListArgs) -> Result<String, String> {
     config::save_mod_list(app, args)
+}
+#[tauri::command]
+pub fn export_active_mod_list(path: String, active_mods: Vec<String>) -> Result<String, String> {
+    export::export_active_mod_list(path, active_mods)
 }
