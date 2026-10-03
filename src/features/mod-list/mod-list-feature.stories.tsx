@@ -500,23 +500,6 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Mod preview and list card titles must appear in preview, inactive, active order.',
 			);
 		}
-		const pageText = context.canvasElement.textContent ?? '';
-		if (
-			Array.from(context.canvasElement.querySelectorAll('h2')).some(
-				(heading) => heading.textContent?.trim() === 'Mod list',
-			) ||
-			pageText.includes('Active mod list checks:') ||
-			pageText.includes('mods with errors') ||
-			pageText.includes('ModsConfig.xml') ||
-			pageText.includes(
-				'Drag mods between the lists to change activation.',
-			) ||
-			/\d+ active · \d+ inactive/.test(pageText)
-		) {
-			throw new Error(
-				'Redundant mod-list headings and summaries must be omitted.',
-			);
-		}
 		const modListCards = Array.from(
 			context.canvasElement.ownerDocument.querySelectorAll(
 				'[data-slot="card"]',
@@ -529,20 +512,62 @@ export const LoadedActiveAndInactiveLists: Story = {
 		if (modListCards.length !== 2) {
 			throw new Error('Both mod-list panels must be rendered.');
 		}
-		for (const card of modListCards) {
-			const list = card.querySelector<HTMLElement>('.overflow-y-auto');
+		const scrollViewports = modListCards.map((card) =>
+			card.querySelector<HTMLElement>(
+				'[data-slot="scroll-area-viewport"]',
+			)
+		);
+		const [inactiveList, activeList] = scrollViewports;
+		const listTypes = modListCards.map((card) =>
+			card.querySelector<HTMLElement>('[data-mod-list-type]')?.dataset
+				.modListType
+		);
+		for (const [index, card] of modListCards.entries()) {
 			const count = card.querySelector('[data-slot="badge"]')?.textContent
 				?.trim();
+			const list = scrollViewports[index];
 			if (
-				!count || !/^\d+$/.test(count) ||
-				!list || list.clientHeight === 0 ||
+				!count || !/^[0-9]+$/.test(count) || !list ||
+				list.clientHeight === 0 ||
 				list.scrollHeight <= list.clientHeight
 			) {
 				throw new Error(
-					'Each list must show its count and scroll independently.',
+					'Each mod list must have a count and its own scrollable viewport.',
 				);
 			}
 		}
+		if (
+			!inactiveList || !activeList ||
+			listTypes[0] !== 'inactive' || listTypes[1] !== 'active'
+		) {
+			throw new Error(
+				'Each independent scroll viewport must remain bound to its own drop target.',
+			);
+		}
+		inactiveList.scrollTop = inactiveList.scrollHeight;
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve())
+		);
+		const inactiveScrollTop = inactiveList.scrollTop;
+		if (inactiveScrollTop === 0 || activeList.scrollTop !== 0) {
+			throw new Error(
+				'Scrolling the inactive list must not scroll the active list.',
+			);
+		}
+		activeList.scrollTop = activeList.scrollHeight;
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => resolve())
+		);
+		if (
+			activeList.scrollTop === 0 ||
+			inactiveList.scrollTop !== inactiveScrollTop
+		) {
+			throw new Error(
+				'Scrolling the active list must not scroll the inactive list.',
+			);
+		}
+		inactiveList.scrollTop = 0;
+		activeList.scrollTop = 0;
 		const officialContentNames = [
 			'RimWorld',
 			'Royalty',

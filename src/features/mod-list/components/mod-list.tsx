@@ -18,6 +18,7 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
 	cancelModPointerDrag,
 	finishModPointerDrag,
@@ -237,8 +238,8 @@ export function ModList(props: ModListProps) {
 				</div>
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
-				<div
-					className='flex min-h-0 flex-1 flex-col overflow-y-auto border'
+				<ScrollArea
+					className='min-h-0 flex-1 border'
 					data-mod-list-type={type}
 				>
 					{isLoading
@@ -311,7 +312,7 @@ export function ModList(props: ModListProps) {
 								);
 							},
 						)}
-				</div>
+				</ScrollArea>
 			</CardContent>
 		</Card>
 	);
