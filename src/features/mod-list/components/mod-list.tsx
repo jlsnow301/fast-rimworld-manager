@@ -199,6 +199,7 @@ export function ModList(props: ModListProps) {
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<div
 					className='flex min-h-0 flex-1 flex-col overflow-y-auto border'
+					onDragEnter={(event) => event.preventDefault()}
 					onDragOver={(event) => {
 						event.preventDefault();
 						event.dataTransfer.dropEffect = 'move';

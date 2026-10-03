@@ -62,7 +62,7 @@ export function AppHeader() {
 					Import list
 				</Button>
 				<Button
-					variant='outline'
+					variant={isModListDirty ? 'default' : 'outline'}
 					size='sm'
 					disabled={!hasModList || isTestMode}
 					onClick={saveModList}

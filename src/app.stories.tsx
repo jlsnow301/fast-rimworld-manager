@@ -336,6 +336,41 @@ async function waitForRender() {
 	);
 }
 
+function findModListDropTarget(
+	canvasElement: HTMLElement,
+	title: string,
+): HTMLDivElement | null {
+	const card = Array.from(
+		canvasElement.querySelectorAll('[data-slot="card"]'),
+	).find((candidate) =>
+		candidate.querySelector('[data-slot="card-title"]')?.textContent
+			.trim() === title
+	);
+	return card?.querySelector<HTMLDivElement>(
+		'[class*="overflow-y-auto"]',
+	) ?? null;
+}
+
+function readModListRows(dropTarget: HTMLElement): string[] {
+	return Array.from(
+		dropTarget.querySelectorAll<HTMLButtonElement>('button[draggable]'),
+	).map((row) => row.textContent?.trim() ?? '');
+}
+
+function dispatchModDrag(source: HTMLElement, dropTarget: HTMLElement) {
+	const dataTransfer = new DataTransfer();
+	const eventOptions = {
+		bubbles: true,
+		cancelable: true,
+		dataTransfer,
+	};
+	source.dispatchEvent(new DragEvent('dragstart', eventOptions));
+	dropTarget.dispatchEvent(new DragEvent('dragenter', eventOptions));
+	dropTarget.dispatchEvent(new DragEvent('dragover', eventOptions));
+	dropTarget.dispatchEvent(new DragEvent('drop', eventOptions));
+	source.dispatchEvent(new DragEvent('dragend', eventOptions));
+}
+
 export const CompleteAppMockup: Story = {
 	globals: { viewport: { value: 'application', isRotated: false } },
 	render: () => <AppStory />,
@@ -404,6 +439,74 @@ export const CompleteAppMockup: Story = {
 				'The app story must show search, dim controls, and diagnostic and Workshop status icons.',
 			);
 		}
+		const inactiveDropTarget = findModListDropTarget(
+			canvasElement,
+			'Inactive mods',
+		);
+		const activeDropTarget = findModListDropTarget(
+			canvasElement,
+			'Active mods',
+		);
+		const inactiveFrameworkRow = canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label^="Show details for Sample Framework"]',
+		);
+		if (!inactiveDropTarget || !activeDropTarget || !inactiveFrameworkRow) {
+			throw new Error(
+				'The mod lists must expose draggable rows and drop targets.',
+			);
+		}
+
+		dispatchModDrag(inactiveFrameworkRow, activeDropTarget);
+		await waitForRender();
+		const activatedRows = readModListRows(activeDropTarget);
+		const remainingInactiveRows = readModListRows(inactiveDropTarget);
+		const hasUnsavedChanges = canvasElement.querySelector('header')
+			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
+		if (
+			!activatedRows.includes('Sample Framework') ||
+			remainingInactiveRows.includes('Sample Framework') ||
+			!hasUnsavedChanges
+		) {
+			throw new Error(
+				'Dropping an inactive mod in the active list must move it and show unsaved changes.',
+			);
+		}
+
+		const activatedFrameworkRow = canvasElement.querySelector<
+			HTMLButtonElement
+		>(
+			'button[aria-label^="Show details for Sample Framework"]',
+		);
+		if (!activatedFrameworkRow) {
+			throw new Error('The activated mod must remain draggable.');
+		}
+		dispatchModDrag(activatedFrameworkRow, inactiveDropTarget);
+		await waitForRender();
+		const restoredActiveRows = readModListRows(activeDropTarget);
+		const restoredInactiveRows = readModListRows(inactiveDropTarget);
+		const stillDirty = canvasElement.querySelector('header')
+			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
+		if (
+			restoredActiveRows.includes('Sample Framework') ||
+			!restoredInactiveRows.includes('Sample Framework') ||
+			stillDirty
+		) {
+			throw new Error(
+				'Dropping the mod back in the inactive list must restore the saved list state.',
+			);
+		}
+
+		const coreRow = canvasElement.querySelector<HTMLButtonElement>(
+			'button[aria-label="Show details for Core"]',
+		);
+		if (!coreRow || coreRow.draggable) {
+			throw new Error(
+				'RimWorld Core must remain protected from dragging.',
+			);
+		}
+
 		const workshopButton = findButton(canvasElement, 'Check for updates') ??
 			findButton(canvasElement, 'Preview Workshop updates');
 		if (!workshopButton) {
