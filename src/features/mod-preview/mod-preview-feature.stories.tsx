@@ -305,6 +305,11 @@ export const LoadingKeepsPreviewHeight: Story = {
 		if (initialSlotBounds.height === 0) {
 			throw new Error('The padded image slot must keep a fixed height.');
 		}
+		if (initialSlotBounds.height <= viewportHeight * 0.2) {
+			throw new Error(
+				'The Workshop image area must use at least 20% of the viewport height.',
+			);
+		}
 
 		const workshopButtons = Array.from(
 			canvasElement.querySelectorAll('button'),
@@ -321,6 +326,18 @@ export const LoadingKeepsPreviewHeight: Story = {
 		const initialButtonBounds = workshopButtons.map((button) =>
 			button.getBoundingClientRect()
 		);
+		const initialButtonBottom = Math.max(
+			initialButtonBounds[0].bottom,
+			initialButtonBounds[1].bottom,
+		);
+		if (
+			card.getBoundingClientRect().bottom - initialButtonBottom >
+				viewportHeight * 0.12
+		) {
+			throw new Error(
+				'Workshop actions must stay near the bottom of the preview card.',
+			);
+		}
 		if (
 			canvasElement.querySelector(
 				'[data-preview-column-width="narrow"]',

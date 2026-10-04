@@ -100,7 +100,7 @@ export function ModPreviewFeature() {
 	}
 
 	return (
-		<Card className='h-[60dvh] max-h-full gap-2 min-h-0 min-w-0'>
+		<Card className='h-[60dvh] max-h-full gap-1 min-h-0 min-w-0 py-2'>
 			<CardHeader className='flex flex-row items-center justify-between'>
 				<CardTitle>{selectedMod.name}</CardTitle>
 				<CardAction className='flex gap-2'>
@@ -148,7 +148,7 @@ export function ModPreviewFeature() {
 					</TooltipProvider>
 				</CardAction>
 			</CardHeader>
-			<CardContent className='flex min-h-0 flex-1 flex-col gap-3'>
+			<CardContent className='flex min-h-0 flex-1 flex-col gap-1'>
 				<div className='flex h-5 shrink-0 items-center'>
 					{isSteamPreviewLoading
 						? <Skeleton className='h-4 w-1/3' />
@@ -162,7 +162,7 @@ export function ModPreviewFeature() {
 					aria-label={isPreviewImageLoading
 						? 'Loading mod preview image'
 						: undefined}
-					className='relative flex h-[min(8rem,14dvh)] w-full shrink-0 items-center justify-center rounded-md p-3 sm:h-[min(10rem,14dvh)] sm:p-4'
+					className='relative flex min-h-0 w-full flex-1 items-center justify-center rounded-md p-3 sm:p-4'
 					data-slot='mod-preview-image'
 					role={isPreviewImageLoading ? 'status' : undefined}
 				>
@@ -182,7 +182,7 @@ export function ModPreviewFeature() {
 						/>
 					)}
 				</div>
-				<div className='flex flex-wrap gap-2'>
+				<div className='mt-auto flex flex-wrap gap-2'>
 					{workshopPageUrls && (
 						<>
 							<Button
