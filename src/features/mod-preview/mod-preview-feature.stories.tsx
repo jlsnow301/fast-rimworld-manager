@@ -316,13 +316,21 @@ export const LoadingKeepsPreviewHeight: Story = {
 		const workshopButtons = Array.from(
 			canvasElement.querySelectorAll('button'),
 		).filter((button) =>
-			['Open in browser', 'Open in Steam'].includes(
-				button.textContent?.trim() ?? '',
-			)
+			['Browser', 'Steam'].includes(button.textContent?.trim() ?? '')
 		);
-		if (workshopButtons.length !== 2) {
+		const browserButton = workshopButtons.find((button) =>
+			button.textContent?.trim() === 'Browser'
+		);
+		const steamButton = workshopButtons.find((button) =>
+			button.textContent?.trim() === 'Steam'
+		);
+		if (
+			workshopButtons.length !== 2 ||
+			!browserButton?.querySelector('svg') ||
+			!steamButton?.querySelector('svg')
+		) {
 			throw new Error(
-				'Both Workshop actions must remain visible while loading.',
+				'Both Workshop actions must show their icon and label while loading.',
 			);
 		}
 		const initialButtonBounds = workshopButtons.map((button) =>
@@ -340,14 +348,8 @@ export const LoadingKeepsPreviewHeight: Story = {
 				'Workshop actions must stay near the bottom of the preview card.',
 			);
 		}
-		if (
-			canvasElement.querySelector(
-				'[data-preview-column-width="narrow"]',
-			) && initialButtonBounds[0].top === initialButtonBounds[1].top
-		) {
-			throw new Error(
-				'Workshop actions must stack in an 18rem preview column.',
-			);
+		if (initialButtonBounds[0].top !== initialButtonBounds[1].top) {
+			throw new Error('Workshop actions must stay on one row.');
 		}
 
 		await new Promise<void>((resolve) => setTimeout(resolve, 1100));
@@ -455,7 +457,7 @@ export const MissingPreviewImage: Story = {
 		if (
 			Array.from(canvasElement.querySelectorAll('button')).filter(
 				(button) =>
-					['Open in browser', 'Open in Steam'].includes(
+					['Browser', 'Steam'].includes(
 						button.textContent?.trim() ?? '',
 					),
 			).length !== 2
