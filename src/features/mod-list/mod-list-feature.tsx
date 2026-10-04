@@ -83,9 +83,7 @@ export function ModListFeature() {
 	const [selectedUpdateIds, setSelectedUpdateIds] = useState<string[]>([]);
 	const updateCount = useAtomValue(workshopUpdateResultAtom)?.outdatedMods
 		.length ?? 0;
-	const checkForUpdatesLabel = checkingWorkshopUpdates
-		? 'Checking Workshop…'
-		: isTestMode
+	const checkForUpdatesLabel = isTestMode
 		? 'Preview Workshop updates'
 		: 'Check for updates';
 	const checkForUpdatesAriaLabel = updateCount > 0
@@ -95,6 +93,21 @@ export function ModListFeature() {
 		: checkForUpdatesLabel;
 	const displayedUpdateCount = updateCount > 9 ? '9+' : updateCount;
 	const hasCheckedForUpdatesOnStartup = useRef(false);
+	const [showNoUpdatesCheck, setShowNoUpdatesCheck] = useState(false);
+
+	useEffect(() => {
+		if (workshopUpdateStatus?.state !== 'no-updates') {
+			setShowNoUpdatesCheck(false);
+			return;
+		}
+
+		setShowNoUpdatesCheck(true);
+		const timeout = globalThis.setTimeout(
+			() => setShowNoUpdatesCheck(false),
+			1800,
+		);
+		return () => globalThis.clearTimeout(timeout);
+	}, [workshopUpdateStatus?.state]);
 
 	useEffect(() => {
 		if (
@@ -135,12 +148,29 @@ export function ModListFeature() {
 								<Button
 									aria-busy={checkingWorkshopUpdates}
 									aria-label={checkForUpdatesAriaLabel}
+									aria-describedby={workshopUpdateStatus
+											?.state ===
+											'incomplete'
+										? 'workshop-update-incomplete'
+										: undefined}
 									disabled={checkingWorkshopUpdates ||
 										(!isTestMode && !hasWorkshopMods)}
 									onClick={handleCheckForUpdates}
 									size='sm'
 									variant='outline'
 								>
+									{checkingWorkshopUpdates
+										? (
+											<LoaderCircle
+												className='animate-spin'
+												data-icon='inline-start'
+												role='img'
+												aria-label='Checking for Workshop updates'
+											/>
+										)
+										: showNoUpdatesCheck
+										? <Check data-icon='inline-start' />
+										: null}
 									{checkForUpdatesLabel}
 									{updateCount > 0 && (
 										<Badge
@@ -161,26 +191,13 @@ export function ModListFeature() {
 									Sort active mods
 								</Button>
 							</div>
-							{workshopUpdateStatus && (
+							{workshopUpdateStatus?.state === 'incomplete' && (
 								<Badge
+									id='workshop-update-incomplete'
 									aria-live='polite'
 									role='status'
-									variant={workshopUpdateStatus.state ===
-											'updates'
-										? 'secondary'
-										: 'outline'}
+									variant='outline'
 								>
-									{workshopUpdateStatus.state === 'checking'
-										? (
-											<LoaderCircle
-												className='animate-spin'
-												data-icon='inline-start'
-											/>
-										)
-										: workshopUpdateStatus.state ===
-												'no-updates'
-										? <Check data-icon='inline-start' />
-										: null}
 									{workshopUpdateStatus.message}
 								</Badge>
 							)}

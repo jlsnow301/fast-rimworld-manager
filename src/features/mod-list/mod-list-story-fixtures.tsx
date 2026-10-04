@@ -47,6 +47,8 @@ type ModListStoryState = {
 type ActiveInactiveStoryProps = {
 	failWorkshopUpdateDispatch?: boolean;
 	autoCheckWorkshopUpdates?: boolean;
+	zeroUpdateCheck?: boolean;
+	checkDelayMs?: number;
 };
 
 export async function waitForCheckForUpdatesButton(canvasElement: HTMLElement) {
@@ -344,10 +346,17 @@ const startupWorkshopUpdateResult: WorkshopUpdateCheckResult = {
 		steamTimeUpdated: 1722470400,
 	})),
 };
+const zeroUpdateWorkshopResult: WorkshopUpdateCheckResult = {
+	checkedCount: 7,
+	skippedCount: 0,
+	outdatedMods: [],
+};
 
 function createModListStoryState(
 	failWorkshopUpdateDispatch = false,
 	autoCheckWorkshopUpdates = false,
+	zeroUpdateCheck = false,
+	checkDelayMs = 0,
 ): ModListStoryState {
 	const store = createStore();
 	store.set(installedModsAtom, loadedStoryMods);
@@ -426,9 +435,17 @@ function createModListStoryState(
 		},
 		async checkForModUpdates() {
 			store.set(checkingWorkshopUpdatesAtom, true);
-			await Promise.resolve();
+			if (checkDelayMs > 0) {
+				await new Promise<void>((resolve) =>
+					setTimeout(resolve, checkDelayMs)
+				);
+			} else {
+				await Promise.resolve();
+			}
 			const result = autoCheckWorkshopUpdates
 				? startupWorkshopUpdateResult
+				: zeroUpdateCheck
+				? zeroUpdateWorkshopResult
 				: workshopUpdateResult;
 			if (autoCheckWorkshopUpdates) {
 				startupWorkshopUpdateCheckCount += 1;
@@ -475,11 +492,15 @@ export function ActiveInactiveStory(props: ActiveInactiveStoryProps) {
 	const {
 		failWorkshopUpdateDispatch = false,
 		autoCheckWorkshopUpdates = false,
+		zeroUpdateCheck = false,
+		checkDelayMs = 0,
 	} = props;
 	const [storyState] = useState(() =>
 		createModListStoryState(
 			failWorkshopUpdateDispatch,
 			autoCheckWorkshopUpdates,
+			zeroUpdateCheck,
+			checkDelayMs,
 		)
 	);
 

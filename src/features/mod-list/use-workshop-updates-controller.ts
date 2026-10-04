@@ -34,22 +34,13 @@ export function useWorkshopUpdatesController(setStatus: WorkshopStatusSetter) {
 		}
 		setCheckingWorkshopUpdates(true);
 		setWorkshopUpdateResult(null);
-		setStatus('Checking installed Workshop mods for updates…');
+		setStatus('');
 		try {
 			const result = await invokeDesktop<WorkshopUpdateCheckResult>(
 				'check_outdated_mods',
 			);
 			if (store.get(isTestModeAtom)) return null;
 			setWorkshopUpdateResult(result);
-			const updateCount = result.outdatedMods.length;
-			const skipped = result.skippedCount
-				? ` ${result.skippedCount} could not be compared.`
-				: '';
-			setStatus(
-				`Checked ${result.checkedCount} Workshop mods; ${updateCount} update${
-					updateCount === 1 ? '' : 's'
-				} available.${skipped}`,
-			);
 			return result;
 		} catch (error) {
 			if (!store.get(isTestModeAtom)) {
