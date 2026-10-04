@@ -382,36 +382,34 @@ function readModListRows(dropTarget: HTMLElement): string[] {
 	).map((row) => row.textContent?.trim() ?? '');
 }
 
-function dispatchModPointerDrag(source: HTMLElement, dropTarget: HTMLElement) {
-	const pointerOptions = {
-		bubbles: true,
-		cancelable: true,
-		pointerId: 31,
-		button: 0,
-	};
-	source.dispatchEvent(
-		new PointerEvent('pointerdown', {
-			...pointerOptions,
-			clientX: 0,
-			clientY: 0,
-		}),
-	);
-	dropTarget.dispatchEvent(
-		new PointerEvent('pointermove', {
-			...pointerOptions,
-			clientX: 10,
-			clientY: 0,
-		}),
-	);
-	dropTarget.dispatchEvent(
-		new PointerEvent('pointerup', {
-			...pointerOptions,
-			clientX: 10,
-			clientY: 0,
-		}),
-	);
+async function dragModRow(source: HTMLElement, dropTarget: HTMLElement) {
+	const sourceBounds = source.getBoundingClientRect();
+	const targetBounds = dropTarget.getBoundingClientRect();
+	const startX = sourceBounds.left + sourceBounds.width / 2;
+	const startY = sourceBounds.top + sourceBounds.height / 2;
+	const endX = targetBounds.left + targetBounds.width / 2;
+	const endY = targetBounds.top + targetBounds.height / 2;
+	const moveActions = Array.from({ length: 24 }, (_, step) => {
+		const progress = (step + 1) / 24;
+		return {
+			pointerName: 'mouse',
+			target: dropTarget,
+			coords: {
+				clientX: startX + (endX - startX) * progress,
+				clientY: startY + (endY - startY) * progress,
+			},
+		};
+	});
+	await userEvent.pointer([
+		{
+			target: source,
+			keys: '[MouseLeft>]',
+			coords: { clientX: startX, clientY: startY },
+		},
+		...moveActions,
+		{ keys: '[/MouseLeft]' },
+	]);
 }
-
 export const CompleteAppMockup: Story = {
 	globals: { viewport: { value: 'application', isRotated: false } },
 	render: () => <AppStory />,
@@ -491,6 +489,17 @@ export const CompleteAppMockup: Story = {
 				'The app story must show search, dim controls, and diagnostic and Workshop status icons.',
 			);
 		}
+		await userEvent.click(diagnosticRow);
+		await waitForRender();
+		if (
+			!Array.from(
+				canvasElement.querySelectorAll('[data-slot="card-title"]'),
+			).some((title) =>
+				title.textContent?.trim() === 'Sample Vehicle Mod'
+			)
+		) {
+			throw new Error('Clicking a mod row must select it for preview.');
+		}
 		const inactiveDropTarget = findModListDropTarget(
 			canvasElement,
 			'Inactive mods',
@@ -500,31 +509,55 @@ export const CompleteAppMockup: Story = {
 			'Active mods',
 		);
 		await userEvent.type(inactiveSearchField, 'Sample Patch Pack');
-		await waitForRender();
-		const inactivePatchPackRow = canvasElement.querySelector<
-			HTMLButtonElement
-		>(
-			'button[aria-label^="Show details for Sample Patch Pack"]',
-		);
+		let inactivePatchPackRow: HTMLButtonElement | null = null;
+		for (let frame = 0; frame < 60; frame += 1) {
+			inactivePatchPackRow = canvasElement.querySelector<
+				HTMLButtonElement
+			>(
+				'button[aria-label^="Show details for Sample Patch Pack"]',
+			);
+			if (inactivePatchPackRow) break;
+			await waitForRender();
+		}
 		if (!inactiveDropTarget || !activeDropTarget || !inactivePatchPackRow) {
 			throw new Error(
 				'Filtered rows must remain draggable into the opposite list.',
 			);
 		}
 
-		dispatchModPointerDrag(inactivePatchPackRow, activeDropTarget);
+		const isModListDirty = () =>
+			canvasElement.querySelector('header')?.textContent?.toLowerCase()
+				.includes('unsaved changes') ?? false;
+		await dragModRow(inactivePatchPackRow, activeDropTarget);
+		for (let frame = 0; frame < 180; frame += 1) {
+			if (
+				readModListRows(activeDropTarget).includes(
+					'Sample Patch Pack',
+				) &&
+				!readModListRows(inactiveDropTarget).includes(
+					'Sample Patch Pack',
+				) &&
+				isModListDirty()
+			) break;
+			await waitForRender();
+		}
 		await waitForRender();
 		const activatedRows = readModListRows(activeDropTarget);
 		const remainingInactiveRows = readModListRows(inactiveDropTarget);
-		const hasUnsavedChanges = canvasElement.querySelector('header')
-			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
+		const hasUnsavedChanges = isModListDirty();
 		if (
 			!activatedRows.includes('Sample Patch Pack') ||
 			remainingInactiveRows.includes('Sample Patch Pack') ||
 			!hasUnsavedChanges
 		) {
 			throw new Error(
-				'Dropping a filtered inactive mod into Active must move the indexed mod and mark the list dirty.',
+				`Dropping a filtered inactive mod into Active must move the indexed mod and mark the list dirty: ${
+					JSON.stringify({
+						activatedRows,
+						remainingInactiveRows,
+						hasUnsavedChanges,
+					})
+				}`,
 			);
 		}
 
@@ -536,12 +569,23 @@ export const CompleteAppMockup: Story = {
 		if (!activatedPatchPackRow) {
 			throw new Error('The activated mod must remain draggable.');
 		}
-		dispatchModPointerDrag(activatedPatchPackRow, inactiveDropTarget);
+		await dragModRow(activatedPatchPackRow, inactiveDropTarget);
+		for (let frame = 0; frame < 180; frame += 1) {
+			if (
+				!readModListRows(activeDropTarget).includes(
+					'Sample Patch Pack',
+				) &&
+				readModListRows(inactiveDropTarget).includes(
+					'Sample Patch Pack',
+				) &&
+				!isModListDirty()
+			) break;
+			await waitForRender();
+		}
 		await waitForRender();
 		const restoredActiveRows = readModListRows(activeDropTarget);
 		const restoredInactiveRows = readModListRows(inactiveDropTarget);
-		const stillDirty = canvasElement.querySelector('header')
-			?.textContent?.toLowerCase().includes('unsaved changes') ?? false;
+		const stillDirty = isModListDirty();
 		if (
 			restoredActiveRows.includes('Sample Patch Pack') ||
 			!restoredInactiveRows.includes('Sample Patch Pack') ||
@@ -558,7 +602,7 @@ export const CompleteAppMockup: Story = {
 		if (!coreRow) {
 			throw new Error('The RimWorld Core row must be present.');
 		}
-		dispatchModPointerDrag(coreRow, inactiveDropTarget);
+		await dragModRow(coreRow, inactiveDropTarget);
 		await waitForRender();
 		if (
 			!readModListRows(activeDropTarget).includes('Core') ||

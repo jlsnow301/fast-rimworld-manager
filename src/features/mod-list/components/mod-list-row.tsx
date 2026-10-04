@@ -1,3 +1,4 @@
+import { useDraggable } from '@dnd-kit/react';
 import { cn } from 'cn';
 import {
 	BookOpen,
@@ -18,10 +19,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-	consumeSuppressedModClick,
-	startModPointerDrag,
-} from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
 import type {
 	ModHighlightState,
@@ -85,39 +82,32 @@ export function ModListRow(props: ModListRowProps) {
 		updateDetails,
 	].filter(Boolean).join('. ');
 	const canDrag = type !== 'active' || normalizedId !== 'ludeon.rimworld';
+	const { ref: dragRef, isDragging } = useDraggable({
+		id: `${type}:${packageId}`,
+		type: 'mod',
+		disabled: !canDrag,
+		data: { sourceIndex: index, source: type },
+	});
 
 	return (
 		<Button
+			ref={dragRef}
+			aria-roledescription={canDrag ? 'draggable mod' : undefined}
 			aria-label={`Show details for ${name}${
 				accessibleIssues ? `. ${accessibleIssues}` : ''
 			}`}
+			onClick={() => onSelectMod(packageId)}
 			className={cn(
 				'h-auto min-h-12 w-full justify-start rounded-none px-3 py-2 text-left normal-case tracking-normal',
 				canDrag
 					? 'cursor-grab active:cursor-grabbing'
 					: 'cursor-default',
-				canDrag && 'select-none',
+				canDrag && 'select-none touch-pan-y',
+				isDragging && 'opacity-50',
 				hasErrors && 'border-l-2 border-destructive',
 				!hasErrors && hasWarnings &&
 					'border-l-2 border-muted-foreground',
 			)}
-			draggable={false}
-			onClick={() => {
-				if (consumeSuppressedModClick()) return;
-				onSelectMod(packageId);
-			}}
-			onPointerDown={(event) => {
-				if (
-					!canDrag || event.button !== 0 ||
-					event.pointerType === 'touch'
-				) return;
-				startModPointerDrag(
-					{ index, source: type },
-					event.pointerId,
-					event.clientX,
-					event.clientY,
-				);
-			}}
 			variant='ghost'
 		>
 			<span

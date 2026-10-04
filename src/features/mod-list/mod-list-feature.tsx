@@ -34,6 +34,7 @@ import { allWorkshopUpdateIds } from '@/utils/workshop_update_selection';
 import { ModPreviewFeature } from '@/features/mod-preview/mod-preview-feature';
 import { ModList } from '@/features/mod-list/components/mod-list';
 import { WorkshopUpdatesPage } from '@/features/mod-list/components/workshop-updates-page';
+import { ModListDragDropProvider } from '@/features/mod-list/components/mod-list-drag-drop-provider';
 
 export function ModListFeature() {
 	const { moveMod, sortMods, selectMod, checkForModUpdates } =
@@ -202,57 +203,57 @@ export function ModListFeature() {
 								</Badge>
 							)}
 						</div>
-						<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
-							<div className='min-h-0'>
-								<ModPreviewFeature />
+						<ModListDragDropProvider onDropMod={moveMod}>
+							<div className='grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(18rem,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1'>
+								<div className='min-h-0'>
+									<ModPreviewFeature />
+								</div>
+								<ModList
+									filterWarnings={inactiveWarningFilter}
+									filterErrors={inactiveErrorFilter}
+									count={inactiveMods.length}
+									dimNonMatchingMods={inactiveDimNonMatchingMods}
+									isLoading={modListLoadState === 'loading'}
+									emptyMessage='No inactive mods found. Configure paths in Settings.'
+									mods={visibleInactiveMods}
+									activeDiagnosticsByPackageId={activeModDiagnostics
+										.byPackageId}
+									outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+									modDetailsByPackageId={modDetailsByPackageId}
+									onFilterWarningsChange={setInactiveWarningFilter}
+									onFilterErrorsChange={setInactiveErrorFilter}
+									onDimNonMatchingModsChange={setInactiveDimNonMatchingMods}
+									onSearchChange={setInactiveModSearch}
+									onSelectMod={selectMod}
+									searchValue={inactiveModSearch}
+									title='Inactive mods'
+									type='inactive'
+								/>
+								<ModList
+									filterWarnings={activeWarningFilter}
+									filterErrors={activeErrorFilter}
+									count={activeMods.length}
+									dimNonMatchingMods={activeDimNonMatchingMods}
+									isLoading={modListLoadState === 'loading'}
+									emptyMessage={hasModList
+										? 'No active mods.'
+										: 'Import a mod list or configure your RimWorld paths.'}
+									mods={visibleActiveMods}
+									activeDiagnosticsByPackageId={activeModDiagnostics
+										.byPackageId}
+									outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+									modDetailsByPackageId={modDetailsByPackageId}
+									onFilterWarningsChange={setActiveWarningFilter}
+									onFilterErrorsChange={setActiveErrorFilter}
+									onDimNonMatchingModsChange={setActiveDimNonMatchingMods}
+									onSearchChange={setActiveModSearch}
+									onSelectMod={selectMod}
+									searchValue={activeModSearch}
+									title='Active mods'
+									type='active'
+								/>
 							</div>
-							<ModList
-								filterWarnings={inactiveWarningFilter}
-								filterErrors={inactiveErrorFilter}
-								count={inactiveMods.length}
-								dimNonMatchingMods={inactiveDimNonMatchingMods}
-								isLoading={modListLoadState === 'loading'}
-								emptyMessage='No inactive mods found. Configure paths in Settings.'
-								mods={visibleInactiveMods}
-								activeDiagnosticsByPackageId={activeModDiagnostics
-									.byPackageId}
-								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-								modDetailsByPackageId={modDetailsByPackageId}
-								onFilterWarningsChange={setInactiveWarningFilter}
-								onFilterErrorsChange={setInactiveErrorFilter}
-								onDimNonMatchingModsChange={setInactiveDimNonMatchingMods}
-								onSearchChange={setInactiveModSearch}
-								onDropMod={moveMod}
-								onSelectMod={selectMod}
-								searchValue={inactiveModSearch}
-								title='Inactive mods'
-								type='inactive'
-							/>
-							<ModList
-								filterWarnings={activeWarningFilter}
-								filterErrors={activeErrorFilter}
-								count={activeMods.length}
-								dimNonMatchingMods={activeDimNonMatchingMods}
-								isLoading={modListLoadState === 'loading'}
-								emptyMessage={hasModList
-									? 'No active mods.'
-									: 'Import a mod list or configure your RimWorld paths.'}
-								mods={visibleActiveMods}
-								activeDiagnosticsByPackageId={activeModDiagnostics
-									.byPackageId}
-								outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-								modDetailsByPackageId={modDetailsByPackageId}
-								onFilterWarningsChange={setActiveWarningFilter}
-								onFilterErrorsChange={setActiveErrorFilter}
-								onDimNonMatchingModsChange={setActiveDimNonMatchingMods}
-								onSearchChange={setActiveModSearch}
-								onDropMod={moveMod}
-								onSelectMod={selectMod}
-								searchValue={activeModSearch}
-								title='Active mods'
-								type='active'
-							/>
-						</div>
+						</ModListDragDropProvider>
 						<p
 							aria-live='polite'
 							className='mt-3 shrink-0 text-sm text-muted-foreground'

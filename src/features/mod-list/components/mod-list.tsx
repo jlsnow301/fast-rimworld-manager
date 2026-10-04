@@ -1,4 +1,5 @@
-import { Fragment, useEffect } from 'react';
+import { Fragment } from 'react';
+import { useDroppable } from '@dnd-kit/react';
 import { CircleAlert, Eye, EyeOff, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,11 +20,6 @@ import {
 } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-	cancelModPointerDrag,
-	finishModPointerDrag,
-	updateModPointerDrag,
-} from '@/utils/mod_drag';
 import { normalizedPackageId } from '@/utils/mods';
 import type {
 	InstalledMod,
@@ -52,11 +48,6 @@ export type ModListProps = {
 	onFilterErrorsChange: (filter: boolean) => void;
 	onSearchChange: (search: string) => void;
 	onSelectMod: (packageId: string) => void;
-	onDropMod: (
-		sourceIndex: number,
-		source: ModListType,
-		target: ModListType,
-	) => void;
 	searchValue: string;
 	title: string;
 	type: ModListType;
@@ -79,54 +70,15 @@ export function ModList(props: ModListProps) {
 		onFilterErrorsChange,
 		onSearchChange,
 		onSelectMod,
-		onDropMod,
 		searchValue,
 		title,
 		type,
 	} = props;
-	useEffect(() => {
-		function handlePointerMove(event: PointerEvent) {
-			updateModPointerDrag(
-				event.pointerId,
-				event.clientX,
-				event.clientY,
-			);
-		}
-		function handlePointerUp(event: PointerEvent) {
-			const dropTarget = event.target instanceof Element
-				? event.target.closest<HTMLElement>('[data-mod-list-type]')
-				: null;
-			if (!dropTarget) {
-				cancelModPointerDrag(event.pointerId);
-				return;
-			}
-			if (dropTarget.dataset.modListType !== type) return;
-			const payload = finishModPointerDrag(event.pointerId);
-			if (payload && payload.source !== type) {
-				onDropMod(payload.index, payload.source, type);
-			}
-		}
-		function handlePointerCancel(event: PointerEvent) {
-			cancelModPointerDrag(event.pointerId);
-		}
-
-		document.addEventListener('pointermove', handlePointerMove, true);
-		document.addEventListener('pointerup', handlePointerUp, true);
-		document.addEventListener('pointercancel', handlePointerCancel, true);
-		return () => {
-			document.removeEventListener(
-				'pointermove',
-				handlePointerMove,
-				true,
-			);
-			document.removeEventListener('pointerup', handlePointerUp, true);
-			document.removeEventListener(
-				'pointercancel',
-				handlePointerCancel,
-				true,
-			);
-		};
-	}, [onDropMod, type]);
+	const { ref: dropTargetRef } = useDroppable({
+		id: `mod-list-${type}`,
+		accept: 'mod',
+		data: { target: type },
+	});
 	return (
 		<Card className='flex min-h-0 min-w-0 flex-col' size='sm'>
 			<CardHeader className='gap-3'>
@@ -239,6 +191,7 @@ export function ModList(props: ModListProps) {
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col'>
 				<ScrollArea
+					ref={dropTargetRef}
 					className='min-h-0 flex-1 border'
 					data-mod-list-type={type}
 				>

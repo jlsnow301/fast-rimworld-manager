@@ -1,4 +1,5 @@
 import { normalizedPackageId } from '@/utils/mods';
+import type { ModListType } from '@/utils/types';
 
 export type ModListTransfer = {
 	active: string[];
@@ -6,6 +7,14 @@ export type ModListTransfer = {
 	packageId: string;
 };
 
+export type ModListDragData = {
+	sourceIndex: number;
+	source: ModListType;
+};
+
+export type ModListDropData = {
+	target: ModListType;
+};
 export function moveModBetweenLists(
 	active: string[],
 	inactive: string[],

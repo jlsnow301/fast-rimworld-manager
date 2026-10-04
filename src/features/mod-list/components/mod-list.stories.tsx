@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { DragDropProvider } from '@dnd-kit/react';
 import { useState } from 'react';
 import type { ModHighlightState } from '@/utils/types';
 import type { ModListType } from '@/utils/types';
@@ -7,6 +8,7 @@ import { filterVisibleMods } from '@/utils/mod_search';
 import { moveModBetweenLists } from '@/utils/mod_lists';
 import { normalizedPackageId } from '@/utils/mods';
 import { TEST_MOD_LIST } from '@/utils/test_mod_list';
+import { ModListDragDropProvider } from '@/features/mod-list/components/mod-list-drag-drop-provider';
 import { ModList } from '@/features/mod-list/components/mod-list';
 import { ModListRow } from '@/features/mod-list/components/mod-list-row';
 
@@ -158,59 +160,59 @@ function ModListDemo() {
 	}
 
 	return (
-		<div className='grid h-dvh min-h-0 grid-cols-2 gap-4 overflow-hidden p-6'>
-			<ModList
-				count={inactiveMods.length}
-				dimNonMatchingMods={dimInactiveNonMatching}
-				filterWarnings={filterInactiveWarnings}
-				filterErrors={filterInactiveErrors}
-				isLoading={false}
-				emptyMessage='No inactive sample mods.'
-				mods={visibleInactiveMods}
-				activeDiagnosticsByPackageId={activeDiagnostics.byPackageId}
-				outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-				modDetailsByPackageId={modDetailsByPackageId}
-				onDimNonMatchingModsChange={setDimInactiveNonMatching}
-				onFilterWarningsChange={setFilterInactiveWarnings}
-				onFilterErrorsChange={setFilterInactiveErrors}
-				onSearchChange={setInactiveSearch}
-				onDropMod={handleDropMod}
-				onSelectMod={setSelectedPackageId}
-				searchValue={inactiveSearch}
-				title='Inactive mods'
-				type='inactive'
-			/>
-			<ModList
-				count={activeMods.length}
-				dimNonMatchingMods={dimActiveNonMatching}
-				filterWarnings={filterActiveWarnings}
-				filterErrors={filterActiveErrors}
-				isLoading={false}
-				emptyMessage='No active sample mods.'
-				mods={visibleActiveMods}
-				activeDiagnosticsByPackageId={activeDiagnostics.byPackageId}
-				outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
-				modDetailsByPackageId={modDetailsByPackageId}
-				onDimNonMatchingModsChange={setDimActiveNonMatching}
-				onFilterWarningsChange={setFilterActiveWarnings}
-				onFilterErrorsChange={setFilterActiveErrors}
-				onSearchChange={setActiveSearch}
-				onDropMod={handleDropMod}
-				onSelectMod={setSelectedPackageId}
-				searchValue={activeSearch}
-				title='Active mods'
-				type='active'
-			/>
-			<span aria-live='polite' className='sr-only'>
-				{selectedPackageId
-					? `Selected ${
-						modDetailsByPackageId.get(
-							normalizedPackageId(selectedPackageId),
-						)?.name ?? selectedPackageId
-					}`
-					: ''}
-			</span>
-		</div>
+		<ModListDragDropProvider onDropMod={handleDropMod}>
+			<div className='grid h-dvh min-h-0 grid-cols-2 gap-4 overflow-hidden p-6'>
+				<ModList
+					count={inactiveMods.length}
+					dimNonMatchingMods={dimInactiveNonMatching}
+					filterWarnings={filterInactiveWarnings}
+					filterErrors={filterInactiveErrors}
+					isLoading={false}
+					emptyMessage='No inactive sample mods.'
+					mods={visibleInactiveMods}
+					activeDiagnosticsByPackageId={activeDiagnostics.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+					modDetailsByPackageId={modDetailsByPackageId}
+					onDimNonMatchingModsChange={setDimInactiveNonMatching}
+					onFilterWarningsChange={setFilterInactiveWarnings}
+					onFilterErrorsChange={setFilterInactiveErrors}
+					onSearchChange={setInactiveSearch}
+					onSelectMod={setSelectedPackageId}
+					searchValue={inactiveSearch}
+					title='Inactive mods'
+					type='inactive'
+				/>
+				<ModList
+					count={activeMods.length}
+					dimNonMatchingMods={dimActiveNonMatching}
+					filterWarnings={filterActiveWarnings}
+					filterErrors={filterActiveErrors}
+					isLoading={false}
+					emptyMessage='No active sample mods.'
+					mods={visibleActiveMods}
+					activeDiagnosticsByPackageId={activeDiagnostics.byPackageId}
+					outdatedWorkshopModsByPackageId={outdatedWorkshopModsByPackageId}
+					modDetailsByPackageId={modDetailsByPackageId}
+					onDimNonMatchingModsChange={setDimActiveNonMatching}
+					onFilterWarningsChange={setFilterActiveWarnings}
+					onFilterErrorsChange={setFilterActiveErrors}
+					onSearchChange={setActiveSearch}
+					onSelectMod={setSelectedPackageId}
+					searchValue={activeSearch}
+					title='Active mods'
+					type='active'
+				/>
+				<span aria-live='polite' className='sr-only'>
+					{selectedPackageId
+						? `Selected ${
+							modDetailsByPackageId.get(
+								normalizedPackageId(selectedPackageId),
+							)?.name ?? selectedPackageId
+						}`
+						: ''}
+				</span>
+			</div>
+		</ModListDragDropProvider>
 	);
 }
 
@@ -309,16 +311,18 @@ function SeverityColorsDemo() {
 	];
 
 	return (
-		<div className='flex w-96 flex-col border'>
-			{rows.map((data) => (
-				<ModListRow
-					data={data}
-					key={data.packageId}
-					onSelectMod={() => {}}
-					type='inactive'
-				/>
-			))}
-		</div>
+		<DragDropProvider>
+			<div className='flex w-96 flex-col border'>
+				{rows.map((data) => (
+					<ModListRow
+						data={data}
+						key={data.packageId}
+						onSelectMod={() => {}}
+						type='inactive'
+					/>
+				))}
+			</div>
+		</DragDropProvider>
 	);
 }
 
