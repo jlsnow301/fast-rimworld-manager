@@ -15,6 +15,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'Core',
 			author: null,
+			modVersion: null,
 			packageId: 'ludeon.rimworld',
 			description: 'Base game content used by the sample list.',
 			publishedFileId: null,
@@ -30,6 +31,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'RimWorld - Royalty',
 			author: null,
+			modVersion: null,
 			packageId: 'ludeon.rimworld.royalty',
 			description: 'Official RimWorld expansion content.',
 			publishedFileId: null,
@@ -45,6 +47,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'RimWorld - Biotech',
 			author: null,
+			modVersion: null,
 			packageId: 'ludeon.rimworld.biotech',
 			description: 'Official RimWorld expansion content.',
 			publishedFileId: null,
@@ -60,6 +63,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'Harmony',
 			author: 'Brrainz',
+			modVersion: null,
 			packageId: 'brrainz.harmony',
 			description: 'A sample framework mod.',
 			publishedFileId: null,
@@ -75,6 +79,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'Sample Framework',
 			author: null,
+			modVersion: null,
 			packageId: 'sample.framework',
 			description:
 				'Drag this framework into Active to resolve the sample dependency warning.',
@@ -91,6 +96,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'Sample Vehicle Mod',
 			author: null,
+			modVersion: null,
 			packageId: 'sample.vehiclemod',
 			description:
 				'This sample intentionally has a missing framework dependency. Use it to exercise active-mod diagnostics.',
@@ -113,6 +119,7 @@ export const TEST_MOD_LIST: TestModListFixture = {
 		{
 			name: 'Sample Patch Pack',
 			author: null,
+			modVersion: null,
 			packageId: 'sample.patchpack',
 			description:
 				'A second inactive sample mod for search and drag-and-drop testing.',

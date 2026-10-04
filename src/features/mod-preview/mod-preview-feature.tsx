@@ -149,7 +149,7 @@ export function ModPreviewFeature() {
 				</CardAction>
 			</CardHeader>
 			<CardContent className='flex min-h-0 flex-1 flex-col gap-1'>
-				<div className='flex h-5 shrink-0 items-center'>
+				<div className='flex h-5 shrink-0 items-center justify-between gap-2'>
 					{isSteamPreviewLoading
 						? <Skeleton className='h-4 w-1/3' />
 						: selectedMod.author && (
@@ -157,6 +157,14 @@ export function ModPreviewFeature() {
 								{selectedMod.author}
 							</p>
 						)}
+					{selectedMod.modVersion && (
+						<p
+							aria-label='Mod version'
+							className='ml-auto text-sm text-muted-foreground'
+						>
+							Version {selectedMod.modVersion}
+						</p>
+					)}
 				</div>
 				<div
 					aria-label={isPreviewImageLoading

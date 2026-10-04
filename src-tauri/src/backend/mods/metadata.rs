@@ -225,6 +225,7 @@ mod tests {
         InstalledMod {
             name: package_id.to_string(),
             author: None,
+            mod_version: None,
             package_id: package_id.to_string(),
             description: String::new(),
             published_file_id: published_file_id.map(str::to_string),

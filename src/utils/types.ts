@@ -42,6 +42,7 @@ type ModDependency = {
 export type InstalledMod = {
 	name: string;
 	author: string | null;
+	modVersion: string | null;
 	packageId: string;
 	description: string;
 	publishedFileId: string | null;

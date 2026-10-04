@@ -20,6 +20,7 @@ function installedMod(packageId: string, name: string): InstalledMod {
 	return {
 		name,
 		author: null,
+		modVersion: null,
 		packageId,
 		description: '',
 		publishedFileId: null,

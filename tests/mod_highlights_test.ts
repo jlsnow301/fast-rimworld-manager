@@ -8,6 +8,7 @@ function mod(
 	return {
 		name: packageId,
 		author: null,
+		modVersion: null,
 		packageId,
 		description: '',
 		publishedFileId: null,

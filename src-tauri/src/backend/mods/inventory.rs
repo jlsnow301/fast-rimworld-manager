@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
 use super::about_xml::{
-    parse_about_rules, parse_about_xml, parse_mod_dependencies, parse_xml_list,
+    parse_about_rules, parse_about_xml, parse_mod_dependencies, parse_xml_list, ParsedAboutXml,
 };
 use super::metadata;
 use super::model::InstalledMod;
@@ -103,7 +103,14 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         let Ok(contents) = fs::read_to_string(about_path) else {
             continue;
         };
-        let Some((name, author, package_id, description)) = parse_about_xml(&contents) else {
+        let Some(ParsedAboutXml {
+            name,
+            author,
+            package_id,
+            description,
+            mod_version,
+        }) = parse_about_xml(&contents)
+        else {
             continue;
         };
         let name = if source == "game" && name.eq_ignore_ascii_case(&package_id) {
@@ -125,6 +132,7 @@ fn scan_mod_root(root: &Path, source: &str, mods: &mut Vec<InstalledMod>) -> Res
         mods.push(InstalledMod {
             name,
             author,
+            mod_version,
             package_id,
             description,
             published_file_id,
@@ -192,9 +200,9 @@ mod tests {
             fs::create_dir_all(&about_directory).expect("About folder should be created");
             fs::write(
                 about_directory.join("About.xml"),
-                format!(
-                    "<ModMetaData><name>{xml_name}</name><packageId>{package_id}</packageId></ModMetaData>"
-                ),
+				format!(
+					"<ModMetaData><name>{xml_name}</name><packageId>{package_id}</packageId><supportedVersions><li>1.6</li></supportedVersions><modVersion>2.3.4</modVersion></ModMetaData>"
+				),
             )
             .expect("About.xml should be created");
         }
@@ -215,6 +223,10 @@ mod tests {
                 .expect("each installed package should be listed");
             assert_eq!(listed.name, name);
             assert_eq!(listed.source, source);
+            assert_eq!(listed.mod_version.as_deref(), Some("2.3.4"));
+            let serialized = serde_json::to_value(listed).expect("installed mod should serialize");
+            assert_eq!(serialized["modVersion"], "2.3.4");
+            assert_eq!(listed.supported_versions, ["1.6"]);
         }
         fs::remove_dir_all(root).expect("fixture directory should be removed");
     }

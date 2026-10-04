@@ -62,6 +62,7 @@ function assertPreviewDoesNotScroll(card: HTMLElement) {
 const previewMod: InstalledMod = {
 	name: 'Sample Vehicle Mod',
 	author: 'Workshop Author',
+	modVersion: '2.3.4',
 	packageId: 'sample.vehiclemod',
 	description: 'Installed About.xml description for the sample mod.',
 	publishedFileId: '123456789',
@@ -359,6 +360,25 @@ export const LoadingKeepsPreviewHeight: Story = {
 			throw new Error('The Workshop preview image must load.');
 		}
 		const loadedImageSlot = loadedImage.parentElement;
+		const previewAuthor = Array.from(
+			canvasElement.querySelectorAll('p'),
+		).find((paragraph) =>
+			paragraph.textContent?.trim() === 'Workshop Author'
+		);
+		const modVersion = canvasElement.querySelector<HTMLElement>(
+			'[aria-label="Mod version"]',
+		);
+		if (
+			!previewAuthor ||
+			!modVersion ||
+			modVersion.textContent?.trim() !== 'Version 2.3.4' ||
+			previewAuthor.getBoundingClientRect().right >=
+				modVersion.getBoundingClientRect().left
+		) {
+			throw new Error(
+				'About.xml modVersion must display across from the author.',
+			);
+		}
 		if (loadedImageSlot.querySelector('[data-slot="skeleton"]')) {
 			throw new Error(
 				'The image slot Skeleton must disappear after image load.',

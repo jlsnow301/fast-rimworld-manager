@@ -1,15 +1,26 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
+use super::model::ModDependency;
+
 #[derive(Clone, Copy)]
 enum AboutField {
     Name,
     Author,
     PackageId,
     Description,
+    ModVersion,
 }
-use super::model::ModDependency;
-pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, String, String)> {
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct ParsedAboutXml {
+    pub(super) name: String,
+    pub(super) author: Option<String>,
+    pub(super) package_id: String,
+    pub(super) description: String,
+    pub(super) mod_version: Option<String>,
+}
+pub(super) fn parse_about_xml(xml: &str) -> Option<ParsedAboutXml> {
     let mut reader = Reader::from_str(xml);
     let mut current_field = None;
     let mut depth = 0usize;
@@ -17,6 +28,7 @@ pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, Stri
     let mut author = String::new();
     let mut package_id = String::new();
     let mut description = String::new();
+    let mut mod_version = String::new();
 
     loop {
         match reader.read_event() {
@@ -31,6 +43,8 @@ pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, Stri
                         Some(AboutField::PackageId)
                     } else if tag.as_ref().eq_ignore_ascii_case("description") {
                         Some(AboutField::Description)
+                    } else if tag.as_ref().eq_ignore_ascii_case("modVersion") {
+                        Some(AboutField::ModVersion)
                     } else {
                         None
                     };
@@ -46,6 +60,7 @@ pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, Stri
                     &mut author,
                     &mut package_id,
                     &mut description,
+                    &mut mod_version,
                 );
             }
             Ok(Event::GeneralRef(reference)) => {
@@ -58,6 +73,7 @@ pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, Stri
                     &mut author,
                     &mut package_id,
                     &mut description,
+                    &mut mod_version,
                 );
             }
             Ok(Event::End(_)) => {
@@ -78,16 +94,18 @@ pub(super) fn parse_about_xml(xml: &str) -> Option<(String, Option<String>, Stri
     }
     let name = name.trim();
     let author = author.trim();
-    Some((
-        if name.is_empty() {
+    let mod_version = mod_version.trim();
+    Some(ParsedAboutXml {
+        name: if name.is_empty() {
             package_id.to_string()
         } else {
             name.to_string()
         },
-        (!author.is_empty()).then(|| author.to_string()),
-        package_id.to_string(),
-        description.trim().to_string(),
-    ))
+        author: (!author.is_empty()).then(|| author.to_string()),
+        package_id: package_id.to_string(),
+        description: description.trim().to_string(),
+        mod_version: (!mod_version.is_empty()).then(|| mod_version.to_string()),
+    })
 }
 
 fn append_about_text(
@@ -97,12 +115,14 @@ fn append_about_text(
     author: &mut String,
     package_id: &mut String,
     description: &mut String,
+    mod_version: &mut String,
 ) {
     match field {
         Some(AboutField::Name) => name.push_str(value),
         Some(AboutField::Author) => author.push_str(value),
         Some(AboutField::PackageId) => package_id.push_str(value),
         Some(AboutField::Description) => description.push_str(value),
+        Some(AboutField::ModVersion) => mod_version.push_str(value),
         None => {}
     }
 }
@@ -407,18 +427,20 @@ fn parses_author_from_about_xml_without_guessing_from_package_id() {
 	);
     assert_eq!(
         parsed,
-        Some((
-            "Example".to_string(),
-            Some("Mod Team & Friends".to_string()),
-            "ModTeam.Example".to_string(),
-            String::new(),
-        )),
+        Some(ParsedAboutXml {
+            name: "Example".to_string(),
+            author: Some("Mod Team & Friends".to_string()),
+            package_id: "ModTeam.Example".to_string(),
+            description: String::new(),
+            mod_version: None,
+        }),
     );
 
     let without_author =
         parse_about_xml("<ModMetaData><packageId>ModTeam.Example</packageId></ModMetaData>");
-    assert_eq!(without_author.map(|(_, author, _, _)| author), Some(None));
+    assert_eq!(without_author.map(|about| about.author), Some(None));
 }
+
 #[test]
 fn parses_mod_dependencies_with_nested_alternative_ids() {
     let dependencies = parse_mod_dependencies(
@@ -452,35 +474,60 @@ fn parses_about_order_incompatibility_and_supported_version_lists() {
     assert_eq!(rules.incompatible_with, ["Author.Conflict"]);
     assert_eq!(parse_xml_list(xml, "supportedVersions"), ["1.5", "1.6"]);
 }
+
+#[test]
+fn parses_mod_version_from_about_xml() {
+    let parsed = parse_about_xml(
+		"<ModMetaData><packageId>Author.Mod</packageId><supportedVersions><li>1.6</li></supportedVersions><modVersion> 2.3.4 </modVersion></ModMetaData>",
+	);
+
+    assert_eq!(
+        parsed.map(|about| about.mod_version),
+        Some(Some("2.3.4".to_string())),
+    );
+}
+
+#[test]
+fn supported_versions_do_not_supply_a_missing_mod_version() {
+    let parsed = parse_about_xml(
+		"<ModMetaData><packageId>Author.Mod</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+	);
+
+    assert_eq!(parsed.map(|about| about.mod_version), Some(None));
+}
+
 #[test]
 fn about_package_id_ignores_nested_dependency_package_ids() {
     let parsed = parse_about_xml(
-            "<ModMetaData><name>1trickPwnyta's Anomaly Patch</name><packageId>anomalypatch.1trickPwnyta</packageId><modDependencies><li><packageId>brrainz.harmony</packageId></li></modDependencies></ModMetaData>",
-        );
+		"<ModMetaData><name>1trickPwnyta's Anomaly Patch</name><packageId>anomalypatch.1trickPwnyta</packageId><modDependencies><li><packageId>brrainz.harmony</packageId></li></modDependencies></ModMetaData>",
+	);
 
     assert_eq!(
         parsed,
-        Some((
-            "1trickPwnyta's Anomaly Patch".to_string(),
-            None,
-            "anomalypatch.1trickPwnyta".to_string(),
-            String::new(),
-        )),
+        Some(ParsedAboutXml {
+            name: "1trickPwnyta's Anomaly Patch".to_string(),
+            author: None,
+            package_id: "anomalypatch.1trickPwnyta".to_string(),
+            description: String::new(),
+            mod_version: None,
+        }),
     );
 }
+
 #[test]
 fn parses_escaped_description_for_preview() {
     let parsed = parse_about_xml(
-            "<ModMetaData><name>Mod &amp; More</name><packageId>Author.Mod</packageId><description>Details &amp; requirements</description></ModMetaData>",
-        );
+		"<ModMetaData><name>Mod &amp; More</name><packageId>Author.Mod</packageId><description>Details &amp; requirements</description></ModMetaData>",
+	);
 
     assert_eq!(
         parsed,
-        Some((
-            "Mod & More".to_string(),
-            None,
-            "Author.Mod".to_string(),
-            "Details & requirements".to_string(),
-        ))
+        Some(ParsedAboutXml {
+            name: "Mod & More".to_string(),
+            author: None,
+            package_id: "Author.Mod".to_string(),
+            description: "Details & requirements".to_string(),
+            mod_version: None,
+        }),
     );
 }

@@ -196,6 +196,7 @@ mod tests {
         InstalledMod {
             name: format!("Sample {published_file_id}"),
             author: None,
+            mod_version: None,
             package_id: format!("sample.mod{published_file_id}"),
             description: String::new(),
             published_file_id: Some(published_file_id.to_string()),
