@@ -1,5 +1,6 @@
 import { cn } from 'cn';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { userEvent } from 'storybook/test';
 import { useEffect, useState } from 'react';
 import { createStore, Provider } from 'jotai';
 import { AppProvider } from '@/context/app-context';
@@ -162,7 +163,7 @@ function PreviewStory(props: PreviewStoryProps) {
 
 export const InfoShowsOnDiskDetails: Story = {
 	render: () => <PreviewStory />,
-	play: async ({ canvasElement, userEvent }) => {
+	play: async ({ canvasElement }) => {
 		const document = canvasElement.ownerDocument;
 		const infoButton = canvasElement.querySelector<HTMLButtonElement>(
 			'button[aria-label="Show on-disk details"]',
@@ -297,18 +298,18 @@ export const LoadingKeepsPreviewHeight: Story = {
 		const viewportHeight = canvasElement.ownerDocument.documentElement
 			.clientHeight;
 		const initialCardHeight = card.getBoundingClientRect().height;
-		if (Math.abs(initialCardHeight / viewportHeight - 0.6) > 0.03) {
+		if (Math.abs(initialCardHeight / viewportHeight - 0.48) > 0.03) {
 			throw new Error(
-				`The preview must occupy about 60% of the page height; received ${initialCardHeight}px of ${viewportHeight}px.`,
+				`The preview must occupy about 48% of the page height; received ${initialCardHeight}px of ${viewportHeight}px.`,
 			);
 		}
 		const initialSlotBounds = imageSlot.getBoundingClientRect();
 		if (initialSlotBounds.height === 0) {
 			throw new Error('The padded image slot must keep a fixed height.');
 		}
-		if (initialSlotBounds.height <= viewportHeight * 0.2) {
+		if (initialSlotBounds.height <= viewportHeight * 0.16) {
 			throw new Error(
-				'The Workshop image area must use at least 20% of the viewport height.',
+				'The Workshop image area must stay above 16% of the viewport height.',
 			);
 		}
 

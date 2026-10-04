@@ -56,6 +56,32 @@ export const LoadedActiveAndInactiveLists: Story = {
 				'Mod preview and list card titles must appear in preview, inactive, active order.',
 			);
 		}
+		const emptyPreviewCard = Array.from(
+			context.canvasElement.ownerDocument.querySelectorAll<HTMLElement>(
+				'[data-slot="card"]',
+			),
+		).find((card) =>
+			card.querySelector('[data-slot="card-title"]')?.textContent
+				?.trim() ===
+				'Mod preview'
+		);
+		const emptyPreviewContent = emptyPreviewCard?.querySelector<
+			HTMLElement
+		>(
+			'[data-slot="card-content"]',
+		);
+		if (
+			!emptyPreviewCard || !emptyPreviewContent ||
+			Math.abs(
+					emptyPreviewCard.getBoundingClientRect().height /
+							documentElement.clientHeight - 0.48,
+				) > 0.03 ||
+			emptyPreviewContent.scrollHeight > emptyPreviewContent.clientHeight
+		) {
+			throw new Error(
+				'The empty preview card must stay at 48dvh without scrolling.',
+			);
+		}
 		const modListCards = Array.from(
 			context.canvasElement.ownerDocument.querySelectorAll(
 				'[data-slot="card"]',

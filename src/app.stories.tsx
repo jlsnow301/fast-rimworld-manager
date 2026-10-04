@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { userEvent } from 'storybook/test';
 import { createStore, Provider } from 'jotai';
-import { AppShell } from '@/app';
+import { AppShell } from '@/App';
 import {
 	activeModsAtom,
 	checkingWorkshopUpdatesAtom,

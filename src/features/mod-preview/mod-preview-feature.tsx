@@ -70,7 +70,7 @@ export function ModPreviewFeature() {
 
 	if (!selectedMod) {
 		return (
-			<Card className='h-[60dvh] max-h-full min-h-0 min-w-0'>
+			<Card className='h-[48dvh] max-h-full min-h-0 min-w-0'>
 				<CardHeader>
 					<CardTitle>Mod preview</CardTitle>
 				</CardHeader>
@@ -100,9 +100,11 @@ export function ModPreviewFeature() {
 	}
 
 	return (
-		<Card className='h-[60dvh] max-h-full gap-1 min-h-0 min-w-0 py-2'>
-			<CardHeader className='flex flex-row items-center justify-between'>
-				<CardTitle>{selectedMod.name}</CardTitle>
+		<Card className='h-[48dvh] max-h-full gap-1 min-h-0 min-w-0 py-0'>
+			<CardHeader className='flex flex-row items-center justify-between px-2'>
+				<CardTitle className='text-base tracking-normal'>
+					{selectedMod.name}
+				</CardTitle>
 				<CardAction className='flex gap-2'>
 					<TooltipProvider>
 						<Tooltip>
